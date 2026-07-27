@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from general import original_ann as predict_model
+from original_ann import original_ann as predict_model
 from general.components import *
 import json
 from general.data import matrix_ops, transformation
