@@ -1,6 +1,5 @@
 import os
 import json, time
-import configparser
 from pathlib import Path
 
 import numpy as np
@@ -15,9 +14,13 @@ from general.boundary_env import BoudaryEnv
 
 # sns.set_theme(style="darkgrid")
 
-base_path = Path(__file__).parent.parent.parent
-config = configparser.ConfigParser()
-config.read(f'{base_path}/config')
+base_path = Path(__file__).parent.parent
+domains_path = base_path / "domains"
+output_path = base_path / "sac" / "output"
+logs_path = output_path / "logs"                 # trained checkpoints written by train.py: logs/<method>/<version>/<stage>/<checkpoint>
+eval_path = output_path / "evaluation"           # evaluation figures, samples, result files
+experiments_path = output_path / "experiments"   # history-info dumps
+pics_path = output_path / "pics"                 # density images for element_number_box_plot
 
 
 version = 'sac_training_domain_compare_66' # sac_4_ann
@@ -26,10 +29,11 @@ seed=999
 learning_rate=1e-4
 
 def prepare_eval_envs():
-    domains = []
-    domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary15.json')
-    domains.append(f'D:/python_projects/meshgeneration/ui/domains/random1_1.json') # medium
-    domains.append(f'D:/python_projects/meshgeneration/ui/domains/random2_2.json') # hard
+    domains = [
+        domains_path / "boundary15.json",
+        domains_path / "random1_1.json",  # medium
+        domains_path / "random2_2.json",  # hard
+    ]
     domains = [BoudaryEnv(read_polygon(d), experiment_version=version, env_name=i) for i, d in enumerate(domains)]
     # for d in domains:
     #     d.estimate_area_range()
@@ -37,7 +41,7 @@ def prepare_eval_envs():
 
 def prepare_model(method_name, model_path, env):
 
-    # env = Monitor(o_env, f"{config['default']['a2c_log']}/{version}/")
+    # env = Monitor(o_env, logs_path / "a2c" / version)
     if method_name == 'a2c':
         # the policy_kwargs are automatically loaded
         model = A2C.load(model_path, env=env)
@@ -68,9 +72,12 @@ def plot_elements_area(elements):
 
 
 def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=False, save_samples=False):
+    os.makedirs(eval_path / version, exist_ok=True)
     envs = prepare_eval_envs()
     is_random = 'T' if deterministic else 'F'
-    iter = "66/curriculum/0"
+    # Checkpoints are loaded from train.py's layout: logs/<method>/<model_version>/<stage>/<checkpoint>
+    model_version = "66"
+    stage = "0"
     START = 1200 #3348
     END = 1210
     # agents = [529, 554, 621, 778, 800, 838, 881, 897, 907, 945, 950, 953, 1010, 1080, 1106, 1124, 1189, 1198,
@@ -84,31 +91,31 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
     }
 
     methods = {
-        'a2c': [], #'D:/meshingData/baselines/logs/a2c_mesh/3/best_model'
-        # 'ppo': ['D:/meshingData/baselines/logs/ppo_mesh/38/2090'], #16/3541; 21/3828; 22/4077, 4170, 4624; 31/4103
-        # 'ppo': [f'D:/meshingData/baselines/logs/ppo_mesh/{iter}/{i}' for i in range(START, END)], #
-        # 'ppo': [f'D:/meshingData/baselines/logs/ppo_mesh/{iter}/best_model'],
-        # 'ddpg': [f'D:/meshingData/baselines/logs/ddpg_mesh/{iter}/{i}' for i in range(START, END)],
-        'sac': [f'D:/meshingData/baselines/logs/sac_mesh/{iter}/{i}' for i in range(START, END)], # agents
-        # 'sac': [f'D:/meshingData/baselines/logs/sac_mesh/{iter}/{i}' for i in range(START, END)],  # range(START, END)
-        # 'ppo': ['D:/meshingData/baselines/logs/ppo_mesh/43/curriculum/0/mesh'],
-        # 'td3': [f'D:/meshingData/baselines/logs/td3_mesh/{iter}/{i}' for i in range(START, END)]
+        'a2c': [], # logs_path / "a2c" / "3" / stage / "best_model"
+        # 'ppo': [logs_path / "ppo" / "38" / stage / "2090"], #16/3541; 21/3828; 22/4077, 4170, 4624; 31/4103
+        # 'ppo': [logs_path / "ppo" / model_version / stage / str(i) for i in range(START, END)], #
+        # 'ppo': [logs_path / "ppo" / model_version / stage / "best_model"],
+        # 'ddpg': [logs_path / "ddpg" / model_version / stage / str(i) for i in range(START, END)],
+        'sac': [logs_path / "sac" / model_version / stage / str(i) for i in range(START, END)], # agents
+        # 'sac': [logs_path / "sac" / model_version / stage / str(i) for i in range(START, END)],  # range(START, END)
+        # 'ppo': [logs_path / "ppo" / "43" / stage / "mesh"],
+        # 'td3': [logs_path / "td3" / model_version / stage / str(i) for i in range(START, END)]
     }
     results = {
-        'a2c': [],  # 'D:/meshingData/baselines/logs/a2c_mesh/3/best_model'
-        # 'ppo': ['D:/meshingData/baselines/logs/ppo_mesh/38/1893'], #16/3541; 21/3828; 22/4077, 4170, 4624; 31/4103
-        # 'ppo': {model.split('/')[-1]: {'completed': [],
+        'a2c': [],  # logs_path / "a2c" / "3" / stage / "best_model"
+        # 'ppo': [logs_path / "ppo" / "38" / stage / "1893"], #16/3541; 21/3828; 22/4077, 4170, 4624; 31/4103
+        # 'ppo': {v.name: {'completed': [],
         #         'n_elements': [],
-        #         'n_complete': 0} for model in methods['ppo']},
-        # 'ddpg': {model.split('/')[-1]: {'completed': [],
+        #         'n_complete': 0} for v in methods['ppo']},
+        # 'ddpg': {v.name: {'completed': [],
         #         'n_elements': [],
-        #         'n_complete': 0} for model in methods['ddpg']},
-        'sac': {model.split('/')[-1]: {'completed': [],
+        #         'n_complete': 0} for v in methods['ddpg']},
+        'sac': {v.name: {'completed': [],
                         'n_elements': [],
-                        'n_complete': 0} for model in methods['sac']},
-        # 'td3': {model.split('/')[-1]: {'completed': [],
+                        'n_complete': 0} for v in methods['sac']},
+        # 'td3': {v.name: {'completed': [],
         #         'n_elements': [],
-        #         'n_complete': 0} for model in methods['td3']},
+        #         'n_complete': 0} for v in methods['td3']},
     }
 
     time_costs = []
@@ -122,8 +129,7 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
 
                 # for j in range(replication['times']):
                 obs = env.reset()
-                # env.boundary.savefig(f"{config['default']['evaluation']}/{version}/ \
-                #                             {k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_{i}_00.png", dpi=200, style='b.-')
+                # env.boundary.savefig(eval_path / version / f"{k}_{v.parent.name}_{v.name}_env_{i}_00.png", dpi=200, style='b.-')
                 # print(len(env.original_vertices), env.boundary.get_perimeter())
                 start = time.time()
                 while True:
@@ -141,15 +147,15 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
 
                 print(f'Meshing running time: {time.time() - start}s')
                 env.close()
-                results[k][v.split('/')[-1]]['completed'].append(info['is_complete'])
-                results[k][v.split('/')[-1]]['n_elements'].append(len(env.generated_meshes))
-                results[k][v.split('/')[-1]]['n_complete'] += 1 if info['is_complete'] else 0
+                results[k][v.name]['completed'].append(info['is_complete'])
+                results[k][v.name]['n_elements'].append(len(env.generated_meshes))
+                results[k][v.name]['n_complete'] += 1 if info['is_complete'] else 0
                 # plot_elements_area(env.generated_meshes)
                 # env.smooth(env.boundary.vertices)
 
                 if save_fig:
                     if info['is_complete']:
-                        env.save_meshes(f"{config['default']['evaluation']}/{version}/{k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_{i}_{is_random}.png",
+                        env.save_meshes(eval_path / version / f"{k}_{v.parent.name}_{v.name}_env_{i}_{is_random}.png",
                                         meshes=env.generated_meshes, quality=False, type=4,
                                         indexing=indexing, style='k-')
                         print(np.mean(
@@ -158,16 +164,16 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
                             [env.get_quality(env.generated_meshes[i], 4) for i in range(len(env.generated_meshes))]))
 
                         # env.smooth(env.boundary.vertices)
-                        # env.save_meshes(f"{config['default']['evaluation']}/{version}/{k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_{i}_{is_random}_smoothed.png", meshes=env.generated_meshes,
+                        # env.save_meshes(eval_path / version / f"{k}_{v.parent.name}_{v.name}_env_{i}_{is_random}_smoothed.png", meshes=env.generated_meshes,
                         #                         indexing=indexing, style='k-')
                         # pass
 
-                        # env.save_history_info(f"{config['default']['experiments']}/{version}/{k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_{i}_history_info")
+                        # env.save_history_info(experiments_path / version / f"{k}_{v.parent.name}_{v.name}_env_{i}_history_info")
 
                         # env.write_generated_elements_2_file(
-                        #     f"{config['default']['evaluation']}/{version}/{k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_{i}_{is_random}.inp")
+                        #     eval_path / version / f"{k}_{v.parent.name}_{v.name}_env_{i}_{is_random}.inp")
                     else:
-                        env.save_meshes(f"{config['default']['evaluation']}/{version}/{k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_{i}_{is_random}.png",
+                        env.save_meshes(eval_path / version / f"{k}_{v.parent.name}_{v.name}_env_{i}_{is_random}.png",
                                         meshes=env.generated_meshes, quality=False, type=4,
                                         indexing=indexing, style='k-')
                         # pass
@@ -178,17 +184,18 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
                 if save_samples:
                     if len(env.generated_meshes):
                         samples, output_types, outputs = env.extract_samples_2(env.generated_meshes, 2, 3, radius=4)
-                        env.save_samples(f"{config['default']['evaluation']}/{version}/{k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_{i}_{is_random}.json",
+                        env.save_samples(eval_path / version / f"{k}_{v.parent.name}_{v.name}_env_{i}_{is_random}.json",
                                          {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
                         print("Saved!")
 
-    with open('evaluation.txt', 'w') as outfile:
+    with open(eval_path / version / 'evaluation.txt', 'w') as outfile:
         json.dump(results, outfile)
 
 
 def replication_evaluation(is_render=False, deterministic=False, indexing=False, save_fig=False, save_samples=False):
-    model_path = 'D:/meshingData/baselines/logs/sac_mesh/34/curriculum/0/889'
-    env = BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary_fly_r2.json'))
+    os.makedirs(eval_path / version, exist_ok=True)
+    model_path = logs_path / "sac" / "34" / "0" / "889"
+    env = BoudaryEnv(read_polygon(domains_path / "boundary_fly_r2.json"))
     is_random = 'T' if deterministic else 'F'
     model = prepare_model('sac', model_path, env)
     times = 10
@@ -202,8 +209,7 @@ def replication_evaluation(is_render=False, deterministic=False, indexing=False,
 
     for j in range(times):
         obs = env.reset()
-        # env.boundary.savefig(f"{config['default']['evaluation']}/{version}/ \
-        #                             {k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_00.png", style='b.-')
+        # env.boundary.savefig(eval_path / version / f"{model_path.parent.name}_{model_path.name}_env_00.png", style='b.-')
         # print(len(env.original_vertices), env.boundary.get_perimeter())
         # start = time.time()
         while True:
@@ -223,29 +229,28 @@ def replication_evaluation(is_render=False, deterministic=False, indexing=False,
 
         if save_fig:
             if info['is_complete']:
-                # env.save_meshes(f"{config['default']['evaluation']}/{version}/{k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_{i}_{is_random}.png",
+                # env.save_meshes(eval_path / version / f"sac_{model_path.parent.name}_{model_path.name}_env_{j}_{is_random}.png",
                 #                 meshes=env.generated_meshes, quality=True, type=4,
                 #                 indexing=indexing, style='k-')
                 env.smooth(env.boundary.vertices)
-                # env.save_meshes(f"{config['default']['evaluation']}/{version}/{model_path.split('/')[-2]}_{model_path.split('/')[-1]}_{j}_{is_random}_smoothed.png",
+                # env.save_meshes(eval_path / version / f"{model_path.parent.name}_{model_path.name}_{j}_{is_random}_smoothed.png",
                 #                 meshes=env.generated_meshes, indexing=indexing, style='k-')
 
                 # env.write_generated_elements_2_file(
-                #     f"{config['default']['evaluation']}/{version}/{k}_{v.split('/')[-2]}_{v.split('/')[
-                #         -1]}_env_{i}_{is_random}.inp")
+                #     eval_path / version / f"sac_{model_path.parent.name}_{model_path.name}_env_{j}_{is_random}.inp")
             # else:
             #     env.save_meshes(
-            #         f"{config['default']['evaluation']}/{version}/{model_path.split('/')[-2]}_{model_path.split('/')[-1]}_{j}_{is_random}_smoothed.png",
+            #         eval_path / version / f"{model_path.parent.name}_{model_path.name}_{j}_{is_random}_smoothed.png",
             #         meshes=env.generated_meshes, indexing=indexing, style='k-')
             #     # break
         if save_samples:
             if len(env.generated_meshes):
                 samples, output_types, outputs = env.extract_samples_2(env.generated_meshes, 2, 3, radius=4)
-                env.save_samples(f"{config['default']['evaluation']}/{version}/{model_path.split('/')[-2]}_{model_path.split('/')[-1]}_{is_random}.json",
+                env.save_samples(eval_path / version / f"{model_path.parent.name}_{model_path.name}_{is_random}.json",
                                  {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
                 print("Saved!")
 
-    with open(f"{config['default']['evaluation']}/{version}/evaluation_repli.txt", 'w') as outfile:
+    with open(eval_path / version / "evaluation_repli.txt", 'w') as outfile:
         json.dump(results, outfile)
 
 
@@ -276,7 +281,7 @@ def element_number_box_plot():
     img_p.set_xticks([])
     img_p.set_yticks([])
     img_p.set_title('(a) Sparse density')
-    img = mpimg.imread("C:\\Users\\umroot\OneDrive - Concordia University - Canada\\research\PAMI\pics\\sparse.png")
+    img = mpimg.imread(pics_path / "sparse.png")
     img_p.imshow(img)
 
     img_p1 = fig.add_subplot(grid[:1, 1:])
@@ -285,8 +290,7 @@ def element_number_box_plot():
     img_p1.set_xticks([])
     img_p1.set_yticks([])
     img_p1.set_title('(b) Medium density')
-    img1 = mpimg.imread(
-        "C:\\Users\\umroot\OneDrive - Concordia University - Canada\\research\PAMI\pics\\medium.png")
+    img1 = mpimg.imread(pics_path / "medium.png")
     img_p1.imshow(img1)
 
     img_p2 = fig.add_subplot(grid[1:, :1])
@@ -295,8 +299,7 @@ def element_number_box_plot():
     img_p2.set_xticks([])
     img_p2.set_yticks([])
     img_p2.set_title('(c) Dense density')
-    img2 = mpimg.imread(
-        "C:\\Users\\umroot\OneDrive - Concordia University - Canada\\research\PAMI\pics\\dense.png")
+    img2 = mpimg.imread(pics_path / "dense.png")
     img_p2.imshow(img2)
 
     # scatter = sns.lineplot(ax=axes[1], x='Time step', y='Average return', data=data_frame, ci=None, hue='method')
@@ -315,7 +318,7 @@ def element_number_box_plot():
     plt.show()
 
 if __name__ == '__main__':
-    os.makedirs(f"{config['default']['evaluation']}/{version}/", exist_ok=True)
+    os.makedirs(eval_path / version, exist_ok=True)
     evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
     # replication_evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
     # element_number_box_plot()

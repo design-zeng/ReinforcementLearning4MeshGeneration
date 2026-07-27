@@ -1,7 +1,11 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 from matplotlib import patches
 
 from general.components import Vertex, Segment
+
+output_path = Path(__file__).parent.parent.parent / "general" / "output"
 
 def bad_cases():
     ax1 = plt.subplot(131)
@@ -136,38 +140,38 @@ def output_types():
 def read_img():
     fig = plt.figure()
     ax1 = fig.add_subplot(231)
-    im1 = plt.imread("D:\python projects\meshgeneration\\rl\plots\\625-1513-smoothed\\6.png")
+    im1 = plt.imread(f"{output_path}/plots/625-1513-smoothed/6.png")
     plt.imshow(im1)
     ax1.set_title("(a) Original boundary")
 
     ax2 = fig.add_subplot(232)
-    im2 = plt.imread("D:\python projects\meshgeneration\\rl\plots\\625-1513-smoothed\\1.png")
+    im2 = plt.imread(f"{output_path}/plots/625-1513-smoothed/1.png")
     plt.imshow(im2)
     ax2.set_title("(b) Sample 1")
 
     ax3 = fig.add_subplot(233)
-    im3 = plt.imread("D:\python projects\meshgeneration\\rl\plots\\625-1513-smoothed\\12.png")
+    im3 = plt.imread(f"{output_path}/plots/625-1513-smoothed/12.png")
     plt.imshow(im3)
     ax3.set_title("(c) Sample 2")
 
     ax4 = fig.add_subplot(234)
-    im4 = plt.imread("D:\python projects\meshgeneration\\rl\plots\\625-1513-smoothed\\19.png")
+    im4 = plt.imread(f"{output_path}/plots/625-1513-smoothed/19.png")
     plt.imshow(im4)
     ax4.set_title("(d) Sample 3")
 
     ax5 = fig.add_subplot(235)
-    im5 = plt.imread("D:\python projects\meshgeneration\\rl\plots\\625-1513-smoothed\\22.png")
+    im5 = plt.imread(f"{output_path}/plots/625-1513-smoothed/22.png")
     plt.imshow(im5)
     ax5.set_title("(e) Sample 4")
 
     ax6 = fig.add_subplot(236)
-    im6 = plt.imread("D:\python projects\meshgeneration\\rl\plots\\625-1513-smoothed\\34.png")
+    im6 = plt.imread(f"{output_path}/plots/625-1513-smoothed/34.png")
     plt.imshow(im6)
     ax6.set_title("(f) Sample 5")
 
     [a.get_xaxis().set_visible(False) for a in fig.axes]
     [a.get_yaxis().set_visible(False) for a in fig.axes]
-    plt.savefig('e.png', dpi=1000)
+    plt.savefig(f"{output_path}/e.png", dpi=1000)
 
 if __name__ == "__main__":
     pass

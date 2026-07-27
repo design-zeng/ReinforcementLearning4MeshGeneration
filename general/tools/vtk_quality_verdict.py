@@ -1,10 +1,11 @@
 import math
 import re
+from pathlib import Path
 
 import vtk
 import meshio
 
-root = 'D:\\'
+root = Path(__file__).parent.parent.parent / "general" / "output"
 
 domains = [
     # 't-d5',
@@ -42,7 +43,7 @@ domains = [
 
 def render(domain):
     reader = vtk.vtkSTLReader()
-    reader.SetFileName(f"{root}\\{domain}.vtk")
+    reader.SetFileName(f"{root}/{domain}.vtk")
     reader.Update()
 
     colors = vtk.vtkNamedColors()
@@ -98,15 +99,15 @@ def verdict(domains):
         print(k, sum([_v[0] for _v in v]) / len(v), sum([_v[1] for _v in v]) / len(v))
 
 def verdict_domain(domain, metrics):
-    filename = f"{root}\\{domain}.inp"
+    filename = f"{root}/{domain}.inp"
     mr = vtk.vtkUnstructuredGridReader()
 
     iq = vtk.vtkMeshQuality()
 
     m = meshio.Mesh.read(filename, "abaqus")
-    m.write(f"{root}\\{domain}.vtk")  # \\gmsh
+    m.write(f"{root}/{domain}.vtk")  # \\gmsh
 
-    mr.SetFileName(f"{root}\\{domain}.vtk")
+    mr.SetFileName(f"{root}/{domain}.vtk")
     mr.Update()
 
     ug = mr.GetOutput()

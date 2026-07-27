@@ -1,4 +1,5 @@
 import json, math
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import meshio
@@ -10,7 +11,10 @@ from general.mesh import MeshGeneration
 from general.polygon_generators import read_polygon
 from general.boundary_env import BoudaryEnv
 
-root = "D:\meshingData\\baselines\logs\evaluation\\"
+base_path = Path(__file__).parent.parent.parent
+domains_path = base_path / "domains"
+output_path = base_path / "general" / "output"
+root = output_path / "evaluation"
 
 def clockwise_element(vertices):
     flatten_vs = [[v.x, v.y] for v in vertices]
@@ -177,7 +181,7 @@ def metrics_4_domains():
     print(metrics_data)
 
 def final_metrics(domain, metrics):
-    filename = f"{root}\\{domain}.inp"
+    filename = f"{root}/{domain}.inp"
     vertices, elements, tri_elements = generate_mesh_from_inp(filename)
 
     duplicated_vertices = []
@@ -241,10 +245,10 @@ def computational_cost_a2c(filename):
     plt.title('Average number of elements per 100 episodes')
     plt.show()
 
-# computational_cost_a2c("D:\\meshingData\\A2C\\plots\\test_62\\rewardings.txt")
+# computational_cost_a2c(f"{output_path}/A2C/plots/test_62/rewardings.txt")
 def calculate_initial_boundaries_features():
     domains = []
-    domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary12.json')
+    domains.append(domains_path / "boundary12.json")
 
     envs = [BoudaryEnv(read_polygon(name)) for name in domains]
     for e in envs:
@@ -329,10 +333,10 @@ def read_inp_file(filename):
 def extract_samples_from_file(filename):
     env = read_inp_file(filename)
     samples, output_types, outputs = env.extract_samples_2(env.generated_meshes, 3, 3, index=5, radius=6, quality_threshold=0.7)
-    env.save_samples("D:\\meshingData\ANN\data_augmentation\\1\data_aug.json",
+    env.save_samples(f"{output_path}/data_augmentation/1/data_aug.json",
                      {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
     print("Saved!")
 
 if __name__ == '__main__':
     # metrics_4_domains()
-    extract_samples_from_file("D:\\g_d1.inp")
+    extract_samples_from_file(f"{output_path}/g_d1.inp")

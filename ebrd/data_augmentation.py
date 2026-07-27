@@ -4,6 +4,8 @@ import math
 import json
 import random
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,6 +16,9 @@ from matplotlib.gridspec import SubplotSpec
 from general.components import Segment, Vertex, Mesh
 
 sns.set_theme(style="darkgrid")
+
+base_path = Path(__file__).parent.parent
+augmentation_path = base_path / "ebrd" / "output" / "data_augmentation"
 
 class MeshAugmentation:
     def __init__(self, observation_space, action_space):
@@ -152,7 +157,7 @@ class MeshAugmentation:
 
         # print(f"Type -1: {l}; Type 0: {m}; TYpe 1: {r}")
         # data = {'observation': observations, 'action': actions, 'quality': metrics}
-        # with open('D:\\meshingData\\ANN\\data_augmentation\\1\samples.json', 'w+') as f:
+        # with open(f"{augmentation_path}/1/samples.json", 'w+') as f:
         #     json.dump(data, f)
 
         # actions = np.asarray(actions)
@@ -983,33 +988,33 @@ if __name__ == '__main__':
     #     # mg.plot_sample(res[0][i], res[1][i])
     #     print(mg.compute_quality([res[0][i], res[1][i]]))
     # test()
-    # data = mg.load_samples('D:\meshingData\ANN\data_augmentation\\1\\training_samples_data_aug_2.7_100.json')
-    # data = mg.load_samples('D:\meshingData\ANN\data_augmentation\\1\\training_samples_data_aug_6.json')
+    # data = mg.load_samples(f"{augmentation_path}/1/training_samples_data_aug_2.7_100.json")
+    # data = mg.load_samples(f"{augmentation_path}/1/training_samples_data_aug_6.json")
     # data = mg.sampling(40000, threshold=0.7,
-    #                    file_name='D:\meshingData\ANN\data_augmentation\\1103\\training_samples_1_40k_07.json')
+    #                    file_name=f"{augmentation_path}/1103/training_samples_1_40k_07.json")
 
     # mg.scatter_plot(data)
-    # mg.resampling('D:\meshingData\ANN\data_augmentation\\1\\training_samples_data_aug_0.7.json',
-    #               target_name='D:\meshingData\ANN\data_augmentation\\1\\training_samples_data_aug_0.7_1.json',
+    # mg.resampling(f"{augmentation_path}/1/training_samples_data_aug_0.7.json",
+    #               target_name=f"{augmentation_path}/1/training_samples_data_aug_0.7_1.json",
     #               distr=[300, 400, 300])
 
 #     # multiprocessing for sampling
 #     sampling_main(10, 1000, 0.85,
-#                   file_name='D:\meshingData\ANN\data_augmentation\\1\\training_samples_data_aug_1.7_0.6.json',
+#                   file_name=f"{augmentation_path}/1/training_samples_data_aug_1.7_0.6.json",
 #                   is_plot=True)
 
     ### draw sample comparison graphes
-    data1 = mg.load_samples('D:\meshingData\ANN\data_augmentation\\1\\data_aug.json')
-    data2 = mg.load_samples('D:\meshingData\ANN\data_augmentation\\1\\training_samples_1_40k_07.json')
+    data1 = mg.load_samples(f"{augmentation_path}/1/data_aug.json")
+    data2 = mg.load_samples(f"{augmentation_path}/1/training_samples_1_40k_07.json")
     mg.comparison_scatter_plot(data1, data2, include_quality=False)
 
     # mg.scatter_plot(data2)
 
     #### Dataset evaluation
     # files = {
-    #     '0.6': 'D:\meshingData\ANN\data_augmentation\\1\\training_samples_data_aug_1.7_0.6.json',
-    #     '0.7': 'D:\meshingData\ANN\data_augmentation\\1\\training_samples_data_aug_1.7_0.7.json',
-    #     '0.75': 'D:\meshingData\ANN\data_augmentation\\1\\training_samples_data_aug_1.7_0.75.json',
-    #     '0.8': 'D:\meshingData\ANN\data_augmentation\\1\\training_samples_data_aug_1.7_0.7999999999999999.json',
+    #     '0.6': f"{augmentation_path}/1/training_samples_data_aug_1.7_0.6.json",
+    #     '0.7': f"{augmentation_path}/1/training_samples_data_aug_1.7_0.7.json",
+    #     '0.75': f"{augmentation_path}/1/training_samples_data_aug_1.7_0.75.json",
+    #     '0.8': f"{augmentation_path}/1/training_samples_data_aug_1.7_0.7999999999999999.json",
     # }
     # mg.data_evaluation(files)

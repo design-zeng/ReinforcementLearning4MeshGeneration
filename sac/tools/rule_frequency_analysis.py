@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pandas as pd
 import seaborn as sns
@@ -6,6 +7,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 sns.set_theme(style="darkgrid")
+
+base_path = Path(__file__).parent.parent.parent
+experiments_path = base_path / "sac" / "output" / "experiments"
 
 def read_meshing_history_info(filename):
     data = None
@@ -22,12 +26,12 @@ def read_meshing_history_info(filename):
 
 def geometries():
     geometries = {
-        'Domain 4': 'D:\meshingData\\baselines\logs\experiments\sac_72_2 - Copy\\sac_0_1141_env_0_history_info',
-        'Domain 5': 'D:\meshingData\\baselines\logs\experiments\sac_72_2 - Copy\\sac_0_1141_env_2_history_info',
-        'Domain 6': 'D:\meshingData\\baselines\logs\experiments\sac_72_2 - Copy\\sac_0_1141_env_4_history_info',
-        # 'Domain 10': 'D:\meshingData\\baselines\logs\experiments\sac_72_2 - Copy\\sac_0_1141_env_1_history_info',
-        # 'Domain 11': 'D:\meshingData\\baselines\logs\experiments\sac_72_2 - Copy\\sac_0_1141_env_3_history_info',
-        'Domain 7': 'D:\meshingData\\baselines\logs\experiments\sac_72_2 - Copy\\sac_0_1167_env_5_history_info',
+        'Domain 4': f"{experiments_path}/sac_72_2 - Copy/sac_0_1141_env_0_history_info",
+        'Domain 5': f"{experiments_path}/sac_72_2 - Copy/sac_0_1141_env_2_history_info",
+        'Domain 6': f"{experiments_path}/sac_72_2 - Copy/sac_0_1141_env_4_history_info",
+        # 'Domain 10': f"{experiments_path}/sac_72_2 - Copy/sac_0_1141_env_1_history_info",
+        # 'Domain 11': f"{experiments_path}/sac_72_2 - Copy/sac_0_1141_env_3_history_info",
+        'Domain 7': f"{experiments_path}/sac_72_2 - Copy/sac_0_1167_env_5_history_info",
     }
 
     data = pd.DataFrame({"Number": [], "Rule type": [], "Domains": []})

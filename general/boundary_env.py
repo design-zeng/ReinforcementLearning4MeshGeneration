@@ -1,6 +1,7 @@
 import math
 import json
 import time
+from pathlib import Path
 
 import numpy as np
 import gym
@@ -11,6 +12,9 @@ from general.mesh import MeshGeneration
 from general.components import Vertex, Segment, Boundary2D, Mesh, PointEnvironment
 from general.data import matrix_ops, transformation, detransformation
 from general.boundary_renderer import MeshFrame
+
+base_path = Path(__file__).parent.parent
+output_path = base_path / "general" / "output"
 
 class BoudaryEnv(MeshGeneration, gym.Env):
     TYPE_THRESHOLD = 0.3
@@ -175,14 +179,14 @@ class BoudaryEnv(MeshGeneration, gym.Env):
                         self.current_area -= mesh_area
 
                         # if len(self.generated_meshes) % 5 == 0:
-                        # self.boundary.save_intermediate_boundary_fig(f"D:/meshingData/baselines/logs/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png",
+                        # self.boundary.save_intermediate_boundary_fig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png",
                         #                                              mesh.vertices, style='k.-', dpi=200, r_vertices=self.updated_boundary.vertices)
-                        # self.boundary.save_vertices_into_fig(f"D:/meshingData/baselines/logs/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_action.png",
+                        # self.boundary.save_vertices_into_fig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_action.png",
                         #                                              mesh.vertices, style='r.-', dpi=200)
                         # self.updated_boundary.savefig(
-                        #     f"D:/meshingData/baselines/logs/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_left_boundary.png",
+                        #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_left_boundary.png",
                         #     style='b.-')
-                        # self.boundary.savefig(f"D:/meshingData/baselines/logs/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png", style='k.-')
+                        # self.boundary.savefig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png", style='k.-')
 
                         quality = self.get_quality(mesh, 2)
 
@@ -200,10 +204,10 @@ class BoudaryEnv(MeshGeneration, gym.Env):
                                 mesh.connect_vertices()
                                 self.generated_meshes.append(mesh)
                             # self.boundary.save_intermediate_boundary_fig(
-                            #     f"D:/meshingData/baselines/logs/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png",
+                            #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png",
                             #     self.updated_boundary.vertices, style='k.-', dpi=200)
                             # self.boundary.save_vertices_into_fig(
-                            #     f"D:/meshingData/baselines/logs/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_action.png",
+                            #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_action.png",
                             #     self.updated_boundary.vertices, style='r.-', dpi=200)
                         else:
                             done = False
@@ -285,7 +289,7 @@ class BoudaryEnv(MeshGeneration, gym.Env):
 
                 self.update_boundary(reference_point, mesh)
 
-                # self.boundary.save_intermediate_boundary_fig(f"D:\meshingData\ANN\data_augmentation\\test\\{len(self.generated_meshes)}_left_boundary.png",
+                # self.boundary.save_intermediate_boundary_fig(f"{output_path}/data_augmentation/test/{len(self.generated_meshes)}_left_boundary.png",
                 #                                              mesh.vertices, style='k.-', dpi=400, r_vertices=self.updated_boundary.vertices)
 
                 next_state = self.find_next_state(self.not_valid_points, static=True)
@@ -297,7 +301,7 @@ class BoudaryEnv(MeshGeneration, gym.Env):
                         self.generated_meshes.append(mesh)
 
                         # self.boundary.save_intermediate_boundary_fig(
-                        #     f"D:\meshingData\ANN\data_augmentation\\test\\{len(self.generated_meshes)}_left_boundary.png",
+                        #     f"{output_path}/data_augmentation/test/{len(self.generated_meshes)}_left_boundary.png",
                         #     self.updated_boundary.vertices, style='k.-', dpi=400)
 
             ## old handling
@@ -604,14 +608,14 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         #env.plot_points([vertices[34], vertices[20],  vertices[44], vertices[46]])
 
         #
-        env.save_meshes("D:\\meshingData\\test_1.png", env.generated_meshes, quality=True,
+        env.save_meshes(f"{output_path}/test_1.png", env.generated_meshes, quality=True,
                         indexing=True,
                         type=1, dpi=300)
         print()
         env.extract_samples(elements)
 
         samples, output_types, outputs = env.extract_samples(elements)
-        env.save_samples(f'D:\\meshingData\\A2C\\domain\\ebrd_1.json',
+        env.save_samples(f"{output_path}/A2C/domain/ebrd_1.json",
                          {'samples': samples, 'output_types': output_types, 'outputs': outputs})
 
 
