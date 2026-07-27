@@ -16,7 +16,6 @@ from general.components import Segment, Vertex, Mesh
 sns.set_theme(style="darkgrid")
 
 class MeshAugmentation:
-
     def __init__(self, observation_space, action_space):
         '''
         Sample initiation
@@ -66,7 +65,6 @@ class MeshAugmentation:
 
     def sample_action(self, obs, angle, type, m):
         acts = []
-        left, right = False, False
         if type == self.type_label[1]:
             while len(acts) < m:
                 act = [self.type_label[1], self.random(0.01, 0.56), self.random(0.01, angle)]
@@ -841,21 +839,6 @@ class MeshAugmentation:
         with open(target_name, 'w+') as f:
             json.dump(resampling_data, f)
         return resampling_data
-
-    def test(self):
-        angle = math.pi / 9
-        sample = [1, 0, 2, 0, 3, 0, 6, angle/6, 6, angle/2, 6, 5*angle/6, 3, angle, 2, angle, 1, angle]
-        actions = [
-            [0.5, 1, angle/2],
-            [0.5, 1.2, angle/2],
-            [0.5, 1.5, angle / 2],
-            [0.5, 1.8, angle / 2],
-            [0.5, 2, angle / 2],
-            [0.5, 3, angle / 2],
-        ]
-        for a in actions:
-            e_q, b_q = self.compute_quality([sample, a])
-            print(f"Element Q: {e_q}, Boundary Q: {b_q}, Q: {math.sqrt(e_q * b_q)}")
 
     def data_evaluation(self, files):
         datasets = {}

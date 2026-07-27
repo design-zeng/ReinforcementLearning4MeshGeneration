@@ -14,10 +14,9 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import matplotlib.pyplot as plt
 
-from general.polygon_generators import boundary, read_polygon
+from general.polygon_generators import read_polygon
 from general.boundary_env import BoudaryEnv
 from ebrd.data_augmentation import MeshAugmentation, sampling_main
-import general.data as data_process
 
 # default `log_dir` is "runs" - we'll be more specific here
 writer = SummaryWriter('runs/')
@@ -27,6 +26,8 @@ config = configparser.ConfigParser()
 config.read(f'{base_path}/config')
 
 base_path = 'D:\\meshingData\\ANN\\'
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # model_path = f"{base_path}models/ea_t4_2/ebrd_model_1.pt"
 # version = 'ea_training_28'
@@ -39,34 +40,9 @@ base_path = 'D:\\meshingData\\ANN\\'
 class Policy(nn.Module):
     def __init__(self):
         super(Policy, self).__init__()
-        # self.state_space = 2 * (env.neighbor_num + 4)
         self.state_space = 18
         self.action_space = 2
-
-        # self.affine1 = nn.Linear(self.state_space, 500)
-        # self.action_head = nn.Linear(500, self.action_space)
-        # self.type_head = nn.Linear(500, 1)
-        # num_nuerons = 512 # change from 64 to 128
-        #
-        # self.fc1 = nn.Linear(self.state_space, num_nuerons)
-        # self.fc2 = nn.Linear(num_nuerons, num_nuerons)
-        # self.fc1 = nn.Linear(self.state_space, 64)
-        # self.fc2 = nn.Linear(64, 128)
-        # self.fc3 = nn.Linear(128, 256)
-        # self.fc4 = nn.Linear(256, 128)
-        # self.fc5 = nn.Linear(128, 64)
-        # self.fc6 = nn.Linear(64, 32)
-        # self.fc7 = nn.Linear(32, 16)
-        # self.action_head = nn.Linear(16, self.action_space)
-        # self.type_head = nn.Linear(16, 1)
-        # self.fc1 = nn.Linear(self.state_space, 128)
-        # self.fc2 = nn.Linear(128, 256)
-        # self.fc3 = nn.Linear(256, 128)
-        # self.fc4 = nn.Linear(128, 64)
-        # self.fc5 = nn.Linear(64, 32)
-        # self.fc6 = nn.Linear(32, 16)
-        # self.action_head = nn.Linear(16, self.action_space)
-        # self.type_head = nn.Linear(16, 1)
+        self.type_space = 3
 
         self.fc1 = nn.Linear(self.state_space, 64)
         self.fc2 = nn.Linear(64, 128)
@@ -74,141 +50,42 @@ class Policy(nn.Module):
         self.fc4 = nn.Linear(64, 32)
         self.fc5 = nn.Linear(32, 16)
         self.action_head = nn.Linear(16, self.action_space)
-        self.type_head = nn.Linear(16, 3)
-        # self.type_head = nn.Linear(16, 1)
-
-        # self.fc1 = nn.Linear(self.state_space, 32)
-        # self.fc2 = nn.Linear(32, 64)
-        # self.fc3 = nn.Linear(64, 128)
-        # self.fc4 = nn.Linear(128, 64)
-        # self.fc5 = nn.Linear(64, 32)
-        # self.fc6 = nn.Linear(32, 16)
-        # self.action_head = nn.Linear(16, self.action_space)
-        # self.type_head = nn.Linear(16, 1)
-
-        # self.fc1 = nn.Linear(self.state_space, 64)
-        # self.fc2 = nn.Linear(64, 128)
-        # self.fc3 = nn.Linear(128, 64)
-        # self.fc4 = nn.Linear(64, 32)
-        # self.fc5 = nn.Linear(32, 16)
-        # self.action_head = nn.Linear(16, self.action_space)
-        # # self.type_head = nn.Linear(128, 1)
+        self.type_head = nn.Linear(16, self.type_space)
 
         self.saved_actions = []
         self.rewards = []
 
     def forward(self, x):
-        # x = F.relu(self.affine1(x))
-        # action = self.action_head(x)
-        # state_values = self.type_head(x)
-        # return action, state_values
-
         x1 = F.relu(self.fc1(x))
         x2 = F.relu(self.fc2(x1))
         x3 = F.relu(self.fc3(x2))
         x4 = F.relu(self.fc4(x3))
         x5 = F.relu(self.fc5(x4))
         action = self.action_head(x5)
-        state_values = self.type_head(x5)
+        one_hot_types = self.type_head(x5)
 
-        # x1 = self.fc1(x)
-        # x2 = self.fc2(x1)
-        # x3 = self.fc3(x2)
-        # x4 = self.fc4(x3)
-        # x5 = F.relu(self.fc5(x4))
-        # action = self.action_head(x5)
-        # state_values = self.type_head(x5)
-
-        # x1 = self.fc1(x)
-        #         # x2 = self.fc2(x1)
-        #         # x3 = self.fc3(x2)
-        #         # x4 = self.fc4(x3)
-        #         # x5 = self.fc5(x4)
-        #         # x6 = self.fc6(x5)
-        #         # x7 = F.relu(self.fc7(x6))
-        #         # action = self.action_head(x7)
-        #         # state_values = self.type_head(x7)
-        # x1 = self.fc1(x)
-        # x2 = self.fc2(x1)
-        # x3 = self.fc3(x2)
-        # x4 = self.fc4(x3)
-        # x5 = self.fc5(x4)
-        # x7 = F.relu(self.fc6(x5))
-        # action = self.action_head(x7)
-        # state_values = self.type_head(x7)
-
-        # x1 = self.fc1(x)
-        # x2 = self.fc2(x1)
-        # x3 = self.fc3(x2)
-        # x4 = self.fc4(x3)
-        # x5 = self.fc5(x4)
-        # x7 = F.relu(self.fc4(x3))
-        # action = self.action_head(F.relu(x5))
-        # state_values = self.type_head(x7)
-        return action, state_values
-        # return action
-
-
-device = torch.device("cuda:0")
-
-def prepare_model(model_path):
-    model = Policy().to(device)
-    model.load_state_dict(torch.load(model_path))
-    model.eval()
-    return model
+        return action, one_hot_types
 
 def get_action(state, model):
     state = torch.FloatTensor(state).to(device)
     action, type_values = model(state)
-    return action.tolist(), float(torch.argmax(type_values)/2)
-    # return action.tolist(), float(type_values)
-
+    return action.tolist(), float(torch.argmax(type_values) / 2)
 
 def load_training_data(file_name):
     with open(file_name, 'r') as fr:
         data = json.loads(fr.read())
-
     return data
 
-
 def build_training_data(data):
-    inputs = np.asarray(data['samples'])
-    outputs = np.asarray(data['outputs'])
-    output_types = np.asarray(data['output_types'])
+    inputs = np.array(data['samples'])
+    outputs = np.array(data['outputs'])
+    output_types = np.array(data['output_types'])
 
-    # transfered_data = data_process.data_transformation(np.concatenate((inputs, outputs), axis=1),
-    #                                                    env.neighbor_num - 2, env.neighbor_num - 1,
-    #                                            env.neighbor_num, env.neighbor_num + 1,
-    #                                            env.neighbor_num + 2, env.neighbor_num + 3)
-
-    # x = torch.from_numpy(np.concatenate((transfered_data[:, : 4], transfered_data[:, -4: -2]), axis=1)).float().to(device)
-    # x = torch.from_numpy(transfered_data[:, : -2]).float().to(
-    #     device)
-    # # x = x.to(cuda0)
-    #
-    # y = transfered_data[:, -2:]
-    # y = torch.from_numpy(np.concatenate((output_types, y), axis=1)).float().to(device)
-    x = torch.from_numpy(inputs).float().to(
-        device)
+    x = torch.from_numpy(inputs).float().to(device)
     y = torch.from_numpy(np.concatenate((output_types, outputs), axis=1)).float().to(device)
     return x, y
 
-def loss_func(y_pred, y, reduction='sum'):
-    sum = 0
-    for i in range(len(y)):
-        if y[i][0] == '1' or y[i][0] == '0':
-            sum += (y[i][0] - y_pred[i][0]) ** 2
-        else:
-            sum += (y[i][0] - y_pred[i][0]) ** 2 + (y[i][1] - y_pred[i][1]) ** 2 + (y[i][2] - y_pred[i][2]) ** 2
-    # sum /= len(y)
-    return torch.tensor(sum, dtype=torch.float32, device=device, requires_grad=True)
-
-
 def training_model(model, x, y, model_path, tensorboard_log):
-
-    # Define two separate loss functions
-    # classification_loss_fn = nn.BCELoss()  # Binary Cross Entropy Loss for binary output
-    # regression_loss_fn = nn.MSELoss()  # Mean Squared Error Loss for continuous output
     loss_fn = torch.nn.MSELoss(reduction='sum')
 
     learning_rate = 3e-4
@@ -223,23 +100,18 @@ def training_model(model, x, y, model_path, tensorboard_log):
         y_pred = torch.cat([y_types, y_actions], 1).to(device)
 
         loss = loss_fn(y_pred, y)
-        # loss = loss_func(y_pred, y)
         if loss < 0.01:
             break
         print(t, loss.item())
 
-        # Zero the gradients before running the backward pass.
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         running_loss.append(loss.item())
         if t % 1000:
-            writer.add_scalar('training loss',
-                              sum(running_loss[-1000:]) / 1000,
-                              t)
+            writer.add_scalar('training loss', sum(running_loss[-1000:]) / 1000, t)
 
     torch.save(model.state_dict(), model_path)
-
 
 def map_type_to_tensors(tensor):
     result = []
@@ -254,43 +126,31 @@ def map_type_to_tensors(tensor):
             raise ValueError("Unsupported value: {}".format(value.item()))
     return torch.tensor(result)
 
-
 def train_ch3(train_data, model, num_epoches, batch_size, tensorboard_log, model_path, lr=None):
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
-    # loss_fn = torch.nn.MSELoss(reduction='sum')
 
-    classification_loss_fn = nn.CrossEntropyLoss(reduction='sum')  # Cross Entropy Loss for binary output
+    classification_loss_fn = nn.CrossEntropyLoss(reduction='sum')  # Cross Entropy Loss for one-hot
     regression_loss_fn = nn.MSELoss(reduction='sum')  # Mean Squared Error Loss for continuous output
 
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     writer = SummaryWriter(tensorboard_log)
 
     for t in range(num_epoches):
-        # train_loop(train_dataloader, model, loss_fn, optimizer, t)
         size = len(train_dataloader)
         sum_loss = 0
         for batch, (x, y) in enumerate(train_dataloader):
-            # Compute prediction and loss
             y_actions, y_types = model(x)
-            # pred = torch.cat([y_types, y_actions], 1).to(device)
 
-            # pred = model(x)
-            # Compute individual losses
             classification_loss = classification_loss_fn(y_types, map_type_to_tensors(y[:, 0]).to(device))
             regression_loss = regression_loss_fn(y_actions, y[:, 1:].to(device))
 
-            # Combine the two losses (you can adjust the weighting as needed)
             loss = classification_loss + regression_loss
 
-            # loss = loss_fn(pred, y)
-
-            # Backpropagation
             optimizer.zero_grad()
             loss.backward()
             # torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
             optimizer.step()
 
-            # loss, current = loss.item(), batch * len(X)
             sum_loss += loss.item()
             if batch % 10:
                 writer.add_scalar('training loss',
@@ -305,10 +165,7 @@ def train_ch3(train_data, model, num_epoches, batch_size, tensorboard_log, model
     print("Done!")
     torch.save(model.state_dict(), model_path)
 
-
 def start_training(model_path, data_path, tensorboard_log):
-        # mg.scatter_plot(data)
-
     # x, y = build_training_data(load_training_data(
     #     "D:\meshingData\\baselines\logs\evaluation\sac_4_ann\\sac_0_890_env_0_F.json"))
     x, y = build_training_data(load_training_data(data_path))
@@ -318,12 +175,12 @@ def start_training(model_path, data_path, tensorboard_log):
 
     # x, y = build_training_data(load_training_data(
     #     f"{base_path}\\models\\ebrd_.json"))
+
     model = Policy().to(device)
+
     # training_model(model, x, y, model_path, tensorboard_log)
 
-        ##
     train_ch3(list(zip(x, y)), model, 2000, 128, tensorboard_log, model_path)
-
 
 def training(env, version):
     max_steps = 8000
@@ -334,25 +191,18 @@ def training(env, version):
         state, ep_reward = env.reset(static=True), 0
 
         start = time.time()
-        '''
-        x = [state[i] * math.cos(state[i+1]) for i in range(0, 19, 2)]
-        y = [state[i] * math.sin(state[i+1]) for i in range(0, 19, 2)]
-        plt.plot(x, y, 'r.')
-        
-        _x = action[0] * math.cos(action[1])
-        _y = action[0] * math.sin(action[1])
-        plt.plot(_x, _y, 'k.')
-        '''
 
         for i in range(max_steps):
             step += 1
-            # state = state[
+
             action, type_values = get_action(state)
+
+            state, reward, done, _ = env.move(action, round(type_values, 2), 0.9, 0.5)
+
             # fig = plt.figure(figsize=(15,5))
             #
             # ax = fig.add_subplot(1, 3, 1)
             # [seg.show() for seg in env.boundary.all_segments()]
-            state, reward, done, _ = env.move(action, round(type_values, 2), 0.9, 0.5)
             # env.boundary.show()
             # ax.set_title("(a) Original boundary")
             #
@@ -365,6 +215,7 @@ def training(env, version):
             # [a.get_xaxis().set_visible(False) for a in fig.axes]
             # [a.get_yaxis().set_visible(False) for a in fig.axes]
             # fig.savefig("teststst.png")
+
             print(i, reward, len(env.updated_boundary.vertices))
             ep_reward += reward
             if done:
@@ -372,11 +223,11 @@ def training(env, version):
 
         print(f"Execution time: {time.time() - start}s.")
 
-        # env.smooth(env.boundary.vertices)
         if len(env.updated_boundary.vertices) <= 5:
             env.smooth(env.boundary.vertices)
         else:
             env.smooth_pave(env.boundary.vertices, env.updated_boundary.vertices, iteration=400, interior=True)
+
         # env.plot_meshes(env.generated_meshes, quality=True, type=1)
 
         # env.boundary.show()
@@ -450,53 +301,18 @@ def single_run(env, step, lr_1, lr_2, i_episode):
     #     step, i_episode, ep_reward,
     # ))
 
-def training_test():
-    step = 0
-    i_episode = 0
-    for lr_1 in np.arange(0.999, 0.9999, 0.0001):
-        for lr_2 in np.arange(0.999, 0.9999, 0.0001):
-            i_episode += 1
-            single_run(step, lr_1, lr_2, i_episode)
-            # pool.apply(
-            #     single_run, args=(step, lr_1, lr_2, i_episode))
-
-    # pool.close()
-    # pool.join()
-
 def prepare_eval_envs():
     domains = []
     domains.append(f'D:/python_projects/meshgeneration/ui/domains/engeer.json')
-
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/easy1_1.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary15.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary_fly_r2.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/problem.json') #easy
     domains.append(f'D:/python_projects/meshgeneration/ui/domains/star1.json') #hard
     domains.append(f'D:/python_projects/meshgeneration/ui/domains/random1_1.json') # medium
     domains.append(f'D:/python_projects/meshgeneration/ui/domains/tool2.json')  # medium
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/random2_1.json') # hard
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/basic1.json') # medium low
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/dolphine0.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/dolphine1.json') # easy high
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/dolphine2.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/dolphine3.json') # easy
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/basic2.json') # medium
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary16.json')
-    # domains.append(f'D:/python projects/meshgeneration/ui/domains/test1.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary4.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary8.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary9.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary10.json')
-    # domains.append(f'D:/python projects/meshgeneration/ui/domains/boundary_hole_r2.json')
-    # domains.append(f'D:/python projects/meshgeneration/ui/domains/boundary13.json')
     domains.append(f'D:/python_projects/meshgeneration/ui/domains/test2.json')
     domains.append(f'D:/python_projects/meshgeneration/ui/domains/test3.json')
     domains = [BoudaryEnv(read_polygon(d)) for d in domains]
     # for d in domains:
     #     d.estimate_area_range()
     return domains
-    # return [BoudaryEnv(boundary())]
-
 
 def data_sampling(data_path, n, threshold):
     # mg = MeshAugmentation([], [])
@@ -512,18 +328,21 @@ def evaluation(model_path, version, is_render=False, indexing=False, save_fig=Fa
     os.makedirs(f"{config['default']['augmentation']}/{version}/", exist_ok=True)
 
     envs = prepare_eval_envs()
-    model = prepare_model(model_path)
+    model = Policy().to(device)
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
 
     for i, env in enumerate(envs):
         # if i < 16:
         #     continue
         print(f'Starting for model with env {i}')
 
-        # for j in range(replication['times']):
         state = env.reset(static=True)
+
         # env.boundary.savefig(f"{config['default']['evaluation']}/{version}/ \
         #                             {k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_00.png", style='b.-')
         # print(len(env.original_vertices), env.boundary.get_perimeter())
+
         # start = time.time()
         while True:
             action, type_values = get_action(state, model)
@@ -533,7 +352,9 @@ def evaluation(model_path, version, is_render=False, indexing=False, save_fig=Fa
             if done:
                 break
         # print(f'Meshing running time: {time.time() - start}s')
+
         env.close()
+
         # results[k][v.split('/')[-1]]['completed'].append(info['is_complete'])
         # results[k][v.split('/')[-1]]['n_elements'].append(len(env.generated_meshes))
         # results[k][v.split('/')[-1]]['n_complete'] += 1 if info['is_complete'] else 0
