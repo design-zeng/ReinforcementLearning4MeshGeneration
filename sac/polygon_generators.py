@@ -1,59 +1,13 @@
 import json
 
-from matplotlib import pyplot
-#from shapely.geometry import Polygon
-#from descartes.patch import PolygonPatch
-
-from sac.figures import BLUE, SIZE, set_limits, plot_coords, color_isvalid
 from general.components import *
 from general.mesh import connect_vertices
-
-def plot_polygon():
-    fig = pyplot.figure(1, figsize=SIZE, dpi=90)
-
-    # 1: valid polygon
-    ax = fig.add_subplot(121)
-
-    ext = [(0, 0), (0, 2), (2, 2), (2, 0), (0, 0)]
-    # int = [(1, 0), (0.5, 0.5), (1, 1), (1.5, 0.5), (1, 0)][::-1]
-    polygon = Polygon(ext)
-
-    # plot_coords(ax, polygon.interiors[0])
-    plot_coords(ax, polygon.exterior)
-
-    patch = PolygonPatch(polygon, facecolor=color_isvalid(polygon), edgecolor=color_isvalid(polygon, valid=BLUE), alpha=0.5, zorder=2)
-    ax.add_patch(patch)
-
-    ax.set_title('a) valid')
-
-    set_limits(ax, -1, 3, -1, 3)
-
-    #2: invalid self-touching ring
-    # ax = fig.add_subplot(122)
-    # ext = [(0, 0), (0, 2), (2, 2), (2, 0), (0, 0)]
-    # int = [(1, 0), (0, 1), (0.5, 1.5), (1.5, 0.5), (1, 0)][::-1]
-    # polygon = Polygon(ext, [int])
-    #
-    # plot_coords(ax, polygon.interiors[0])
-    # plot_coords(ax, polygon.exterior)
-    #
-    # patch = PolygonPatch(polygon, facecolor=color_isvalid(polygon), edgecolor=color_isvalid(polygon, valid=BLUE), alpha=0.5, zorder=2)
-    # ax.add_patch(patch)
-    #
-    # ax.set_title('b) invalid')
-
-    set_limits(ax, -1, 3, -1, 3)
-
-    pyplot.show()
 
 def gen_boundary():
     # p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13
     points = [(0, 0), (0, 6), (12, 6), (12, 0), (17, 0), (17, -5), (11, -5),
                                                          (10, -11), (-3, -12), (-3, -7), (-6, -9), (-12, -1)]
     p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12 = [Vertex(p[0], p[1]) for p in points]
-    # for v in vertices:
-    #     v.show()
-    # plt.show()
     vertices = []
     vertices.extend(p1.sampling_between_endpoints(p2, 5, is_even=True))
     vertices.extend(p2.sampling_between_endpoints(p3, 5, is_even=True))
@@ -68,13 +22,11 @@ def gen_boundary():
     vertices.extend(p11.sampling_between_endpoints(p12, 5, is_even=True))
     vertices.extend(p12.sampling_between_endpoints(p1, 5, is_even=True))
     [v.show() for v in vertices]
-    # plt.show()
     connect_vertices(vertices)
     env = Boundary2D(vertices)
     return env
 
 def boundary(index=0):
-
     if index == 0:
         points = [Vertex(0, 1), Vertex(0, 2), Vertex(0, 3), Vertex(0, 4), Vertex(0, 5), Vertex(0, 6),
                   Vertex(1, 6), Vertex(2, 6), Vertex(3, 6), Vertex(4, 6), Vertex(5, 6), Vertex(6, 6),
@@ -110,7 +62,6 @@ def boundary(index=0):
 def read_polygon(filename):
     with open(filename, 'r') as fr:
         vertices = json.loads(fr.readline())
-        # vertices = json.loads(fr.readline())
     points = [Vertex(p[0]/100, p[1]/100) for p in vertices]
     connect_vertices(points)
     env = Boundary2D(points)

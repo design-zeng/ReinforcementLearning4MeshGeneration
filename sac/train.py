@@ -1,5 +1,4 @@
 import os
-from typing import Dict
 from pathlib import Path
 import configparser
 
@@ -8,7 +7,8 @@ from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.monitor import Monitor
 
-from sac.boundary_env import BoudaryEnv, read_polygon, boundary
+from sac.polygon_generators import read_polygon
+from sac.boundary_env import BoudaryEnv
 from sac.custom_callback import CustomCallback
 
 base_path = Path(__file__).parent.parent.parent
@@ -17,8 +17,6 @@ config.read(f'{base_path}/config')
 
 device = torch.device("cuda:0")
 
-# o_env = BoudaryEnv(boundary())
-# eval_env = BoudaryEnv(boundary())
 o_env = BoudaryEnv(read_polygon(config['domains']['dolphine3'])) #dolphine3 basic2
 eval_env = BoudaryEnv(read_polygon(config['domains']['dolphine3']))
 
@@ -36,32 +34,8 @@ parameter_tuning = {
 
 def prepare_eval_envs():
     domains = [
-                # [500000, BoudaryEnv(boundary(-1)), BoudaryEnv(boundary(-1))],
-               # [1000000, BoudaryEnv(boundary(0)), BoudaryEnv(boundary(0))],
-               # [1000000, BoudaryEnv(boundary(2)), BoudaryEnv(boundary(2))],
-               #  [1500000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary15.json')),
-               #   BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary15.json'))],
-               #  [100000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/star1.json')),
-               #   BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/star1.json'))],
-               #  [500000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/reward_calibration.json')),
-               #   BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/reward_calibration.json'))],
-               #  [500000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/easy1_1.json')),
-               #   BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/easy1_1.json'))],
                [1500000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/random1_1.json')),
                 BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/random1_1.json'))],
-               # [2000000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/random2_2.json')),
-               #  BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/random2_2.json'))],
-               # [1000000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/basic1.json')),
-               #  BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/basic1.json'))],
-               # [1000000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary4.json')),
-               #  BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary4.json'))],
-               # [1000000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary8.json')),
-               #  BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary8.json'))],
-
-               # [100000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary16.json')),
-               #  BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary16.json'))],
-                # [100000, BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary10.json')),
-                #  BoudaryEnv(read_polygon('D:/python_projects/meshgeneration/ui/domains/boundary10.json'))],
                ]
     return domains
 

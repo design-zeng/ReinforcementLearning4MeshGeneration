@@ -10,7 +10,8 @@ import matplotlib.image as mpimg
 from matplotlib import pyplot as plt
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
-from sac.boundary_env import BoudaryEnv, read_polygon, boundary
+from sac.polygon_generators import read_polygon
+from sac.boundary_env import BoudaryEnv
 
 # sns.set_theme(style="darkgrid")
 
@@ -26,42 +27,13 @@ learning_rate=1e-4
 
 def prepare_eval_envs():
     domains = []
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary7.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/fat2.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/easy1_1.json')
-    # #
-    # #
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary13.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/problem.json')  # easy
-    # #
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary10.json')
     domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary15.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary_fly_r2.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/star1.json') # easy
     domains.append(f'D:/python_projects/meshgeneration/ui/domains/random1_1.json') # medium
     domains.append(f'D:/python_projects/meshgeneration/ui/domains/random2_2.json') # hard
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/basic1.json') # medium low
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/dolphine0.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/dolphine1.json') # easy high
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/dolphine2.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/dolphine3.json') # easy
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/basic2.json') # medium
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary16.json')
-    # # domains.append(f'D:/python_projects/meshgeneration/ui/domains/test1.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary4.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary8.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary9.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary10.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary_hole_r2.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary13.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/test2.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/test3.json')
     domains = [BoudaryEnv(read_polygon(d), experiment_version=version, env_name=i) for i, d in enumerate(domains)]
     # for d in domains:
     #     d.estimate_area_range()
     return domains
-    # return [BoudaryEnv(boundary(index=2), experiment_version=version, env_name=0)]
-
 
 def prepare_model(method_name, model_path, env):
 
@@ -341,19 +313,6 @@ def element_number_box_plot():
     fig.tight_layout()
     # ax.margins(1, 0)
     plt.show()
-
-
-def set_size(w,h, ax=None):
-    """ w, h: width, height in inches """
-    if not ax: ax=plt.gca()
-    l = ax.figure.subplotpars.left
-    r = ax.figure.subplotpars.right
-    t = ax.figure.subplotpars.top
-    b = ax.figure.subplotpars.bottom
-    figw = float(w)/(r-l)
-    figh = float(h)/(t-b)
-    ax.figure.set_size_inches(figw, figh)
-
 
 if __name__ == '__main__':
     os.makedirs(f"{config['default']['evaluation']}/{version}/")
