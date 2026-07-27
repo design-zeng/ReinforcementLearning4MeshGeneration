@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from general.mesh import MeshGeneration
 from general.components import Vertex, Segment, Boundary2D, Mesh, PointEnvironment
 from general.data import matrix_ops, transformation, detransformation
-from sac.boundary_renderer import MeshFrame
+from general.boundary_renderer import MeshFrame
 
 class BoudaryEnv(MeshGeneration, gym.Env):
     TYPE_THRESHOLD = 0.3

@@ -1,17 +1,14 @@
-from general.mesh import MeshGeneration
+import time
+import json
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.distributions import Categorical
-from sac.boundary_env import BoudaryEnv, boundary, read_polygon
-import numpy as np
-import general.data as data_process
-import json
 import matplotlib.pyplot as plt
-import time
-# from general.EBRD import Policy
 
+from general.polygon_generators import boundary, read_polygon
+from general.boundary_env import BoudaryEnv
 
 # env = BoudaryEnv(boundary())
 # env.boundary.show(style='k.-')

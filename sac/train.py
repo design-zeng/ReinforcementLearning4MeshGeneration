@@ -4,8 +4,8 @@ from pathlib import Path
 import torch
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
-from sac.polygon_generators import read_polygon
-from sac.boundary_env import BoudaryEnv
+from general.polygon_generators import read_polygon
+from general.boundary_env import BoudaryEnv
 from sac.custom_callback import CustomCallback
 
 base_path = Path(__file__).parent.parent

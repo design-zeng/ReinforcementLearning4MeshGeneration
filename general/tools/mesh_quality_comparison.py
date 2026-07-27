@@ -7,8 +7,8 @@ from scipy.spatial import ConvexHull
 
 from general.components import Mesh, Vertex, Boundary2D
 from general.mesh import MeshGeneration
-from sac.polygon_generators import read_polygon
-from sac.boundary_env import BoudaryEnv
+from general.polygon_generators import read_polygon
+from general.boundary_env import BoudaryEnv
 
 root = "D:\meshingData\\baselines\logs\evaluation\\"
 

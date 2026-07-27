@@ -14,8 +14,8 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import matplotlib.pyplot as plt
 
-from general.mesh import MeshGeneration
-from sac.boundary_env import BoudaryEnv, boundary, read_polygon
+from general.polygon_generators import boundary, read_polygon
+from general.boundary_env import BoudaryEnv
 from ebrd.data_augmentation import MeshAugmentation, sampling_main
 import general.data as data_process
 

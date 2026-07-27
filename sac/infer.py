@@ -10,8 +10,8 @@ import matplotlib.image as mpimg
 from matplotlib import pyplot as plt
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
-from sac.polygon_generators import read_polygon
-from sac.boundary_env import BoudaryEnv
+from general.polygon_generators import read_polygon
+from general.boundary_env import BoudaryEnv
 
 # sns.set_theme(style="darkgrid")
 
