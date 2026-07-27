@@ -315,7 +315,7 @@ def element_number_box_plot():
     plt.show()
 
 if __name__ == '__main__':
-    os.makedirs(f"{config['default']['evaluation']}/{version}/")
+    os.makedirs(f"{config['default']['evaluation']}/{version}/", exist_ok=True)
     evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
     # replication_evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
     # element_number_box_plot()
