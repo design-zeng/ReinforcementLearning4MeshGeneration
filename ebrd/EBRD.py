@@ -1,5 +1,6 @@
 import json
 import configparser
+import os
 import time
 from multiprocessing import Pool
 from pathlib import Path
@@ -30,26 +31,10 @@ base_path = 'D:\\meshingData\\ANN\\'
 # model_path = f"{base_path}models/ea_t4_2/ebrd_model_1.pt"
 # version = 'ea_training_28'
 
-
-def mkdir_p(mypath):
-    '''Creates a directory. equivalent to using mkdir -p on the command line'''
-
-    from errno import EEXIST
-    from os import makedirs,path
-
-    try:
-        makedirs(mypath)
-    except OSError as exc: # Python >2.5
-        if exc.errno == EEXIST and path.isdir(mypath):
-            pass
-        else: raise
-
-
-# mkdir_p(f'{base_path}models/{version}/')
-# mkdir_p(f'{base_path}plots/{version}/')
-# mkdir_p(f'{base_path}samples/{version}/')
-# mkdir_p(f'{base_path}elements/{version}/')
-
+# os.makedirs(f'{base_path}models/{version}/', exist_ok=True)
+# os.makedirs(f'{base_path}plots/{version}/', exist_ok=True)
+# os.makedirs(f'{base_path}samples/{version}/', exist_ok=True)
+# os.makedirs(f'{base_path}elements/{version}/', exist_ok=True)
 
 class Policy(nn.Module):
     def __init__(self):
@@ -524,7 +509,7 @@ def data_sampling(data_path, n, threshold):
 
 
 def evaluation(model_path, version, is_render=False, indexing=False, save_fig=False, save_samples=False):
-    mkdir_p(f"{config['default']['augmentation']}/{version}/")
+    os.makedirs(f"{config['default']['augmentation']}/{version}/", exist_ok=True)
 
     envs = prepare_eval_envs()
     model = prepare_model(model_path)

@@ -1,3 +1,4 @@
+import os
 import json, time
 import configparser
 from pathlib import Path
@@ -22,19 +23,6 @@ version = 'sac_training_domain_compare_66' # sac_4_ann
 total_timesteps = 4000000
 seed=999
 learning_rate=1e-4
-
-def mkdir_p(mypath):
-    '''Creates a directory. equivalent to using mkdir -p on the command line'''
-
-    from errno import EEXIST
-    from os import makedirs,path
-
-    try:
-        makedirs(mypath)
-    except OSError as exc: # Python >2.5
-        if exc.errno == EEXIST and path.isdir(mypath):
-            pass
-        else: raise
 
 def prepare_eval_envs():
     domains = []
@@ -368,7 +356,7 @@ def set_size(w,h, ax=None):
 
 
 if __name__ == '__main__':
-    mkdir_p(f"{config['default']['evaluation']}/{version}/")
+    os.makedirs(f"{config['default']['evaluation']}/{version}/")
     evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
     # replication_evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
     # element_number_box_plot()

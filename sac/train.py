@@ -1,3 +1,4 @@
+import os
 from typing import Dict
 from pathlib import Path
 import configparser
@@ -32,20 +33,6 @@ learning_rate = 3e-4
 parameter_tuning = {
     'gamma': 0.5
 }
-
-def mkdir_p(mypath):
-    '''Creates a directory. equivalent to using mkdir -p on the command line'''
-
-    from errno import EEXIST
-    from os import makedirs,path
-
-    try:
-        makedirs(mypath)
-    except OSError as exc: # Python >2.5
-        if exc.errno == EEXIST and path.isdir(mypath):
-            pass
-        else: raise
-
 
 def prepare_eval_envs():
     domains = [
@@ -96,8 +83,8 @@ def curriculum_learning(method_name):
 def mesh_learning(method_name, o_env, eval_env, total_timesteps, model_path=None,
                   log_path=None,
                   tensorboard_log=None):
-    mkdir_p(log_path)
-    mkdir_p(tensorboard_log)
+    os.makedirs(log_path)
+    os.makedirs(tensorboard_log)
 
     eval_callback = CustomCallback(eval_env, best_model_save_path=log_path,
                                    log_path=log_path, eval_freq=1000,
