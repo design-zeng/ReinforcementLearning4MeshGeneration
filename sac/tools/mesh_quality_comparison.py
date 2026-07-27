@@ -3,15 +3,14 @@ import json, math
 import matplotlib.pyplot as plt
 import meshio
 import pandas as pd
-import seaborn as sns
 from scipy.spatial import ConvexHull
 
-from general.components import Mesh, Vertex, Segment, Boundary2D
+from general.components import Mesh, Vertex, Boundary2D
 from general.mesh import MeshGeneration
-from sac.boundary_env import BoudaryEnv, read_polygon
+from sac.polygon_generators import read_polygon
+from sac.boundary_env import BoudaryEnv
 
-base_path = 'D:\\meshingData\\ANN\\'
-# root = "D:\meshingData\\baselines\logs\evaluation\\"
+root = "D:\meshingData\\baselines\logs\evaluation\\"
 
 def clockwise_element(vertices):
     flatten_vs = [[v.x, v.y] for v in vertices]
@@ -158,15 +157,14 @@ def metrics_4_domains():
             if len(v):
                 if not isinstance(v[0], list):
                     m = sum(v) / len(v)
-                    print(k, m, math.sqrt(sum([(_v - m) ** 2 for _v in v]) / len(
-                                                            v)))
+                    print(k, m, math.sqrt(sum([(_v - m) ** 2 for _v in v]) / len(v)))
                 else:
                     print(k, sum([_v[0] for _v in v]) / len(v), sum([_v[1] for _v in v]) / len(v))
 
     metrics_data = {
-            "Element quality": pd.DataFrame({"value": [], "method": []}),
-            'Singularity': pd.DataFrame({"value": [], "method": []}),
-        }
+        "Element quality": pd.DataFrame({"value": [], "method": []}),
+        'Singularity': pd.DataFrame({"value": [], "method": []}),
+    }
     for name, m in metrics.items():
         for k, v in m.items():
             if name == 'Pave' and k == 'Triangles':
@@ -190,8 +188,6 @@ def final_metrics(domain, metrics):
                     # duplicated_vertices.append((i, j))
                     duplicated_vertices.append(vertices[j])
 
-        # print(sorted(dists))
-    # print(duplicated_vertices)
     real_vertices = [v for v in vertices if v not in duplicated_vertices]
     du_elements = []
     for ele in elements:
@@ -203,10 +199,7 @@ def final_metrics(domain, metrics):
 
     if 'Triangles' in metrics.keys():
         metrics['Triangles'].append(tri_elements)
-    calculate_metrics(real_vertices, real_elements, metrics,
-                      ["Element quality",  'Singularity' #'num_elements' #'Stretch', , #'num_vertices', , 'Taper', 'Scaled Jacobian', 'MinAngle', 'MaxAngle'
-                       ])
-
+    calculate_metrics(real_vertices, real_elements, metrics, ["Element quality",  'Singularity'])
 
 def computational_cost_a2c(filename):
     with open(filename, 'r') as fr:

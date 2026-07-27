@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib import patches
 
 from general.components import Vertex, Segment
 
@@ -8,9 +9,7 @@ def bad_cases():
     ax1.set_title("(a)")
 
     ax2 = plt.subplot(132)
-    p1, p2, p3, p4, p5, p6, p7, p8, p9, p10 = [Vertex(1, 1), Vertex(2, 0.9), Vertex(2.8, 0.8), Vertex(3, 1.9),
-                                               Vertex(2.2, 2), Vertex(3.5, 1.2), Vertex(2.2, 2.2), Vertex(3.6, 2.3),
-                                               Vertex(4.5, 1.3), Vertex(5.5, 1.4)]
+    p1, p2, p3, p4, p5, p6, p7, p8, p9, p10 = [Vertex(1, 1), Vertex(2, 0.9), Vertex(2.8, 0.8), Vertex(3, 1.9), Vertex(2.2, 2), Vertex(3.5, 1.2), Vertex(2.2, 2.2), Vertex(3.6, 2.3), Vertex(4.5, 1.3), Vertex(5.5, 1.4)]
 
     segmts = []
     segmts.append(Segment(p1, p2))
@@ -29,8 +28,7 @@ def bad_cases():
     ax2.set_title("(b)")
 
     ax3 = plt.subplot(133)
-    p1, p2, p3, p4, p5, p6, p7, p8 = [Vertex(1, 1), Vertex(2, 0.9), Vertex(2.8, 0.8), Vertex(2.8, 1.6),
-                                               Vertex(2.2, 1.7), Vertex(3.5, 1.2), Vertex(2.2, 2.2), Vertex(3.2, 2.3),]
+    p1, p2, p3, p4, p5, p6, p7, p8 = [Vertex(1, 1), Vertex(2, 0.9), Vertex(2.8, 0.8), Vertex(2.8, 1.6), Vertex(2.2, 1.7), Vertex(3.5, 1.2), Vertex(2.2, 2.2), Vertex(3.2, 2.3),]
 
     segmts = []
     segmts.append(Segment(p1, p2))
@@ -46,7 +44,6 @@ def bad_cases():
     ax3.set_title("(c)")
 
     plt.show()
-# env.boundary.show()
 
 def primitive_rules():
     fig = plt.figure()
@@ -69,14 +66,13 @@ def primitive_rules():
     [a.get_yaxis().set_visible(False) for a in fig.axes]
     plt.show()
 
-# primitive_rules()
 def generation_partial_boundary():
     fig = plt.figure(figsize=(5,5))
     ax2 = fig.add_subplot(111)
     ax2.set_xlim(-1, 6.5)
     ax2.set_ylim(-.5, 6)
     ax2.plot([0.3, 1.4, 1.5, 2.5, 3.5, 5.1, 3.4, 3.5, 2.2, 1, 0.5, -0.6, 0.3], [3.4, 2.6, 1.5, 1.5, 0.5, 1.4, 2.9, 4.3, 5.45, 5.7, 4.6, 4, 3.4], 'k-o')
-    circle2 = plt.Circle((1.5, 1.5), 4, color='black', linestyle='--', fill=False)
+    circle2 = patches.Circle((1.5, 1.5), 4, color='black', linestyle='--', fill=False)
     ax2.add_artist(circle2)
     ax2.plot([1.5, 1.15], [1.5, 5.57], color='black', linestyle='--', lw=1)
     ax2.plot([1.5, 3.28], [1.5, 5.17], color='black', linestyle='--', lw=1)
@@ -89,7 +85,6 @@ def generation_partial_boundary():
     plt.gca().set_aspect('equal', adjustable='box')
     plt.show()
 
-generation_partial_boundary()
 def coordinate_system():
     fig = plt.figure(figsize=(5,5))
     ax2 = fig.add_subplot(111)
@@ -113,8 +108,6 @@ def coordinate_system():
     # ax.plot([-1.2, -0.1, 0, 1, 2], [1.9, 1.1, 0, 0, -1], 'b-o')
 
     plt.show()
-
-# coordinate_system()
 
 def output_types():
     fig = plt.figure()
@@ -140,7 +133,6 @@ def output_types():
     [a.get_yaxis().set_visible(False) for a in fig.axes]
     plt.show()
 
-# output_types()
 def read_img():
     fig = plt.figure()
     ax1 = fig.add_subplot(231)
@@ -177,4 +169,11 @@ def read_img():
     [a.get_yaxis().set_visible(False) for a in fig.axes]
     plt.savefig('e.png', dpi=1000)
 
-# read_img()
+if __name__ == "__main__":
+    pass
+    # env.boundary.show()
+    # primitive_rules()
+    # generation_partial_boundary()
+    # coordinate_system()
+    # output_types()
+    # read_img()

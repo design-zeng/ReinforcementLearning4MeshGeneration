@@ -5,8 +5,7 @@ from general.mesh import connect_vertices
 
 def gen_boundary():
     # p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13
-    points = [(0, 0), (0, 6), (12, 6), (12, 0), (17, 0), (17, -5), (11, -5),
-                                                         (10, -11), (-3, -12), (-3, -7), (-6, -9), (-12, -1)]
+    points = [(0, 0), (0, 6), (12, 6), (12, 0), (17, 0), (17, -5), (11, -5), (10, -11), (-3, -12), (-3, -7), (-6, -9), (-12, -1)]
     p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12 = [Vertex(p[0], p[1]) for p in points]
     vertices = []
     vertices.extend(p1.sampling_between_endpoints(p2, 5, is_even=True))
@@ -21,7 +20,6 @@ def gen_boundary():
     vertices.extend(p10.sampling_between_endpoints(p11, 3, is_even=True))
     vertices.extend(p11.sampling_between_endpoints(p12, 5, is_even=True))
     vertices.extend(p12.sampling_between_endpoints(p1, 5, is_even=True))
-    [v.show() for v in vertices]
     connect_vertices(vertices)
     env = Boundary2D(vertices)
     return env
@@ -55,6 +53,9 @@ def boundary(index=0):
                   Vertex(1, 6), Vertex(2, 6), Vertex(3, 6), Vertex(4, 6), Vertex(5, 6), Vertex(6, 6),
                   Vertex(6, 5), Vertex(6, 4), Vertex(6, 3), Vertex(6, 2), Vertex(6, 1), Vertex(6, 0),
                    Vertex(5, 0), Vertex(4, 0), Vertex(3, 0), Vertex(2, 0), Vertex(1, 0), Vertex(0, 0)]
+    elif index == 3:
+        return gen_boundary()
+
     connect_vertices(points)
     env = Boundary2D(points)
     return env

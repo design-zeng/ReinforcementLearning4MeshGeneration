@@ -1,6 +1,6 @@
 import json
 
-def gmsh_formating(filename):
+def json_to_gmsh(filename):
     with open(filename, 'r') as fr:
         result = json.loads(fr.read())
 
@@ -18,9 +18,6 @@ def gmsh_formating(filename):
             fw.write(point + "\n")
         for line in lines:
             fw.write(line + "\n")
-    print()
-
-# gmsh_formating("domains/test3.json")
 
 def read_inp_file(inp_file):
     """ Reads the .inp file and extracts node and element data """
@@ -97,6 +94,3 @@ def inp_to_unv(inp_file, unv_file):
     """ Main function to convert .inp file to .unv format """
     nodes, elements = read_inp_file(inp_file)
     write_unv_file(unv_file, nodes, elements)
-
-# Example usage:
-inp_to_unv('D:\\Onedrive\\OneDrive - University of Calgary\\Research & work\\AI\\AI EDAM 2024\\domains\shapes\\tkde\\g_d1.inp', 'model.unv')

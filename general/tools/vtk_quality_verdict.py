@@ -39,9 +39,8 @@ domains = [
     # 'g_d0', 'g_d1', 'g_d2', 'g_d3', 'g_d4',
     'pave_d0', 'pave_d1', 'pave_d2', 'pave_d3', 'pave_d4'
 ]
-#
 
-def render(filename):
+def render(domain):
     reader = vtk.vtkSTLReader()
     reader.SetFileName(f"{root}\\{domain}.vtk")
     reader.Update()
@@ -71,7 +70,6 @@ def render(filename):
     renWin.Render()
     iren.Start()
 
-
 def DumpQualityStats(iq, arrayname):
     an = iq.GetOutput().GetFieldData().GetArray(arrayname)
     cardinality = an.GetComponent(0, 4)
@@ -86,7 +84,6 @@ def DumpQualityStats(iq, arrayname):
         '  average: ', average, '  , standard deviation: ', stdDev)
     return outStr
 
-
 def verdict(domains):
     metrics = {
         'QualityMeasureToMinAngle': [],
@@ -99,18 +96,14 @@ def verdict(domains):
         verdict_domain(d, metrics)
     for k, v in metrics.items():
         print(k, sum([_v[0] for _v in v]) / len(v), sum([_v[1] for _v in v]) / len(v))
-    print()
 
 def verdict_domain(domain, metrics):
-    # mr = vtk.vtkSTLReader()
     filename = f"{root}\\{domain}.inp"
     mr = vtk.vtkUnstructuredGridReader()
-    # mr = vtk.vtkExodusIIReader()
 
     iq = vtk.vtkMeshQuality()
 
-    m = meshio.Mesh.read(filename, "abaqus")  # same arguments as meshio.read
-    # m.write(f"D:\\CAD\\gmsh mesh\\freemesh\\D4-D10\\{domain}.vtk") #\\gmsh
+    m = meshio.Mesh.read(filename, "abaqus")
     m.write(f"{root}\\{domain}.vtk")  # \\gmsh
 
     mr.SetFileName(f"{root}\\{domain}.vtk")
@@ -121,31 +114,15 @@ def verdict_domain(domain, metrics):
 
     # Here we define the various mesh types and labels for output.
     meshTypes = [
-        # ['Triangle', 'Triangle',
-        #           [['QualityMeasureToEdgeRatio', ' Edge Ratio:'],
-        #            ['QualityMeasureToAspectRatio', ' Aspect Ratio:'],
-        #            ['QualityMeasureToRadiusRatio', ' Radius Ratio:'],
-        #            ['QualityMeasureToAspectFrobenius', ' Frobenius Norm:'],
-        #            ['QualityMeasureToMinAngle', ' Minimal Angle:']
-        #            ]
-        #           ],
-
         ['Quad', 'Quadrilateral',
-         [
-             # ['QualityMeasureToEdgeRatio', ' Edge Ratio:'],
-             # ['QualityMeasureToAspectRatio', ' Aspect Ratio:'],
-             # ['QualityMeasureToRadiusRatio', ' Radius Ratio:'],
-             # ['QualityMeasureToMedAspectFrobenius',
-             #  ' Average Frobenius Norm:'],
-             # ['QualityMeasureToMaxAspectFrobenius',
-             #  ' Maximal Frobenius Norm:'],
-             ['QualityMeasureToMinAngle', ' Minimal Angle:'],
-             ['QualityMeasureToMaxAngle', ' Maximum Angle:'],
-             ['QualityMeasureToScaledJacobian', ' Scaled Jacobian:'],
-             ['QualityMeasureToStretch', ' Stretch:'],
-             ['QualityMeasureToTaper', ' Taper:'],
-         ]
-         ],
+            [
+                ['QualityMeasureToMinAngle', ' Minimal Angle:'],
+                ['QualityMeasureToMaxAngle', ' Maximum Angle:'],
+                ['QualityMeasureToScaledJacobian', ' Scaled Jacobian:'],
+                ['QualityMeasureToStretch', ' Stretch:'],
+                ['QualityMeasureToTaper', ' Taper:'],
+            ]
+        ],
     ]
 
     if ug.GetNumberOfCells() > 0:
@@ -176,7 +153,6 @@ def verdict_domain(domain, metrics):
 
             res += '\n'
         return metrics
-
 
 if __name__ == '__main__':
     verdict(domains)

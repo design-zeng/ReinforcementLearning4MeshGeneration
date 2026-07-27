@@ -32,12 +32,12 @@ def compute():
             angle.append(v.to_find_clockwise_angle(v3, v2))
             ratio.append(v.distance_to(v2)/v.distance_to(v3))
 
-    x, y = np.meshgrid(np.array(angle), np.array(ratio))
-    z = np.tile(quality, (len(angle), 1))
-
+    # x, y = np.meshgrid(np.array(angle), np.array(ratio))
+    # z = np.tile(quality, (len(angle), 1))
     # fig = plt.figure()
     # ax = Axes3D(fig)
     # ax.plot_surface(x, y, z, rstride=1, cstride=1, cmap=cm.viridis)
+    
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -45,4 +45,5 @@ def compute():
 
     plt.show()
 
-# compute()
+if __name__ == "__main__":
+    compute()

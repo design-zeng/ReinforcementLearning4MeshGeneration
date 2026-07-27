@@ -48,7 +48,6 @@ def generatePolygon(ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts):
         angle = angle + angleSteps[i]
     return points
 
-
 def clip(x, min, max):
     if (min > max):
         return x
@@ -59,20 +58,20 @@ def clip(x, min, max):
     else:
         return x
 
+if __name__ == "__main__":
+    verts = generatePolygon( ctrX=250, ctrY=250, aveRadius=100, irregularity=0.55, spikeyness=0.7, numVerts=16 )
 
-verts = generatePolygon( ctrX=250, ctrY=250, aveRadius=100, irregularity=0.55, spikeyness=0.7, numVerts=16 )
+    black = (0,0,0)
+    white=(255,255,255)
+    im = Image.new('RGB', (500, 500), white)
+    imPxAccess = im.load()
+    draw = ImageDraw.Draw(im)
+    tupVerts = map(tuple,verts)
 
-black = (0,0,0)
-white=(255,255,255)
-im = Image.new('RGB', (500, 500), white)
-imPxAccess = im.load()
-draw = ImageDraw.Draw(im)
-tupVerts = map(tuple,verts)
+    # either use .polygon(), if you want to fill the area with a solid colour
+    draw.polygon(verts, outline=black, fill=white )
 
-# either use .polygon(), if you want to fill the area with a solid colour
-draw.polygon(verts, outline=black, fill=white )
+    # or .line() if you want to control the line thickness, or use both methods together!
+    draw.line(verts+[verts[0]], width=2, fill=black )
 
-# or .line() if you want to control the line thickness, or use both methods together!
-draw.line(verts+[verts[0]], width=2, fill=black )
-
-im.show()
+    im.show()

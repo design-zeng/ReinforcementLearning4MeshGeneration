@@ -9,9 +9,9 @@ class MeshFrame(Frame):
         super().__init__()
         self.master = master
         self.points = []
-        self.done = False  # Flag signalling we're done
+        self.done = False
         self.current = (0, 0)
-        self.window_name = "Mesh Generation UI"  # Name for our window
+        self.window_name = "Mesh Generation UI"
         self.fore_color = '#502c69'
         self.back_color = '#000000'
         self.canvas = None
@@ -83,22 +83,16 @@ class MeshFrame(Frame):
 
     def file_save(self, event):
         f = filedialog.asksaveasfile(mode='w', defaultextension=".json")
-        if f is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+        if f is None:
+            # asksaveasfile return `None` if dialog closed with "cancel".
             return
 
-        # centriod = cal_centriod(self.points)
-        # c_angle = clockwise_angle((self.points[0][0] - centriod[0], self.points[0][1] - centriod[1]),
-        #                                (self.points[1][0] - centriod[0], self.points[1][1] - centriod[1]))
-
         if not self.check_clockwise():
-        # if c_angle < math.pi:
-        #     pass
-        # else:
             self.points = list(reversed(self.points))
 
         text2save = json.dumps(self.points)  # starts from `1.0`, not `0.0`
         f.write(text2save)
-        f.close()  # `()` was missing.
+        f.close()
 
     def clear_btn(self, event):
         self.area.delete('1.0', END)
@@ -174,24 +168,12 @@ class MeshFrame(Frame):
                 clockwise = not clockwise
             return clockwise
 
-
-def cal_centriod(points):
-    if not len(points):
-        return
-    points_len = len(points)
-    centriod_x = sum([p[0] for p in points]) / points_len
-    centriod_y = sum([p[1] for p in points]) / points_len
-    return centriod_x, centriod_y
-
-
 def clockwise_angle(A, B):
     AB = (B[0] - A[0], B[1] - A[1])
-    # unit = (1, 0)
 
     theta = - math.atan2(- AB[1], AB[0])
 
     return theta if math.copysign(1, theta) >= 0 else 2 * math.pi + theta
-
 
 class Density(Frame):
     def __init__(self, master, points, base_frame):
@@ -271,10 +253,8 @@ class Density(Frame):
                                 list_points_density[i - 1][0][1] + inter * math.sin(angle))
                                for inter in interpolations])
 
-        # print(res_points)
         [self.base_frame._create_circle(p[0], p[1], 3, fill="#f00", outline="") for p in res_points]
         self.base_frame.points = res_points
-
 
 if __name__=="__main__":
     root = Tk()
