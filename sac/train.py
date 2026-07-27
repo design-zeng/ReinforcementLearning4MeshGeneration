@@ -1,17 +1,14 @@
 from typing import Dict
-import gym
-import numpy as np
-import torch as th
-from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
-from sac.boundary_env import BoudaryEnv, read_polygon, boundary
-from rl.baselines.CustomizeA2C import CustomActorCriticPolicy
-from sac.custom_callback import CustomCallback
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
-from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common import results_plotter
 from pathlib import Path
 import configparser
+
 import torch
+from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
+from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.monitor import Monitor
+
+from sac.boundary_env import BoudaryEnv, read_polygon, boundary
+from sac.custom_callback import CustomCallback
 
 base_path = Path(__file__).parent.parent.parent
 config = configparser.ConfigParser()
@@ -111,7 +108,7 @@ def mesh_learning(method_name, o_env, eval_env, total_timesteps, model_path=None
     # env = Monitor(o_env, f"{config['default']['a2c_log']}/{version}/")
     env = o_env
     if method_name == 'a2c':
-        # policy_kwargs = dict(activation_fn=th.nn.ReLU,
+        # policy_kwargs = dict(activation_fn=torch.nn.ReLU,
         #                      net_arch=[64, dict(pi=[32, 32], vf=[32, 32])])
         if model_path is not None:
             pass
@@ -136,7 +133,7 @@ def mesh_learning(method_name, o_env, eval_env, total_timesteps, model_path=None
         if model_path is not None:
             pass
         else:
-            # policy_kwargs = dict(activation_fn=th.nn.ReLU,
+            # policy_kwargs = dict(activation_fn=torch.nn.ReLU,
             #                      net_arch=[256, 256])
             model = DDPG(
                 'MlpPolicy',
@@ -158,7 +155,7 @@ def mesh_learning(method_name, o_env, eval_env, total_timesteps, model_path=None
         if model_path is not None:
             model = PPO.load(model_path, env=o_env)
         else:
-            policy_kwargs = dict(activation_fn=th.nn.ReLU,
+            policy_kwargs = dict(activation_fn=torch.nn.ReLU,
                                  net_arch=[dict(pi=[128, 128], vf=[128, 128])])
             model = PPO(
                 'MlpPolicy',
@@ -180,7 +177,7 @@ def mesh_learning(method_name, o_env, eval_env, total_timesteps, model_path=None
         if model_path is not None:
             model = SAC.load(model_path, env=o_env)
         else:
-            policy_kwargs = dict(activation_fn=th.nn.ReLU,
+            policy_kwargs = dict(activation_fn=torch.nn.ReLU,
                                  net_arch=[128, 128, 128])#32, 128, 128, 128, 64, 32
 
             model = SAC(
@@ -205,7 +202,7 @@ def mesh_learning(method_name, o_env, eval_env, total_timesteps, model_path=None
         if model_path is not None:
             model = TD3.load(model_path, env=o_env)
         else:
-            policy_kwargs = dict(activation_fn=th.nn.ReLU,
+            policy_kwargs = dict(activation_fn=torch.nn.ReLU,
                                  net_arch=[256, 256])
             model = TD3(
                 'MlpPolicy',

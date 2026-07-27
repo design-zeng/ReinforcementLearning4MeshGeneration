@@ -1,8 +1,8 @@
-import vtk
 import math
-import meshio
 import re
-from Measurement.meshformat_convector import formating
+
+import vtk
+import meshio
 
 root = 'D:\\'
 

@@ -1,10 +1,9 @@
-import numpy as np
 import math
-import matplotlib.pyplot as plt
 import random
-import seaborn as sns
-import pandas as pd
 
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 class Point2D:
     def __init__(self, x, y):

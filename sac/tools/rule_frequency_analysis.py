@@ -1,10 +1,11 @@
 import json
+
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 import matplotlib
-sns.set_theme(style="darkgrid")
+import matplotlib.pyplot as plt
 
+sns.set_theme(style="darkgrid")
 
 def read_meshing_history_info(filename):
     data = None

@@ -1,12 +1,13 @@
-import numpy as np
 import math
-import matplotlib.pyplot as plt
-from original_ann import original_ann as predict_model
-from general.components import *
 import json
-from general.data import matrix_ops, transformation
 import itertools
 
+import numpy as np
+import matplotlib.pyplot as plt
+
+from original_ann import original_ann as predict_model
+from general.components import *
+from general.data import matrix_ops, transformation
 
 def linear_fit(point1, point2):
     slope = (point2.y - point1.y) / (point2.x - point1.x)

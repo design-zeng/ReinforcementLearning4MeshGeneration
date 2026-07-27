@@ -1,23 +1,17 @@
-from stable_baselines3.common.callbacks import BaseCallback, EventCallback, StopTrainingOnRewardThreshold
-from typing import Any, Callable, Dict, List, Optional, Union
-from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
-from stable_baselines3.common.results_plotter import load_results, ts2xy
-from sac.dummy_vec_env import DummyVecEnv
-import gym
-import numpy as np
 import os
 import warnings
-import warnings
+import configparser
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import gym
 import numpy as np
-
+from stable_baselines3.common.callbacks import BaseCallback, EventCallback
+from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
+from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common import base_class
-from stable_baselines3.common.vec_env import VecEnv
 
-from pathlib import Path
-import configparser
+from sac.dummy_vec_env import DummyVecEnv
 
 base_path = Path(__file__).parent.parent.parent
 config = configparser.ConfigParser()

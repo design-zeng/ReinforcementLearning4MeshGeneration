@@ -155,20 +155,5 @@ def generate_evenly_spaced_points(start_point, end_point, num_points):
     ]
     return points
 
-
-# # Define the start and end points
-# start_point = (5.0, -2)
-# end_point = (5.192, 0.355)
-#
-# # Number of points to generate
-# num_points = 7
-#
-# # Generate the points
-# points = generate_evenly_spaced_points(start_point, end_point, num_points)
-#
-# # Print the generated points
-# print(points)
-
-
 if __name__ == '__main__':
     plot_shape(box())

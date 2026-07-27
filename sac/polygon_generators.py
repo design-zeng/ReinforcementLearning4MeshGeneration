@@ -1,3 +1,5 @@
+import json
+
 from matplotlib import pyplot
 #from shapely.geometry import Polygon
 #from descartes.patch import PolygonPatch
@@ -5,8 +7,6 @@ from matplotlib import pyplot
 from sac.figures import BLUE, SIZE, set_limits, plot_coords, color_isvalid
 from general.components import *
 from general.mesh import connect_vertices
-import json
-
 
 def plot_polygon():
     fig = pyplot.figure(1, figsize=SIZE, dpi=90)
@@ -115,60 +115,3 @@ def read_polygon(filename):
     connect_vertices(points)
     env = Boundary2D(points)
     return env
-
-def get_boundary_data(boundary):
-    xs = [v.x for v in boundary.vertices]
-    xs.append(xs[0])
-    ys = [v.y for v in boundary.vertices]
-    ys.append(ys[0])
-    return xs, ys
-
-def experiement_boundaries():
-    d1 = read_polygon('../ui/domains/boundary16.json')
-    d2 = read_polygon('../ui/domains/boundary15.json')
-    d3 = read_polygon('../ui/domains/test1.json')
-    d4 = read_polygon('../ui/domains/test2.json')
-
-    plt.figure(1)
-    ax1 = plt.subplot(221)
-    d1_xs, d1_ys = get_boundary_data(d1)
-    ax1.set_title("D1")
-    plt.axis('off')
-    # ax1.set_aspect(4)
-    plt.plot(d1_xs, d1_ys, 'k.-')
-    print(len(d1_xs))
-
-    ax2 = plt.subplot(223)
-    d2_xs, d2_ys = get_boundary_data(d2)
-    ax2.set_title("D2")
-    plt.plot(d2_xs, d2_ys, 'k.-')
-    plt.axis('off')
-    # ax2.set_aspect(4)
-    print(len(d2_xs))
-
-    ax3 = plt.subplot(122)
-    d3_xs, d3_ys = get_boundary_data(d3)
-    ax3.set_title("D3")
-    plt.plot(d3_xs, d3_ys, 'k.-')
-    # ax3.set_aspect(4)
-    plt.axis('off')
-    print(len(d3_xs))
-
-    # ax4 = plt.subplot(144)
-    # d4_xs, d4_ys = get_boundary_data(d4)
-    # ax4.set_title("D4")
-    # # ax4.set_aspect(4)
-    # plt.plot(d4_xs, d4_ys, 'b.-')
-    # plt.axis('off')
-    # print(len(d4_xs))
-
-    plt.show()
-    plt.savefig("boundary_domains.png")
-
-
-# env = gen_boundary()
-# env.show()
-# env = read_polygon('../ui/domains/problem.json')
-# env = boundary(2)
-# env.show('k.-')
-# experiement_boundaries()

@@ -1,13 +1,15 @@
-import numpy as np
-from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
-import matplotlib as mpl
-import pandas as pd
+import configparser
+from pathlib import Path
 import traceback
-import seaborn as sns
+
+import numpy as np
+import pandas as pd
+import matplotlib as mpl
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-from pathlib import Path
-import configparser
+import seaborn as sns
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+
 sns.set_theme(style="darkgrid")
 
 base_path = Path(__file__).parent.parent.parent

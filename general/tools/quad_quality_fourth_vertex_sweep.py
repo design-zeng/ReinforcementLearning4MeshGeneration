@@ -1,15 +1,16 @@
-from general.components import Mesh, Vertex, solve_quadratic_equation
-import numpy as np
 import math
+
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from matplotlib.ticker import LinearLocator
 from mpl_toolkits.mplot3d import Axes3D
-import seaborn as sns
 import matplotlib.pyplot as plt
-import pandas as pd
-sns.set_theme(style="whitegrid")
+import seaborn as sns
 
+from general.components import Mesh, Vertex
+
+sns.set_theme(style="whitegrid")
 
 def compute():
     v1 = Vertex(0, 0)
@@ -46,26 +47,7 @@ def compute():
 
     plt.show()
 
-
-def find_perpendicular_verctor(v1, v2):
-    u = (v1.x - v2.x, v1.y - v2.y)
-
-    pass
-
 # compute()
-# v2 = Vertex(-11, 5)
-# v3 = Vertex(3.4, 0.2)
-# vv = v2.get_perpendicular_vertex(v3)
-#
-# for v in [v2, v3]:
-#     v.show()
-#
-# for v in [vv[0], vv[1]]:
-#     v.show('r.')
-#
-# print(vv[0].to_find_clockwise_angle(v2, v3), vv[1].to_find_clockwise_angle(v2, v3))
-# plt.show()
-# print()
 
 def test_plot():
 

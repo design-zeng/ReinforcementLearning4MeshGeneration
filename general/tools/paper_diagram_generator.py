@@ -1,5 +1,5 @@
-import numpy as np
 import matplotlib.pyplot as plt
+
 from general.components import Vertex, Segment
 
 def bad_cases():

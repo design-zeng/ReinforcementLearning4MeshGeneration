@@ -1,6 +1,4 @@
 import json
-import os
-import re
 
 def gmsh_formating(filename):
     with open(filename, 'r') as fr:

@@ -1,8 +1,7 @@
 import torch
-from general import data
 import numpy as np
-import pycuda.driver as cuda
-from original_ann import plot_patterns
+
+from general import data
 
 cuda0 = torch.device('cuda:0')
 torch.set_num_threads(11)

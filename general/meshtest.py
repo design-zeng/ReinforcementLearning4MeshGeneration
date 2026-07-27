@@ -1,7 +1,7 @@
 import unittest
+
 from general.components import *
 from general.mesh import MeshGeneration as mg
-
 
 class MeshTest(unittest.TestCase):
     def setUp(self):

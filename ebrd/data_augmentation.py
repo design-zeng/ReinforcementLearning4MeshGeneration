@@ -1,17 +1,19 @@
-import numpy as np
+import time
+import statistics
 import math
-import matplotlib.pyplot as plt
-from general.components import Segment, Vertex, Mesh
 import json
-import seaborn as sns
 import random
-sns.set_theme(style="darkgrid")
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from multiprocessing import Process, Manager
 from matplotlib.gridspec import SubplotSpec
-import statistics
-import pandas as pd
-import time
 
+from general.components import Segment, Vertex, Mesh
+
+sns.set_theme(style="darkgrid")
 
 class MeshAugmentation:
 

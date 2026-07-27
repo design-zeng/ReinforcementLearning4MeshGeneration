@@ -14,9 +14,6 @@ def get_patterns(filename):
 
     return np.asarray(pattern_inputs), np.asarray(pattern_types), np.asarray(pattern_outputs)
 
-# re = get_patterns("pattern.txt")
-
-
 def data_transformation(data, ind_x_1, ind_y_1, ind_x0, ind_y0, ind_x1, ind_y1):
     #transformation of input and output data
     data_transf = []
@@ -81,11 +78,3 @@ def detransformation(point, dist, p0, p1):
     original_point[1] += p0[1]
 
     return original_point
-
-
-# mat = matrix_ops([0.3, 3.4, 1.4, 2.6, 1.5, 1.5, 2.5, 1.5, 3.5, 0.5])
-# t = transformation(mat, np.asarray([1.4, 2.6]), np.asarray([1.5, 1.5]), np.asarray([2.5, 1.5]))
-#
-# print(t)
-# d = detransformation([1.90065639, -0.9503282],np.asarray([1.4, 2.6]), np.asarray([1.5, 1.5]), np.asarray([2.5, 1.5]))
-# print(d)

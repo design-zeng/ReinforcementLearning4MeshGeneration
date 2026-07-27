@@ -1,6 +1,5 @@
 import pygame
 
-
 class MeshFrame():
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
@@ -47,10 +46,3 @@ class MeshFrame():
         self.surface = None
         self.screen = None
         pygame.display.quit()
-
-
-# if __name__=="__main__":
-#     size = (width, height) = (500, 500)
-#     meshF = MeshFrame(size=size)
-#     meshF.draw_line((0,0), (50, 50))
-#     meshF.render()

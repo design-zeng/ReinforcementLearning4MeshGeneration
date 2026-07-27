@@ -1,8 +1,8 @@
-from tkinter import *
 import math
 import json
-from tkinter import filedialog
 
+from tkinter import *
+from tkinter import filedialog
 
 class MeshFrame(Frame):
     def __init__(self, master):
