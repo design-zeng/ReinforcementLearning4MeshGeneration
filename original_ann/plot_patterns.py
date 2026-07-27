@@ -1,16 +1,17 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
-import numpy as np
 
 from general import data
 
+root_path = Path(__file__).parent.parent
+pattern_path = root_path / "original_ann" / "patterns" / "pattern.txt"
+
 def plot_patterns():
-    inputs, output_types, outputs = data.get_patterns("pattern.txt")
-    # transfered_data = data.data_transformation(np.concatenate((inputs, outputs), axis=1), 4, 5, 6, 7)
+    inputs, output_types, outputs = data.get_patterns(pattern_path)
 
     points = inputs
     for i, point in enumerate(points):
-        if i < 100:
-            continue
         # plot existing points
         input_x = [point[i] for i in range(len(point)) if i % 2 == 0]
         input_y = [point[i] for i in range(len(point)) if i % 2 == 1]
@@ -27,7 +28,6 @@ def plot_patterns():
         plt.show()
         plt.close()
 
-# plot_patterns()
 def plot_flat_points(point):
     input_x = [point[i] for i in range(len(point)) if i % 2 == 0]
     input_y = [point[i] for i in range(len(point)) if i % 2 == 1]
@@ -35,3 +35,6 @@ def plot_flat_points(point):
     # input_y.append(input_y[0])
     plt.plot(input_x, input_y, 'ro-')
     plt.show()
+
+if __name__ == "__main__":
+    plot_patterns()
