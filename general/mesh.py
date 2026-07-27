@@ -1631,7 +1631,7 @@ class MeshGeneration:
         np.savetxt('samples.out', sav)
 
         x, y = predict_model.build_training_data(flated_samples, output_types, outputs)
-        predict_model.training(predict_model.model, x, y)
+        predict_model.train(predict_model.model, x, y)
 
     def remove_point(self, point):
         self.updated_boundary.vertices.remove(point)

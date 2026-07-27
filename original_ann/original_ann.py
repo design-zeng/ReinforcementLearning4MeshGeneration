@@ -1,51 +1,56 @@
+from pathlib import Path
+
 import torch
+import torch.nn as nn
 import numpy as np
 
 from general import data
 
-model = None
+root_path = Path(__file__).parent.parent
+model_path = root_path / "output" / "model.pt"
+pattern_path = root_path / "original_ann" / "patterns" / "pattern.txt"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+learning_rate = 1e-4
+epoches = 300000
 D_in, H1, H2, D_out = 6, 500, 500, 3
 
 def new_model():
-    model = torch.nn.Sequential(
-        torch.nn.Linear(D_in, H1),
-        torch.nn.ReLU(),
-        # torch.nn.Tanh(),
-        torch.nn.Linear(H1, H2),
-        torch.nn.ReLU(),
-        # torch.nn.Tanh(),
-        torch.nn.Linear(H2, D_out),
+    model = nn.Sequential(
+        nn.Linear(D_in, H1),
+        nn.ReLU(),
+        # nn.Tanh(),
+        nn.Linear(H1, H2),
+        nn.ReLU(),
+        # nn.Tanh(),
+        nn.Linear(H2, D_out),
     ).to(device)
     if device.type == "cuda":
-        model = torch.nn.DataParallel(model)
+        model = nn.DataParallel(model)
     return model
 
-def build_model():
-    inputs, output_types, outputs = data.get_patterns("pattern.txt")
-    x, y = build_training_data(inputs, output_types, outputs)
-
+def load_model():
     model = new_model()
-    x = x.to(device)
-    y = y.to(device)
-    return model, x, y
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    return model
 
-def build_training_data(inputs, output_types, outputs):
-    transfered_data = data.data_transformation(np.concatenate((inputs, outputs), axis=1), 2, 3, 4, 5, 6, 7)
+def build_training_data():
+    inputs, output_types, outputs = data.get_patterns(pattern_path)
+    transformed_data = data.data_transformation(np.concatenate((inputs, outputs), axis=1), 2, 3, 4, 5, 6, 7)
 
-    x = torch.from_numpy(np.concatenate((transfered_data[:, : 4], transfered_data[:, -4: -2]), axis=1)).float()
+    x = torch.from_numpy(np.concatenate((transformed_data[:, : 4], transformed_data[:, -4: -2]), axis=1)).float()
+    y = torch.from_numpy(np.concatenate((output_types, transformed_data[:, -2:]), axis=1)).float()
 
-    y = transfered_data[:, -2:]
-    y = torch.from_numpy(np.concatenate((output_types, y), axis=1)).float()
+    x.to(device)
+    y.to(device)
+
     return x, y
 
-def training(model, x, y):
-    loss_fn = torch.nn.MSELoss(reduction='sum')
+def train(model, x, y):
+    model_path.parent.mkdir(parents=True, exist_ok=True)
 
-    learning_rate = 1e-4
-    epoches = 300000
+    loss_fn = nn.MSELoss(reduction='sum')
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -57,43 +62,38 @@ def training(model, x, y):
             break
         print(t, loss.item())
 
-        model.zero_grad()
-
+        optimizer.zero_grad()
         loss.backward()
+        optimizer.step()
 
-        with torch.no_grad():
-            for param in model.parameters():
-                param -= learning_rate * param.grad
+    torch.save(model.state_dict(), model_path)
 
-    torch.save(model.state_dict(), 'model.pt')
+def predict(model, points):
+    model.eval()
 
-def load_model(path):
-    global model
-    if not model:
-        model = new_model()
-        model.load_state_dict(torch.load(path))
-        model.eval()
-    return model
-
-def predict(path, points):
-    if len(points) != 5:
-        return
-
-    flated_points = []
+    flattened_points = []
     for point in points:
-        flated_points.append(point.x)
-        flated_points.append(point.y)
+        flattened_points.append(point.x)
+        flattened_points.append(point.y)
 
-    transfered_data = data.data_transformation([flated_points], 2, 3, 4, 5, 6, 7)
+    transformed_data = data.data_transformation([flattened_points], 2, 3, 4, 5, 6, 7)
 
-    x = torch.from_numpy(np.concatenate((transfered_data[:, : 4], transfered_data[:, -4: -2]), axis=1)).float()
+    x = torch.from_numpy(np.concatenate((transformed_data[:, : 4], transformed_data[:, -4: -2]), axis=1)).float().to(device)
 
-    predict = model.forward(x)
-    detran_predict = data.detransformation(np.asarray([predict[0][1], predict[0][2]]),
-                                           #missing distance between p0 and p1
-                                           np.asarray([flated_points[4], flated_points[5]]),
-                                           np.asarray([flated_points[6], flated_points[7]]))
-    return round(float(predict[0][0])), detran_predict
+    with torch.no_grad():
+        predict = model.forward(x)
 
-# model, x, y = build_model()
-# training(model, x, y)
+    detransformed_predict = data.detransformation(
+        np.array([predict[0][1], predict[0][2]]),
+        #missing distance between p0 and p1
+        np.array([flattened_points[4], flattened_points[5]]),
+        np.array([flattened_points[6], flattened_points[7]]))
+    return round(float(predict[0][0])), detransformed_predict
+
+if __name__ == "__main__":
+    model = new_model()
+    # model = load_model()
+
+    x, y = build_training_data()
+
+    train(model, x, y)
