@@ -1,11 +1,9 @@
 import math
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
 import seaborn as sns
 
 from general.components import Mesh, Vertex
@@ -48,12 +46,3 @@ def compute():
     plt.show()
 
 # compute()
-
-def test_plot():
-
-    data = pd.DataFrame(data={'x': [1, 2, 3], 'y': [1, 2,3]})
-    # Plot the responses for different events and regions
-    sns.lineplot(x="x", y="y",
-                 data=data)
-    plt.show()
-# test_plot()

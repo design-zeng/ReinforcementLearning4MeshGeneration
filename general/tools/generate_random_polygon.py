@@ -76,4 +76,3 @@ draw.polygon(verts, outline=black, fill=white )
 draw.line(verts+[verts[0]], width=2, fill=black )
 
 im.show()
-print()

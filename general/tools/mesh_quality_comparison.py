@@ -13,51 +13,7 @@ from sac.boundary_env import BoudaryEnv, read_polygon
 base_path = 'D:\\meshingData\\ANN\\'
 # root = "D:\meshingData\\baselines\logs\evaluation\\"
 
-def generate_meshes(filename):
-    vertices = []
-    elements = []
-    start_index = 1
-
-    existing_eles = []
-
-    with open(filename, 'r') as fr:
-        for line in fr.readlines():
-            if not line.startswith("*"):
-                info = line.split(',')
-                if len(info) > 4:
-                    vs = sorted([int(info[1]) - start_index, int(info[2]) - start_index, int(info[3]) - start_index,
-                          int(info[4]) - start_index])
-                    if vs not in existing_eles:
-                        elements.append(Mesh([vertices[int(info[1]) - start_index], vertices[int(info[2]) - start_index],
-                                            vertices[int(info[3]) - start_index], vertices[int(info[4]) - start_index]]))
-                        existing_eles.append(vs)
-                else:
-                    vertices.append(Vertex(float(info[1]), float(info[2])))
-
-    return vertices, elements
-
-
 def clockwise_element(vertices):
-    # least_y = vertices[0]
-    #
-    # for v in vertices:
-    #     if v is least_y:
-    #         continue
-    #     if v.y < least_y.y:
-    #         least_y = v
-    # fix_v = Vertex(least_y.x + 1, least_y.y)
-    # vs = [v for v in vertices if v is not least_y]
-    # clockwise_vs = [least_y]
-    # while len(vs):
-    #     min_angle, k = 2 * math.pi, 0
-    #     for i in range(len(vs)):
-    #         angle = least_y.to_find_clockwise_angle(vs[i], fix_v)
-    #         if angle < min_angle:
-    #             min_angle = angle
-    #             k = i
-    #     clockwise_vs.insert(0, vs[k])
-    #     vs.remove(vs[k])
-    # print()
     flatten_vs = [[v.x, v.y] for v in vertices]
     hull_vs = ConvexHull(flatten_vs)
     if len(hull_vs.vertices) == len(vertices):
@@ -68,7 +24,6 @@ def clockwise_element(vertices):
         return res
     else:
         raise ValueError('Not enough vertices!')
-
 
 def generate_mesh_from_inp(filename):
     m = meshio.Mesh.read(filename, "abaqus")  # same arguments as meshio.read
@@ -163,23 +118,6 @@ def calculate_metrics(vertices, elements, metrics, metrics_ind):
 
 
 def metrics_4_domains():
-    # domains = {
-    #     'BQ': [
-    #         'g_random',
-    #         'g_fly',
-    #         'g_dragon',
-    #     ],
-    #     'Pave': [
-    #         'pave_fly',
-    #         'pave_random',
-    #         'pave_dragon',
-    #     ],
-    #     'F-RL': [
-    #         'sac_0_889_env_0_F',
-    #         'sac_0_889_env_1_F',
-    #         'sac_0_889_env_2_F'
-    #     ]
-    # }
     domains = {
         'BQ': [
             'g_d0',
@@ -203,70 +141,10 @@ def metrics_4_domains():
             'd4',
         ]
     }
-    # domains = {
-    #     '5k': [
-    #         '5k',
-    #     ],
-    #     '10k': [
-    #         '10k',
-    #     ],
-    #     '40k': [
-    #         '40k',
-    #     ],
-    #     '100k': [
-    #         '100k',
-    #     ],
-    # }
-    # domains = {
-    #     '4_2_3': [
-    #         'sac_observation_63\sac_0_900_env_0_F',
-    #         'sac_observation_63\sac_0_901_env_0_F',
-    #         'sac_observation_63\sac_0_902_env_0_F',
-    #         'sac_observation_63\sac_0_903_env_0_F',
-    #         'sac_observation_63\sac_0_904_env_0_F',
-    #         'sac_observation_63\sac_0_906_env_0_F',
-    #         'sac_observation_63\sac_0_907_env_0_F',
-    #         'sac_observation_63\sac_0_908_env_0_F',
-    #         'sac_observation_63\sac_0_909_env_0_F',
-    #         'sac_observation_63\sac_0_910_env_0_F',
-    #     ],
-    #     '6_2_3': [
-    #         'sac_observation_72\sac_0_900_env_0_F',
-    #         'sac_observation_72\sac_0_901_env_0_F',
-    #         'sac_observation_72\sac_0_902_env_0_F',
-    #         'sac_observation_72\sac_0_903_env_0_F',
-    #         'sac_observation_72\sac_0_904_env_0_F',
-    #         'sac_observation_72\sac_0_905_env_0_F',
-    #         'sac_observation_72\sac_0_906_env_0_F',
-    #         'sac_observation_72\sac_0_907_env_0_F',
-    #         'sac_observation_72\sac_0_908_env_0_F',
-    #         'sac_observation_72\sac_0_909_env_0_F',
-    #     ],
-    #     '6_3_4': [
-    #         'sac_observation_73\sac_0_900_env_0_F',
-    #         'sac_observation_73\sac_0_901_env_0_F',
-    #         'sac_observation_73\sac_0_903_env_0_F',
-    #         'sac_observation_73\sac_0_904_env_0_F',
-    #         'sac_observation_73\sac_0_906_env_0_F',
-    #         'sac_observation_73\sac_0_908_env_0_F',
-    #         'sac_observation_73\sac_0_910_env_0_F',
-    #         'sac_observation_73\sac_0_911_env_0_F',
-    #         'sac_observation_73\sac_0_912_env_0_F',
-    #         'sac_observation_73\sac_0_914_env_0_F',
-    #     ]
-    # }
     metrics = {
         k: {
             "Element quality": [],
             'Singularity': [],
-            # 'num_vertices': [],
-            # 'num_elements': [],
-            # 'Stretch': [],
-            # 'Taper': [],
-            # 'Scaled Jacobian': [],
-            # 'MinAngle': [],
-            # 'MaxAngle': [],
-            # 'Triangles': []
         } for k in domains.keys()
     }
 
@@ -285,31 +163,9 @@ def metrics_4_domains():
                 else:
                     print(k, sum([_v[0] for _v in v]) / len(v), sum([_v[1] for _v in v]) / len(v))
 
-    # metrics to data frame
-    # metrics_data = pd.DataFrame({"metric": [], "value": [], "method": []})
-    # for name, m in metrics.items():
-    #     for k, v in m.items():
-    #         r = {"metric": [k] * len(v), "value": v, "method": [name]*len(v) if name is not None else []}
-    #         r = pd.DataFrame(r)
-    #         metrics_data = pd.concat([metrics_data, r])
-    #
-    # ax = sns.boxplot(x="metric", y="value", data=metrics_data, hue='method', showfliers=False)  # hue='model'
-    # ax.legend(title=None)
-    # # ax.margins(1, 0)
-    # plt.show()
-
     metrics_data = {
             "Element quality": pd.DataFrame({"value": [], "method": []}),
-
-            # 'num_vertices': [],
-            # 'num_elements': [],
-            # 'Stretch': pd.DataFrame({"value": [], "method": []}),
-            # 'Scaled Jacobian': pd.DataFrame({"value": [], "method": []}),
-            # 'Taper': pd.DataFrame({"value": [], "method": []}),
             'Singularity': pd.DataFrame({"value": [], "method": []}),
-            # 'MinAngle': pd.DataFrame({"value": [], "method": []}),
-            # 'MaxAngle': pd.DataFrame({"value": [], "method": []}),
-            # 'Triangles': pd.DataFrame({"value": [], "method": []}),
         }
     for name, m in metrics.items():
         for k, v in m.items():
@@ -321,46 +177,6 @@ def metrics_4_domains():
             metrics_data[k] = pd.concat([metrics_data[k], r])
 
     print(metrics_data)
-
-    # plt.figure(figsize=(8, 7), dpi=100)
-    # plt.rcParams.update({'font.size': 22})
-    # sns.boxplot(x="method", y="value", data=metrics_data['Element quality'])
-    # plt.xlabel('Sample size')
-    # plt.ylabel('Element quality')
-
-    # fig, axs = plt.subplots(3, 3, sharex=True)
-    # i = 0
-    # for k, v in metrics_data.items():
-    #     # if i == 0:
-    #     #     sns.boxplot(ax=axs[i], x="method", y="value", data=v, hue='method', showfliers=False)
-    #     # else:
-    #     sns.boxplot(ax=axs[i // 3, i % 3], x="method", y="value", data=v)
-    #     if k == 'Element quality':
-    #         title = '(a) Element quality (H)'
-    #     elif k == 'Stretch':
-    #         title = '(b) Stretch (H)'
-    #     elif k == 'Scaled Jacobian':
-    #         title = '(c) Scaled Jacobian (H)'
-    #     elif k == 'Taper':
-    #         title = '(d) Taper (L)'
-    #     elif k == 'Singularity':
-    #         title = '(e) Singularity (L)'
-    #     elif k == 'MinAngle':
-    #         title = '(f) |MinAngle - 90| (L)'
-    #     elif k == 'MaxAngle':
-    #         title = '(g) |MaxAngle - 90| (L)'
-    #     elif k == 'Triangles':
-    #         title = '(h) Triangle (L)'
-    #     axs[i // 3, i % 3].set_title(title)
-    #     axs[i // 3, i % 3].xaxis.set_label_text('foo')
-    #     axs[i // 3, i % 3].xaxis.label.set_visible(False)
-    #     axs[i // 3, i % 3].yaxis.set_label_text('foo')
-    #     axs[i // 3, i % 3].yaxis.label.set_visible(False)
-    #     i += 1
-    # axs[2, 2].axis('off')
-    # fig.tight_layout()
-    # plt.show()
-
 
 def final_metrics(domain, metrics):
     filename = f"{root}\\{domain}.inp"
@@ -435,18 +251,7 @@ def computational_cost_a2c(filename):
 # computational_cost_a2c("D:\\meshingData\\A2C\\plots\\test_62\\rewardings.txt")
 def calculate_initial_boundaries_features():
     domains = []
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary16.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary15.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/test1.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary4.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary8.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary9.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary10.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary_hole_r2.json')
     domains.append(f'D:/python_projects/meshgeneration/ui/domains/boundary12.json')
-    # domains.append(f'D:/python_projects/meshgeneration/ui/domains/test2.json')
-
-    # models_static = [f'{base_path}models/ea_training_14/ebrd_model_{i}.pt' for i in range(3, 4)]
 
     envs = [BoudaryEnv(read_polygon(name)) for name in domains]
     for e in envs:

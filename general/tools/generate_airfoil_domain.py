@@ -124,7 +124,6 @@ def box():
            (-3, 0.5), (-3, 0.0), (-3, -0.5), (-3, -1.0), (-3, -1.5)]
     return box_1
 
-
 def plot_shape(shape):
     print([[x[0]*100, x[1]*100] for x in shape[::-1]])
 
@@ -143,17 +142,6 @@ def plot_shape(shape):
     plt.axhline(0, color='gray', lw=0.5, ls='--')  # Add x-axis line
     plt.axvline(0, color='gray', lw=0.5, ls='--')  # Add y-axis line
     plt.show()
-
-
-def generate_evenly_spaced_points(start_point, end_point, num_points):
-    # Generate evenly spaced points between start_point and end_point
-    points = [
-        (
-            start_point[0] + (end_point[0] - start_point[0]) * (i / (num_points - 1)),
-            start_point[1] + (end_point[1] - start_point[1]) * (i / (num_points - 1))
-        ) for i in range(num_points)
-    ]
-    return points
 
 if __name__ == '__main__':
     plot_shape(box())

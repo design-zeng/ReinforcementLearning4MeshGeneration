@@ -1,5 +1,4 @@
 import math
-import random
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,17 +34,6 @@ class Point2D:
     def length(self):
         return math.sqrt(self.x ** 2 + self.y ** 2)
 
-#
-# A = Point2D(0, 1)
-# B = Point2D(2, 5.1)
-# C = Point2D(1, 3)
-# D = Point2D(0.99, 1.2)
-# AB = Segment(A, B)
-# CD = Segment(C, D)
-# r = AB.cross(CD)
-# print()
-
-
 class Vertex(Point2D):
     def __init__(self, x, y):
         super(Vertex, self).__init__(x, y)
@@ -70,11 +58,7 @@ class Vertex(Point2D):
             self.segments = [segment]
 
     def find_angle(self, another_vertex):
-        theta = np.math.atan2(another_vertex.y - self.y, another_vertex.x - self.x)
-        return theta
-
-    def angle(self):
-        theta = np.math.atan2(self.y, self.x)
+        theta = math.atan2(another_vertex.y - self.y, another_vertex.x - self.x)
         return theta
 
     def to_find_angle(self, point1, point2):
@@ -91,9 +75,6 @@ class Vertex(Point2D):
         v1 = point1 - self
         v2 = point2 - self
 
-        # theta = - math.asin((vector_a.x * vector_b.y - vector_a.y * vector_b.x) /
-        #                   (self.distance_to(point1) * self.distance_to(point2)))
-
         theta = - math.atan2(v1.x * v2.y - v1.y * v2.x, v1.x * v2.x + v1.y * v2.y)
 
         return round(theta, 4) if math.copysign(1, theta) >= 0 else round(2 * math.pi + theta, 4)
@@ -106,12 +87,10 @@ class Vertex(Point2D):
                 return True
         return False
 
-    @staticmethod
-    def get_random_vertex():
-        random.seed()
-        return Vertex(random.randint(-10, 10), random.randint(-10, 10))
-
     def get_connected_vertices(self):
+        if not self.segments:
+            return []
+
         vertices = []
         for seg in self.segments:
             if seg.point1 not in vertices:
@@ -119,14 +98,10 @@ class Vertex(Point2D):
 
             if seg.point2 not in vertices:
                 vertices.append(seg.point2)
-        vertices.remove(self)
-        return vertices
 
-    def equal(self, another_point):
-        if self.x == another_point.x and self.y == another_point.y:
-            return True
-        else:
-            return False
+        vertices.remove(self)
+
+        return vertices
 
     def copy(self):
         return Vertex(self.x, self.y)
@@ -189,18 +164,6 @@ class Vertex(Point2D):
         else:
             s = dist / math.sqrt(1+ v[1]**2)
         return Vertex(m_v.x + s, m_v.y + s * v[1]), Vertex(m_v.x - s, m_v.y - s * v[1])
-
-# v0 = Vertex(0, 0)
-# v1 = Vertex(0, 3)
-# v2 = Vertex(-3, 0)
-# print(math.degrees(v0.to_find_clockwise_angle(v1, v2)))
-
-# samples = v1.sampling_between_endpoints(end_vertex=v2, size=5, is_even=True)
-# for i in samples:
-#     i.show()
-# plt.show()
-# print()
-# print(Vertex(1, 1).angle())
 
 class Boundary2D:
     def __init__(self, vertices):
@@ -460,9 +423,6 @@ class Boundary2D:
             perimeter += self.vertices[i - 1].distance_to(self.vertices[i])
         return perimeter
 
-    def get_boundary_quality(self):
-        pass
-
     def compute_boundary_angle(self, vertex):
         if vertex in self.vertices:
             index = self.vertices.index(vertex)
@@ -515,22 +475,7 @@ class Segment:
             return False
 
     def is_cross(self, another_segment):
-
-        # if one end point of a segment is on the another segment
-
-        # theta1 = self.angle_from_point_2_segment(self.point1, another_segment)
-        # theta2 = self.angle_from_point_2_segment(self.point2, another_segment)
-        #
-        # if round(theta1, 4) == 180 or round(theta2, 4) == 180:
-        #     return True
-        # elif round(theta1, 4) == 0 and round(theta2, 4) == 0:
-        #     return False
-
-        if self.straddle(another_segment) and another_segment.straddle(self):
-            return True
-        else:
-            return False
-
+        return self.straddle(another_segment) and another_segment.straddle(self)
 
     def angle_from_point_2_segment(self, point, segment):
         v1 = segment.point1 - point
@@ -540,17 +485,6 @@ class Segment:
             return math.degrees(theta)
         else:
             return 0
-
-    def cross(self, another_segment):
-        if self.is_cross(another_segment):
-            print("Two segments crossed")
-        else:
-            print("Two segments are not crossed!")
-
-        plt.plot([self.point1.x, self.point2.x], [self.point1.y, self.point2.y], 'b-')
-        plt.plot([another_segment.point1.x, another_segment.point2.x],
-                 [another_segment.point1.y, another_segment.point2.y], 'r-')
-        plt.show()
 
     def show(self, style='b.-', linewidth=2, markersize=0.1):
         # sns.set()
@@ -617,19 +551,6 @@ class Segment:
         else:
             return False
 
-    def __len__(self):
-        return self.point1.distance_to(self.point2)
-
-    def is_inner_perpendicular(self, point):
-        a = self.point1.x
-        b = self.point1.y
-        A = self.point2.x - self.point1.x
-        B = self.point2.y - self.point1.y
-        s = (A*point.x + B*point.y -B*b - A*a)/(A**2 + B**2)
-        if 0 <= s <= 1:
-            return True
-        return False
-
     def perpendicular_point(self, point):
         a = self.point1.x
         b = self.point1.y
@@ -638,9 +559,6 @@ class Segment:
         s = (A * point.x + B * point.y - B * b - A * a) / (A ** 2 + B ** 2)
         target = Vertex(a+s*A, b+s*B)
         return target, point.distance_to(target), True if 0 <= s <= 1 else False
-
-    def vector(self):
-        return (self.point2.x - self.point1.x, self.point2.y - self.point1.y)
 
     def length(self):
         return self.point1.distance_to(self.point2)
@@ -690,25 +608,7 @@ class Segment:
         else:
             raise ValueError('Not recognized object type!')
 
-
-# S1 = Segment(Vertex(1, 1), Vertex(3, 3))
-# S2 = Segment(Vertex(0, 0), Vertex(4, 4))
-# vertex = Vertex(-1, 5.5)
-# print(S1.distance(S2))
-# print(S1.is_inner_perpendicular(vertex))
-
-# S2.show()
-# plt.show()
-# S3 = Segment(Vertex(0, 1), Vertex(2, 0))
-# print(S1.is_cross(S2))
-# print(S2.is_cross(S3))
-# s1 = Segment(Vertex(-1, -1), Vertex(1, 1))
-# s2 = Segment(Vertex(2, 1), Vertex(3, 1))
-# is_inside, v = s1.intersection_vertex(s2)
-# print(is_inside, v)
-
 class Mesh:
-
     def __init__(self, vertices):
         self.vertices = vertices
         self.segments = None
@@ -719,9 +619,6 @@ class Mesh:
         # self.min_taper_ratio = 0.3
         self.max_degree = 0.99 * math.pi
         self.min_degree = 0.01 * math.pi
-
-    def get_all_segments(self):
-        return [Segment(self.vertices[i - 1], self.vertices[i]) for i in range(len(self.vertices))]
 
     def length_4_segments(self):
         return [Segment(self.vertices[i - 1], self.vertices[i]).length() for i in range(len(self.vertices))]
@@ -1005,50 +902,7 @@ class Mesh:
         plt.xticks([])
         plt.yticks([])
 
-    @staticmethod
-    def test():
-        v1 = Vertex(1 + math.cos(math.radians(40)), math.sin(math.radians(40)))
-        a = 15
-        vs = [
-            Vertex(0.9 * math.cos(math.radians(a)), 0.9 * math.sin(math.radians(a))),
-            Vertex(math.cos(math.radians(a)), math.sin(math.radians(a))),
-            Vertex(1.2 * math.cos(math.radians(a)), 1.2 * math.sin(math.radians(a))),
-              Vertex(1.45 * math.cos(math.radians(a)), 1.45 * math.sin(math.radians(a))),
-              Vertex(1.68 * math.cos(math.radians(a)), 1.68 * math.sin(math.radians(a))),
-              Vertex(1.88 * math.cos(math.radians(a)), 1.88 * math.sin(math.radians(a))),
-            Vertex(1 + math.cos(math.radians(2 * a)), math.sin(math.radians(2 * a))),
-              Vertex(3 * math.cos(math.radians(a)), 3 * math.sin(math.radians(a)))
-        ]
-        print(v1.distance_to(Vertex(0, 0)))
-        for v in vs:
-            m = Mesh([Vertex(0, 0), Vertex(math.cos(math.radians(2 * a)), math.sin(math.radians(2 * a))),
-                      v, Vertex(1, 0)])
-            q1 = m.get_quality(type='area')
-            print(f"area: {q1}, default: {m.get_quality()}, robust: {m.get_quality(type='robust')}, "
-                  f"strong: {m.get_quality(type='strong')}")
-
-        a = 60
-        vs = [
-              Vertex(0.9*math.cos(math.radians(a)), 0.9*math.sin(math.radians(a))),
-              Vertex(math.cos(math.radians(a)), math.sin(math.radians(a))),
-              Vertex(1.2 * math.cos(math.radians(a)), 1.2 * math.sin(math.radians(a))),
-              Vertex(1.45 * math.cos(math.radians(a)), 1.45 * math.sin(math.radians(a))),
-              Vertex(1.68 * math.cos(math.radians(a)), 1.68 * math.sin(math.radians(a))),
-              Vertex(1.88 * math.cos(math.radians(a)), 1.88 * math.sin(math.radians(a))),
-              # Vertex(1 + math.cos(math.radians(2 * a)), math.sin(math.radians(2 * a))),
-              Vertex(3 * math.cos(math.radians(a)), 3 * math.sin(math.radians(a)))]
-        print(v1.distance_to(Vertex(0, 0)))
-        for v in vs:
-            m = Mesh([Vertex(0, 0), Vertex(math.cos(math.radians(2 * a)), math.sin(math.radians(2 * a))),
-                      v, Vertex(1, 0)])
-            q1 = m.get_quality(type='area')
-            print(f"area: {q1}, default: {m.get_quality()}, robust: {m.get_quality(type='robust')}, "
-                  f"strong: {m.get_quality(type='strong')}")
-
-# Mesh.test()
-
 class PointEnvironment(object):
-
     def __init__(self, reference_point, boundary, neighbor_num=4, radius_num=3,
                  average_edge_length=1, area_ratio=1, radius=6, static=False):
         self.reference_point = reference_point
@@ -1070,11 +924,6 @@ class PointEnvironment(object):
         self.get_state(type=2)
 
     def get_neighbors(self, boundary):
-        # half = int(neighbor_num / 2)
-        # if neighbor_num % 2 != 0:
-        #     raise ValueError("The neighbor number is not even!")
-        p_num = len(boundary.vertices)
-        index = boundary.vertices.index(self.reference_point)
         vertices = boundary.get_neighbors(self.reference_point, num_points=self.neighbor_num)
         self.neighbors = vertices
         self.base_length = round(sum([vertices[i].distance_to(vertices[i-1])
@@ -1172,12 +1021,6 @@ class PointEnvironment(object):
             pass
 
     def clip_angle(self, angle, max_angle):
-        # normalize the angle
-        # if 1.5 * math.pi > angle > max_angle + math.pi / 2:
-        #     return max_angle + math.pi / 2
-        # elif 1.5 * math.pi <= angle:
-        #     return angle - 2 * math.pi
-        # else:
         return min(angle, max_angle + math.pi / 2)
 
     def get_radius_points(self):
@@ -1280,176 +1123,9 @@ class PointEnvironment(object):
         self.state_vertices.insert(0, self.reference_point)
         return np.asarray([[round(v[0], 4), round(v[1], 4)] for v in r_points])
 
-    def get_radius_points_old(self):
-        r_points = np.full([self.radius_num + self.neighbor_num, 2], 1, dtype=np.float32)
-        index = self.boundary.vertices.index(self.reference_point)
-        right_p = self.boundary.vertices[index - 1]
-        left_p = self.boundary.vertices[(index + 1) % len(self.boundary.vertices)]
-        target_length = self.base_length * self.radius
-
-        theta = self.reference_point.to_find_clockwise_angle(left_p, right_p)
-        self.theta = theta
-
-        for i in range(self.neighbor_num // 2):
-            if i == 0:
-                # the second value is the absolute distance between current base length and the mean length of the boundary
-                r_points[i] = [(self.reference_point.distance_to(right_p) / self.radius) / self.base_length,
-                               self.area_ratio]  # self.area_ratio
-                r_points[self.radius_num + self.neighbor_num - i - 1] = [
-                    (self.reference_point.distance_to(left_p) / self.radius) / self.base_length,
-                    theta]
-            else:
-                _angle = self.reference_point.to_find_clockwise_angle(self.boundary.vertices[index - i - 1], right_p)
-                r_points[i] = [(self.reference_point.distance_to(
-                    self.boundary.vertices[index - i - 1]) / self.radius) / self.base_length,
-                               _angle if _angle < math.pi else max(_angle, 1.5 * math.pi) - 2 * math.pi]
-                _angle = self.reference_point.to_find_clockwise_angle(
-                    self.boundary.vertices[(index + 1 + i) % len(self.boundary.vertices)], right_p)
-                r_points[self.radius_num + self.neighbor_num - i - 1] = [(self.reference_point.distance_to(
-                    self.boundary.vertices[
-                        (index + i + 1) % len(self.boundary.vertices)]) / self.radius) / self.base_length,
-                                                                         min(_angle, theta + math.pi / 2)]
-
-        # rr_angle = self.reference_point.to_find_clockwise_angle(rr_p, right_p)
-        # r_points[1] = [(self.reference_point.distance_to(rr_p) / self.radius) / self.base_length,
-        #                rr_angle]
-        # r_points[self.radius_num + self.neighbor_num - 2] = [(self.reference_point.distance_to(ll_p) / self.radius) / self.base_length,
-        #                self.reference_point.to_find_clockwise_angle(ll_p, right_p)]
-
-        rotation_angle = self.reference_point.to_find_clockwise_angle(right_p, self.reference_point + Vertex(1, 0))
-        # initial angle for all the middle vertices
-        angles = [i * theta / (2 * self.radius_num) for i in range(1, 2 * self.radius_num, 2)]
-        p_s = []
-        for i, a in enumerate(angles):
-            r_points[self.neighbor_num // 2 + i][1] = self.clip_angle(a, theta)
-            p_s.append(self.reference_point + Vertex.rotate(Vertex(target_length * math.cos(a),
-                                                                   target_length * math.sin(a)), rotation_angle))
-
-        # r_points[2][1], r_points[3][1], r_points[4][1] = [self.clip_angle(a, theta) for a in angles]
-
-        shortest_edge = [1, 0]  # dist, id
-
-        for i in range(index - 1, index - len(self.boundary.vertices), -1):
-            d = self.reference_point.distance_to(self.boundary.vertices[i])
-            if self.boundary.vertices[i] in [right_p, left_p]:
-                continue
-            else:
-                angle = self.reference_point.to_find_clockwise_angle(self.boundary.vertices[i], right_p)
-                l_angle = self.reference_point.to_find_clockwise_angle(self.boundary.vertices[i + 1], right_p)
-
-            if angle == 0:
-                continue
-            k = int(angle / (theta / self.radius_num))
-            h = int(l_angle / (theta / self.radius_num))
-            if k < self.radius_num and d < target_length:
-                if r_points[k + self.neighbor_num // 2][0] > (d / self.radius) / self.base_length:
-                    r_points[k + self.neighbor_num // 2][0] = (d / self.radius) / self.base_length
-                    r_points[k + self.neighbor_num // 2][1] = self.clip_angle(angle, theta)
-
-            # if d < target_length and 0 < angle < theta:
-            #     if r_points[3][0] > (d / self.radius) / self.base_length:
-            #         r_points[3][0] = (d / self.radius) / self.base_length
-            #         r_points[3][1] = self.clip_angle(angle, theta)
-            #         r_points[2][0] = (self.reference_point.distance_to(self.boundary.vertices[i + 1])
-            #                          / self.radius) / self.base_length
-            #         r_points[2][1] = self.clip_angle(self.reference_point.to_find_clockwise_angle(
-            #             self.boundary.vertices[i + 1], right_p), theta)
-            #         r_points[4][0] = (self.reference_point.distance_to(self.boundary.vertices[i - 1])
-            #                          / self.radius) / self.base_length
-            #         r_points[4][1] = self.clip_angle(self.reference_point.to_find_clockwise_angle(
-            #             self.boundary.vertices[i - 1], right_p), theta)
-            else:
-                seg = Segment(self.boundary.vertices[i], self.boundary.vertices[i + 1])
-                for c_k in p_s:
-                    ll = Segment(self.reference_point, c_k)
-                    flag, vv = ll.intersection_vertex(seg)
-                    if flag is not None:
-                        if flag:
-                            _d = self.reference_point.distance_to(vv)
-                            if shortest_edge[0] > (_d / self.radius) / self.base_length:
-                                shortest_edge[0] = (_d / self.radius) / self.base_length
-                                shortest_edge[1] = i
-        change = True
-        for i in range(self.radius_num):
-            if r_points[self.neighbor_num // 2 + i][0] != 1:
-                change = False
-        if change and shortest_edge[0] != 1:
-            _i = shortest_edge[1]
-
-            for i in range(self.radius_num):
-                r_points[self.neighbor_num // 2 + i] = [(self.reference_point.distance_to(
-                    self.boundary.vertices[i - self.radius_num // 2 + _i]) / self.radius) / self.base_length,
-                                                        self.reference_point.to_find_clockwise_angle(
-                                                            self.boundary.vertices[i - self.radius_num // 2 + _i],
-                                                            right_p)]
-
-        # if d > target_length:
-        #     continue
-        # if right_p is self.boundary.vertices[i] or left_p is self.boundary.vertices[i]:
-        #     continue
-        # else:
-        #     angle = self.reference_point.to_find_clockwise_angle(self.boundary.vertices[i], right_p)
-        #     l_angle = self.reference_point.to_find_clockwise_angle(self.boundary.vertices[i + 1], right_p)
-        #
-        # if angle == 0:
-        #     continue
-        # k = int(angle / (theta / 3))
-        # h = int(l_angle / (theta / 3))
-        # if k < 3:
-        #     if r_points[k + 2][0] > (d / self.radius) / self.base_length or r_points[k + 2][0] == 1:
-        #         r_points[k + 2][0] = (d / self.radius) / self.base_length
-        #         r_points[k + 2][1] = self.clip_angle(angle)
-        #
-        # if angle < math.pi:
-        #     if k != h:
-        #         cross_k = 2 if k >= 3 else k
-        #         seg = Segment(self.boundary.vertices[i], self.boundary.vertices[i + 1])
-        #         for c_k in range(cross_k + 1):
-        #             for j in [0, 1]:
-        #                 ll = Segment(self.reference_point, p_s[c_k + j])
-        #                 flag, vv = ll.intersection_vertex(seg)
-        #                 if flag is not None:
-        #                     if flag:
-        #                         _d = self.reference_point.distance_to(vv)
-        #                         if r_points[c_k + 2][0] > (_d / self.radius) / \
-        #                                 self.base_length or r_points[c_k + 2][0] == 1:
-        #                             r_points[c_k + 2][0] = (_d / self.radius) / self.base_length
-        #                             r_points[c_k + 2][1] = self.clip_angle(angles[c_k + j])
-
-        return np.asarray([[round(v[0], 4), round(v[1], 4)] for v in r_points])
-
     def points_as_array(self, points):
         flated_points = []
         for point in points:
             flated_points.append(point.x)
             flated_points.append(point.y)
         return np.asarray(flated_points)
-
-    def segmts_diff_ratio(self):
-        res = list(sorted([self.neighbors[i - 1].distance_to(self.neighbors[i]) for i in range(1, len(self.neighbors))]))
-        r1 = min((res[0], res[1])) / max((res[0], res[1]))
-        r2 = min((res[-2], res[-1])) / max((res[-2], res[-1]))
-        r3 = res[0] / res[1]
-        min_r = min((r1, r2, r3))
-        max_r = max((r1, r2, r3))
-        return min_r, max_r
-
-    # def get_aspect_ratio(self):
-    #     if self.neighbors:
-    #         dists = [self.neighbors[i - 1].distance_to(self.neighbors[i]) for i in range(1, len(self.neighbors))]
-    #         return min(dists) / max(dists)
-
-
-def solve_quadratic_equation(a, b, c):
-    drt = b * b - 4 * a * c
-    if a == 0:
-        if b != 0:
-            return -c / b
-    else:
-        if drt == 0:
-            return -b / 2 / a, -b / 2 / a
-        else:
-            if drt > 0:
-                x1 = -b + math.sqrt(drt) / 2 / a;
-                x2 = -b - math.sqrt(drt) / 2 / a;
-                return x1, x2

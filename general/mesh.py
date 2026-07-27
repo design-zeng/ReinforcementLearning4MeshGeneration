@@ -531,11 +531,7 @@ class MeshGeneration:
         return False
 
     def validate_mesh(self, mesh, quality_method=0):
-
-        if not mesh.is_valid(quality_method):
-            return False
-
-        return True
+        return mesh.is_valid(quality_method)
 
     def is_point_inside_area(self, vertex):
         remote_dist = 10000
@@ -546,14 +542,6 @@ class MeshGeneration:
         else:
             return False
 
-    def is_point_inside_mesh(self, vertex, mesh):
-        tmp_seg = Segment(vertex, mesh.get_centriod())
-        count = self.calculate_crossing_segments(mesh.vertices, tmp_seg)
-        if count > 0:
-            return False
-        else:
-            return True
-
     def find_related_meshes(self, vertex):
         near_meshes = []
 
@@ -563,15 +551,6 @@ class MeshGeneration:
 
         near_meshes = list(set(near_meshes))
         return near_meshes
-
-    # def is_point_inside_mesh(self, vertex, mesh):
-    #     remote_dist = self.updated_boundary.get_remotest_point(vertex)[1] + 1
-    #     ray_segment = Segment.build_ray(Segment(vertex, mesh.get_centriod()), remote_dist)
-    #
-    #     if self.is_inside(ray_segment, mesh.vertices):
-    #         return True
-    #     else:
-    #         return False
 
     def update_boundary(self, reference_point, mesh):
 
@@ -647,10 +626,6 @@ class MeshGeneration:
             # add_reference_candidates = [v for v in mesh.vertices if v not in removable_vertices]
 
         # return remove_reference_candidates, add_reference_candidates
-
-    def update_reference_candidats(self, remove_references, add_references):
-        self.remove_reference_candidates(remove_references)
-        self.add_reference_candidates(add_references)
 
     def check_surronding_points(self, vertices, quality_method=0):
         '''
@@ -794,14 +769,6 @@ class MeshGeneration:
             self.smooth_current_boundary_3()
         self.smooth_fixed_vertices([v for v in vertices if v not in current_boundary_vertices], iteration)
         self.find_reference_candidates(target_angle=0)
-
-    def get_adjusted_angle(self, angle):
-        if angle <= math.pi / 2:
-            return angle / 2
-        elif math.pi / 2 < angle <= math.pi:
-            return angle / 3
-        else:
-            return angle / 4
 
     def middle_vertex(self, vertex, left_v, right_v, target_angle):
         m_v = (left_v + right_v) / 2
@@ -1864,72 +1831,8 @@ class MeshGeneration:
                          f"{nodes.index(ele.vertices[3]) + 1}" + "\n")
         print("Document writing is finished!")
 
-
-# points = [Vertex(0, 1), Vertex(0, 2), Vertex(0, 3),
-#           Vertex(1, 3), Vertex(2, 3), Vertex(3, 3),
-#           Vertex(3, 2), Vertex(3, 1), Vertex(3, 0),
-#           Vertex(2, 0), Vertex(1, 0), Vertex(0, 0)]
-
-# points = [Vertex(0, 1), Vertex(0, 1.5), Vertex(0, 2), Vertex(0, 2.5), Vertex(0, 3),
-#           Vertex(1, 3), Vertex(2, 3), Vertex(3, 3),
-#           Vertex(3, 2), Vertex(3, 1), Vertex(3, 0),
-#           Vertex(2, 0), Vertex(1, 0), Vertex(0, 0)]
-
-# points = [Vertex(0, 1), Vertex(0, 2), Vertex(0, 3),
-#           Vertex(1, 3), Vertex(2, 3), Vertex(3, 3), Vertex(4, 3),
-#           Vertex(4, 2), Vertex(4, 1), Vertex(4, 0), Vertex(3, 0),
-#           Vertex(2, 0), Vertex(1, 0), Vertex(0, 0)]
-
-# points = [Vertex(0, 1), Vertex(0, 2), Vertex(0, 3),
-#           Vertex(1, 3), Vertex(2, 3), Vertex(3, 3), Vertex(4, 3),
-#           Vertex(5, 3), Vertex(5, 2), Vertex(5, 1),
-#            Vertex(5, 0), Vertex(4, 0), Vertex(3, 0), Vertex(2, 0), Vertex(1, 0), Vertex(0, 0)]
-
-# points = [Vertex(0, 1.5), Vertex(0, 2), Vertex(0, 3),
-#           Vertex(1, 3), Vertex(2, 3), Vertex(3, 3), Vertex(4, 3),
-#           Vertex(4, 2), Vertex(4, 1), Vertex(4, 0), Vertex(3, 0),
-#           Vertex(2, 0), Vertex(1, 0), Vertex(0.5, 0)]
-#
-# points = [Vertex(0, 1), Vertex(0, 2), Vertex(0, 3), Vertex(0, 4), Vertex(0, 5), Vertex(0, 6),
-#           Vertex(1, 6), Vertex(2, 6), Vertex(3, 6), Vertex(4, 6), Vertex(5, 6), Vertex(6, 6),
-#           Vertex(7, 5), Vertex(8, 4), Vertex(9, 3), Vertex(10, 2), Vertex(11, 1), Vertex(12, 0),
-#           Vertex(11, -1), Vertex(10, -2), Vertex(9, -3), Vertex(8, -4), Vertex(7, -5), Vertex(6, -6),
-#            Vertex(5, -5), Vertex(4, -4), Vertex(3, -3), Vertex(2, -2), Vertex(1, -1), Vertex(0, 0)]
-#
-#
-#
-# for i in range(len(points)):
-#     segmt = Segment(points[i - 1], points[i])
-#     points[i - 1].assign_segment(segmt)
-#     points[i].assign_segment(segmt)
-#
-#
-# boundary = Boundary2D(points)
-# # boundary.show()
-#
-# mg = MeshGeneration(boundary)
-# point = mg.find_reference_point()
-# mg.generate_meshes()
-
-
-def generate_circle(radius, interval_degree):
-    if interval_degree <= 0 or interval_degree >= 360:
-        raise ValueError("The interval degree is not available!")
-
-    points = []
-    for degree in range(0, 359, interval_degree):
-        points.append(Vertex(radius * math.cos(math.radians(degree)), radius * math.sin(math.radians(degree))))
-
-    connect_vertices(points)
-    return points
-
-
 def connect_vertices(points):
     for i in range(len(points)):
         segmt = Segment(points[i - 1], points[i])
         points[i - 1].assign_segment(segmt)
         points[i].assign_segment(segmt)
-
-# points = generate_circle(10, 10)
-# env = Boundary2D(points)
-# env.show()

@@ -22,13 +22,6 @@ def gmsh_formating(filename):
 
 # gmsh_formating("domains/test3.json")
 
-def boundary_domains(file_name):
-    with open(file_name, 'r') as fr:
-        result = json.loads(fr.read())
-
-    print(result)
-
-
 def read_inp_file(inp_file):
     """ Reads the .inp file and extracts node and element data """
     nodes = []
@@ -107,5 +100,3 @@ def inp_to_unv(inp_file, unv_file):
 
 # Example usage:
 inp_to_unv('D:\\Onedrive\\OneDrive - University of Calgary\\Research & work\\AI\\AI EDAM 2024\\domains\shapes\\tkde\\g_d1.inp', 'model.unv')
-
-# boundary_domains("domains/boundary_fly_r2.json")
