@@ -1,45 +1,38 @@
 import json
-import configparser
 import os
 import time
-from multiprocessing import Pool
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-import numpy as np
-import matplotlib.pyplot as plt
 
 from general.polygon_generators import read_polygon
 from general.boundary_env import BoudaryEnv
-from ebrd.data_augmentation import MeshAugmentation, sampling_main
-
-# default `log_dir` is "runs" - we'll be more specific here
-writer = SummaryWriter('runs/')
+from ebrd.data_augmentation import sampling_main
 
 base_path = Path(__file__).parent.parent
-config = configparser.ConfigParser()
-config.read(f'{base_path}/config')
-
-base_path = 'D:\\meshingData\\ANN\\'
+domains_path = base_path / "domains"
+output_path = base_path / "ebrd" / "output"
+augmentation_path = output_path / "data_augmentation"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# model_path = f"{base_path}models/ea_t4_2/ebrd_model_1.pt"
-# version = 'ea_training_28'
 
-# os.makedirs(f'{base_path}models/{version}/', exist_ok=True)
-# os.makedirs(f'{base_path}plots/{version}/', exist_ok=True)
-# os.makedirs(f'{base_path}samples/{version}/', exist_ok=True)
-# os.makedirs(f'{base_path}elements/{version}/', exist_ok=True)
+class FNNPolicy(nn.Module):
+    """Feedforward policy network of FreeMesh-S (Pan et al., 2021).
 
-class Policy(nn.Module):
+    Maps a normalized partial-boundary state to (a) an element-type class and
+    (b) the coordinates of the new vertex. The hidden layers [64, 128, 64, 32, 16]
+    match the optimal FNN structure reported in the paper (Table 8).
+    """
+
     def __init__(self):
-        super(Policy, self).__init__()
+        super().__init__()
         self.state_space = 18
         self.action_space = 2
         self.type_space = 3
@@ -52,29 +45,30 @@ class Policy(nn.Module):
         self.action_head = nn.Linear(16, self.action_space)
         self.type_head = nn.Linear(16, self.type_space)
 
-        self.saved_actions = []
-        self.rewards = []
-
     def forward(self, x):
-        x1 = F.relu(self.fc1(x))
-        x2 = F.relu(self.fc2(x1))
-        x3 = F.relu(self.fc3(x2))
-        x4 = F.relu(self.fc4(x3))
-        x5 = F.relu(self.fc5(x4))
-        action = self.action_head(x5)
-        one_hot_types = self.type_head(x5)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        x = F.relu(self.fc5(x))
+        return self.action_head(x), self.type_head(x)
 
-        return action, one_hot_types
 
 def get_action(state, model):
+    """Run the policy and decode its output into (vertex coords, element type).
+
+    The type head's argmax class {0, 1, 2} is mapped to the environment's type
+    encoding {0, 0.5, 1.0} via the division by 2.
+    """
     state = torch.FloatTensor(state).to(device)
     action, type_values = model(state)
     return action.tolist(), float(torch.argmax(type_values) / 2)
 
+
 def load_training_data(file_name):
     with open(file_name, 'r') as fr:
-        data = json.loads(fr.read())
-    return data
+        return json.loads(fr.read())
+
 
 def build_training_data(data):
     inputs = np.array(data['samples'])
@@ -85,7 +79,15 @@ def build_training_data(data):
     y = torch.from_numpy(np.concatenate((output_types, outputs), axis=1)).float().to(device)
     return x, y
 
-def training_model(model, x, y, model_path, tensorboard_log):
+
+def train_fnn_mse(model, x, y, model_path, tensorboard_log):
+    """Train the FNN with a single joint MSE loss (FreeMesh-S paper, Eq. 21).
+
+    The element type and the vertex coordinates are regressed together as one
+    target. This is the paper-faithful trainer; train_fnn() is the improved
+    variant that splits the type (classification) and coordinate (regression)
+    objectives, and is what start_training() uses in practice.
+    """
     loss_fn = torch.nn.MSELoss(reduction='sum')
 
     learning_rate = 3e-4
@@ -113,9 +115,11 @@ def training_model(model, x, y, model_path, tensorboard_log):
 
     torch.save(model.state_dict(), model_path)
 
-def map_type_to_tensors(tensor):
+
+def types_to_class_indices(types):
+    """Map the environment type encoding {0, 0.5, 1} to class indices {0, 1, 2}."""
     result = []
-    for value in tensor:
+    for value in types:
         if value.item() == 0:
             result.append(0)
         elif value.item() == 0.5:
@@ -126,11 +130,15 @@ def map_type_to_tensors(tensor):
             raise ValueError("Unsupported value: {}".format(value.item()))
     return torch.tensor(result)
 
-def train_ch3(train_data, model, num_epoches, batch_size, tensorboard_log, model_path, lr=None):
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
-    classification_loss_fn = nn.CrossEntropyLoss(reduction='sum')  # Cross Entropy Loss for one-hot
-    regression_loss_fn = nn.MSELoss(reduction='sum')  # Mean Squared Error Loss for continuous output
+def train_fnn(train_data, model, num_epoches, batch_size, tensorboard_log, model_path, lr=None):
+    """Train the FNN with split objectives: cross-entropy on the element type and
+    MSE on the vertex coordinates (an improvement over the paper's single joint
+    MSE in train_fnn_mse)."""
+    optimizer = optim.Adam(model.parameters(), lr=lr or 1e-3)
+
+    classification_loss_fn = nn.CrossEntropyLoss(reduction='sum')  # element type
+    regression_loss_fn = nn.MSELoss(reduction='sum')  # vertex coordinates
 
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     writer = SummaryWriter(tensorboard_log)
@@ -141,82 +149,58 @@ def train_ch3(train_data, model, num_epoches, batch_size, tensorboard_log, model
         for batch, (x, y) in enumerate(train_dataloader):
             y_actions, y_types = model(x)
 
-            classification_loss = classification_loss_fn(y_types, map_type_to_tensors(y[:, 0]).to(device))
+            classification_loss = classification_loss_fn(y_types, types_to_class_indices(y[:, 0]).to(device))
             regression_loss = regression_loss_fn(y_actions, y[:, 1:].to(device))
-
             loss = classification_loss + regression_loss
 
             optimizer.zero_grad()
             loss.backward()
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
             optimizer.step()
 
             sum_loss += loss.item()
             if batch % 10:
-                writer.add_scalar('training loss',
-                                  sum_loss / 1000,
-                                  t * size + batch)
+                writer.add_scalar('training loss', sum_loss / 1000, t * size + batch)
 
         print(f"loss: {sum_loss / size:>7f}  [{t:>5d}/{num_epoches:>5d}]")
-
-        # if t % 2000 == 0:
-        #     torch.save(model.state_dict(), f'model_{t/2000}.pt')
 
     print("Done!")
     torch.save(model.state_dict(), model_path)
 
+
 def start_training(model_path, data_path, tensorboard_log):
-    # x, y = build_training_data(load_training_data(
-    #     "D:\meshingData\\baselines\logs\evaluation\sac_4_ann\\sac_0_890_env_0_F.json"))
+    """Load extracted samples, build tensors, and train a fresh FNN policy."""
     x, y = build_training_data(load_training_data(data_path))
+    model = FNNPolicy().to(device)
+    train_fnn(list(zip(x, y)), model, 2000, 128, tensorboard_log, model_path)
 
-    # x, y = build_training_data(load_training_data(
-    #     f"{base_path}\samples\ea_bp_t5_2\\ebrd_0.json"))
 
-    # x, y = build_training_data(load_training_data(
-    #     f"{base_path}\\models\\ebrd_.json"))
+def self_evolving_training(env, version, model=None, episodes=100, max_steps=8000):
+    """Self-evolving loop of FreeMesh-S (paper Table 6).
 
-    model = Policy().to(device)
-
-    # training_model(model, x, y, model_path, tensorboard_log)
-
-    train_ch3(list(zip(x, y)), model, 2000, 128, tensorboard_log, model_path)
-
-def training(env, version):
-    max_steps = 8000
-    episodes = 100
+    Each round: mesh the domain with the current FNN policy, harvest fresh
+    training samples from the good-quality elements it produced, and retrain the
+    policy on those samples, so the model bootstraps itself from its own output.
+    """
+    model = model or FNNPolicy().to(device)
     running_reward = 10
     step = 0
+
+    plots_dir = output_path / "plots" / version
+    samples_dir = output_path / "samples" / version
+    models_dir = output_path / "models" / version
+    logs_dir = output_path / "log" / version
+    for directory in (plots_dir, samples_dir, models_dir, logs_dir):
+        os.makedirs(directory, exist_ok=True)
+
     for i_episode in range(episodes):
         state, ep_reward = env.reset(static=True), 0
-
         start = time.time()
 
-        for i in range(max_steps):
+        for _ in range(max_steps):
             step += 1
-
-            action, type_values = get_action(state)
-
-            state, reward, done, _ = env.move(action, round(type_values, 2), 0.9, 0.5)
-
-            # fig = plt.figure(figsize=(15,5))
-            #
-            # ax = fig.add_subplot(1, 3, 1)
-            # [seg.show() for seg in env.boundary.all_segments()]
-            # env.boundary.show()
-            # ax.set_title("(a) Original boundary")
-            #
-            # ax1 = fig.add_subplot(1,3,2)
-            # [seg.show() for seg in env.boundary.all_segments()]
-            # ax1.set_title("(b) Boundary with a generated element")
-            # ax2 = fig.add_subplot(1,3,3)
-            # [seg.show() for seg in env.updated_boundary.all_segments()]
-            # ax2.set_title("(c) Updated boundary")
-            # [a.get_xaxis().set_visible(False) for a in fig.axes]
-            # [a.get_yaxis().set_visible(False) for a in fig.axes]
-            # fig.savefig("teststst.png")
-
-            print(i, reward, len(env.updated_boundary.vertices))
+            action, type_value = get_action(state, model)
+            state, reward, done, _ = env.move(action, round(type_value, 2), 0.9, 0.5)
+            print(_, reward, len(env.updated_boundary.vertices))
             ep_reward += reward
             if done:
                 break
@@ -228,260 +212,115 @@ def training(env, version):
         else:
             env.smooth_pave(env.boundary.vertices, env.updated_boundary.vertices, iteration=400, interior=True)
 
-        # env.plot_meshes(env.generated_meshes, quality=True, type=1)
-
-        # env.boundary.show()
-        # env.write_generated_elements_2_file(f"{base_path}elements/{version}/elements_{i_episode}")
-        # env.save_meshes(env.generated_meshes[:9], quality=True)
-        # env.plot_meshes(env.generated_meshes, quality=True, type=5)
-        # env.boundary.show()
-
-        # env.save_meshes(f"{base_path}plots/{version}/{i_episode}.png", env.generated_meshes, quality=True,
-        #         #                 indexing=True,
-        #         #                 type=1, dpi=300)
-        env.boundary.savefig(f"{base_path}plots/{version}/{i_episode}.png", style='k-', dpi=300)
+        env.boundary.savefig(plots_dir / f"{i_episode}.png", style='k-', dpi=300)
         print("Figure saved!")
 
-        # global model_path
-        # model_path = f'{base_path}models/{version}/ebrd_model_{i_episode}.pt'
+        running_reward = 0.05 * ep_reward + 0.95 * running_reward
 
-        running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
-
-        # if ep_reward > 100:
-        samples, output_types, outputs = env.extract_samples_2(env.generated_meshes, 2, 3, radius=4,
-                                                               quality_threshold=0.7)
-        env.save_samples(f'{base_path}samples/{version}/ebrd_{i_episode}.json',
+        # Harvest fresh samples from the elements just generated, then retrain.
+        samples, output_types, outputs = env.extract_samples_2(
+            env.generated_meshes, 2, 3, radius=4, quality_threshold=0.7)
+        env.save_samples(samples_dir / f"ebrd_{i_episode}.json",
                          {'samples': samples, 'output_types': output_types, 'outputs': outputs},
                          _type=2)
-        # x, y = build_training_data({'samples': [env.points_as_array(sample) for sample in samples],
-        #                             'output_types': output_types,
-        #                             'outputs': [env.points_as_array(sample) for sample in outputs]})
+
         x, y = build_training_data({'samples': samples,
                                     'output_types': output_types,
                                     'outputs': outputs})
+        train_fnn(list(zip(x, y)), model, 10000, 1024,
+                  tensorboard_log=logs_dir, model_path=models_dir / f"ebrd_model_{i_episode}.pt")
 
-        # training_model(model, x, y, f'{base_path}models/{version}/ebrd_model_{i_episode}.pt')
-        # train_ch3(list(zip(x, y)), model, 10000, 1024)
+        print("%d: done %d games, running reward %.3f" % (step, i_episode, running_reward))
 
-        print("%d: done %d games, running reward %.3f" % (
-            step, i_episode, running_reward,
-        ))
-
-        # if running_reward > 2000:
-        #     print("Solved! Running reward is now {} and "
-        #           "the last episode runs to {} time steps!".format(running_reward, step))
-        #     break
-
-def single_run(env, step, lr_1, lr_2, i_episode):
-    state, ep_reward = env.reset(), 0
-    for i in range(max_steps):
-        step += 1
-        # state = state[
-        action, type_values = get_action(state)
-        state, reward, done, _ = env.move(state, action, round(type_values, 1), lr_1, lr_2)
-        # env.boundary.show()
-        # print(state, reward, len(env.updated_boundary.vertices))
-        ep_reward += reward
-        if done:
-            break
-
-    # env.boundary.show()
-    # env.smooth(env.boundary.vertices, lr_1, lr_2)
-    # env.plot_meshes(env.generated_meshes, quality=True)
-    # env.boundary.show()
-    env.write_generated_elements_2_file(f"{base_path}elements/{version}/elements_{i_episode}")
-    env.boundary.savefig(f"{base_path}plots/{version}/{i_episode}.png", f"lr_1: {lr_1}, lr_2: {lr_2}", title="", style="k.-")
-
-    print(f"Thread {i_episode} is finishing! *****************************************")
-
-    global model_path
-    model_path = f'{base_path}models/{version}/ebrd_model_{i_episode}.pt'
-
-    # print("%d: done %d games, running reward %.3f" % (
-    #     step, i_episode, ep_reward,
-    # ))
 
 def prepare_eval_envs():
-    domains = []
-    domains.append(f'D:/python_projects/meshgeneration/ui/domains/engeer.json')
-    domains.append(f'D:/python_projects/meshgeneration/ui/domains/star1.json') #hard
-    domains.append(f'D:/python_projects/meshgeneration/ui/domains/random1_1.json') # medium
-    domains.append(f'D:/python_projects/meshgeneration/ui/domains/tool2.json')  # medium
-    domains.append(f'D:/python_projects/meshgeneration/ui/domains/test2.json')
-    domains.append(f'D:/python_projects/meshgeneration/ui/domains/test3.json')
-    domains = [BoudaryEnv(read_polygon(d)) for d in domains]
-    # for d in domains:
-    #     d.estimate_area_range()
-    return domains
+    """Test domains of varying difficulty (FreeMesh-S generalizability set)."""
+    names = ["engeer", "star1", "random1_1", "tool2", "test2", "test3"]
+    return [BoudaryEnv(read_polygon(domains_path / f"{name}.json")) for name in names]
+
 
 def data_sampling(data_path, n, threshold):
-    # mg = MeshAugmentation([], [])
-    # mg.sampling(n=n, threshold=threshold,
-    #             file_name=data_path)
+    """Experience Extraction: sample training data filtered by a mesh-quality
+    threshold (FreeMesh-S)."""
     start_time = time.time()
-    sampling_main(10, n, threshold,
-                  file_name=data_path)
+    sampling_main(10, n, threshold, file_name=data_path)
     print('Sampling completed in', time.time() - start_time, 's!')
 
 
 def evaluation(model_path, version, is_render=False, indexing=False, save_fig=False, save_samples=False):
-    os.makedirs(f"{config['default']['augmentation']}/{version}/", exist_ok=True)
+    """Evaluate a trained FNN policy on the test domains (generalizability)."""
+    out_dir = augmentation_path / version
+    os.makedirs(out_dir, exist_ok=True)
 
     envs = prepare_eval_envs()
-    model = Policy().to(device)
+    model = FNNPolicy().to(device)
     model.load_state_dict(torch.load(model_path))
     model.eval()
 
     for i, env in enumerate(envs):
-        # if i < 16:
-        #     continue
         print(f'Starting for model with env {i}')
-
         state = env.reset(static=True)
 
-        # env.boundary.savefig(f"{config['default']['evaluation']}/{version}/ \
-        #                             {k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_00.png", style='b.-')
-        # print(len(env.original_vertices), env.boundary.get_perimeter())
-
-        # start = time.time()
         while True:
-            action, type_values = get_action(state, model)
-            state, reward, done, info = env.move(action, round(type_values, 2))
+            action, type_value = get_action(state, model)
+            state, reward, done, info = env.move(action, round(type_value, 2))
             if is_render:
                 env.render()
             if done:
                 break
-        # print(f'Meshing running time: {time.time() - start}s')
 
         env.close()
 
-        # results[k][v.split('/')[-1]]['completed'].append(info['is_complete'])
-        # results[k][v.split('/')[-1]]['n_elements'].append(len(env.generated_meshes))
-        # results[k][v.split('/')[-1]]['n_complete'] += 1 if info['is_complete'] else 0
-        # plot_elements_area(env.generated_meshes)
-        # env.smooth(env.boundary.vertices)
-
         if save_fig:
             if info['is_complete']:
-                # env.save_meshes(f"{config['default']['evaluation']}/{version}/{k}_{v.split('/')[-2]}_{v.split('/')[-1]}_env_{i}_{is_random}.png",
-                #                 meshes=env.generated_meshes, quality=True, type=4,
-                #                 indexing=indexing, style='k-')
-
-                # env.save_meshes(f"{config['default']['augmentation']}/{version}/ebrd_env_{i}.png",
-                #                 meshes=env.generated_meshes,
-                #                 indexing=indexing, style='k-')
                 env.smooth(env.boundary.vertices)
-                env.save_meshes(f"{config['default']['augmentation']}/{version}/ebrd_env_{i}__smoothed.png",
+                env.save_meshes(out_dir / f"ebrd_env_{i}__smoothed.png",
                                 meshes=env.generated_meshes,
-                                        indexing=indexing, style='k-')
-
-                # env.write_generated_elements_2_file(
-                #     f"{config['default']['augmentation']}/{version}/ebrd_env_{i}.inp")
+                                indexing=indexing, style='k-')
             else:
-                env.save_meshes(f"{config['default']['augmentation']}/{version}/ebrd_env_{i}.png",
-                                meshes=env.generated_meshes, #quality=True, type=4,
+                env.save_meshes(out_dir / f"ebrd_env_{i}.png",
+                                meshes=env.generated_meshes,
                                 indexing=indexing, style='k-')
         if save_samples:
             if len(env.generated_meshes):
                 samples, output_types, outputs = env.extract_samples_2(env.generated_meshes, 2, 3, radius=4)
-                env.save_samples(f"{config['default']['augmentation']}/{version}/ebrd_env_{i}.json",
+                env.save_samples(out_dir / f"ebrd_env_{i}.json",
                                  {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
                 print("Saved!")
 
 
 def hyperparameter_search():
-    quality_t = [i/100 for i in range(60, 90, 2)]
-    for q in quality_t:
+    """Quality-threshold ablation (FreeMesh-S, Table 7): sweep the extraction
+    quality threshold, then sample -> train -> evaluate for each value."""
+    quality_thresholds = [i / 100 for i in range(60, 90, 2)]
+    for q in quality_thresholds:
         version = f'1_2k_{q}'
 
-        data_path = f"{config['default']['augmentation']}\\1103\\training_samples_{version}.json"
+        data_path = augmentation_path / "1103" / f"training_samples_{version}.json"
+        os.makedirs(data_path.parent, exist_ok=True)
         data_sampling(data_path, n=40000, threshold=q)
 
-        # Meshing model training
         start_time = time.time()
-        start_training(f"{config['default']['augmentation']}/{version}.pt",
+        start_training(augmentation_path / f"{version}.pt",
                        data_path,
-                       tensorboard_log=f"{config['default']['augmentation']}/log/{version}/")
+                       tensorboard_log=augmentation_path / "log" / version)
         print('Complete training in:', time.time() - start_time, 's.')
 
-        model_path = f"{config['default']['augmentation']}/{version}.pt"
-        evaluation(model_path, version, is_render=False, indexing=True,
+        evaluation(augmentation_path / f"{version}.pt", version, is_render=False, indexing=True,
                    save_fig=True, save_samples=False)
 
 
 if __name__ == '__main__':
-    # for i in range(71, 80):
-    #     version = f'data_aug_0.{i/100}'
-    #     # initial training
-    #     start_training(f"{config['default']['augmentation']}/{version}.pt",
-    #                    f"{config['default']['augmentation']}\\1\\training_samples_{i/100}.json",
-    #                    tensorboard_log=f"{config['default']['augmentation']}/log/{version}/",
-    #                    threshold=i/100)
-    #     # FNN
-    #     # training(version= 'data_aug_0.8_2')
-    #     evaluation(f"{config['default']['augmentation']}/{version}.pt", is_render=False, indexing=True,
-    #                save_fig=True, save_samples=False)
-    # version = '1_40k_07'
     version = '1_6000_3'
 
-
-    # # mg = MeshAugmentation([], [])
-    # # data = mg.load_samples(f'D:\meshingData\ANN\data_augmentation\\1\\training_samples_{version}.json')
-    # # # data = mg.sampling(100, 0.7, f'D:\meshingData\ANN\data_augmentation\\1\\training_samples_{version}.json')
-    # # mg.scatter_plot(data)
-    #
-    # # initial training
-    #
-    # data_path = f"{config['default']['augmentation']}\\1103\\training_samples_{version}.json"
-    # data_path = f"{config['default']['augmentation']}\\1103\\training_samples_1_6000.json"
-    # data_sampling(data_path, n=40000, threshold=0.7)
-
-    # data_path = f"{config['default']['augmentation']}\\1\\training_samples_data_aug_2.8_1.json"
-    # data_path = f"{config['default']['augmentation']}\\1\\data_aug.json"
-
-    ## Meshing model training
-    # start_time = time.time()
-    # start_training(f"{config['default']['augmentation']}/{version}.pt",
-    #                data_path,
-    #                tensorboard_log=f"{config['default']['augmentation']}/log/{version}/")
-    # print('Complete training in:', time.time() - start_time, 's.')
-
-    model_path = f"{config['default']['augmentation']}/1_6000_2.pt"
+    model_path = augmentation_path / "1_6000_2.pt"
     evaluation(model_path, version, is_render=False, indexing=False,
                save_fig=True, save_samples=False)
 
+    # Other entry points (uncomment as needed):
+    # data_sampling(augmentation_path / "1103" / "training_samples_1_6000.json", n=40000, threshold=0.7)
+    # start_training(augmentation_path / f"{version}.pt",
+    #                augmentation_path / "1103" / f"training_samples_{version}.json",
+    #                tensorboard_log=augmentation_path / "log" / version)
     # hyperparameter_search()
-
-    # resampling
-    # mg = MeshAugmentation([], [])
-    # for i in range(0, 20, 5):
-    #     version = f'data_aug_1.7_{0.7 + i/100}'
-    #     data_sampling(f"{config['default']['augmentation']}\\1\\training_samples_{version}.json", n=10000,
-    #                   threshold=0.7 + i/100)
-    #     # mg.resampling(f"{config['default']['augmentation']}\\1\\training_samples_data_aug_0.7.json",
-    #     #               target_name=f"{config['default']['augmentation']}\\1\\training_samples_{version}.json",
-    #     #               n=i*1000)
-    #     start_training(f"{config['default']['augmentation']}/{version}.pt",
-    #                    f"{config['default']['augmentation']}\\1\\training_samples_{version}.json",
-    #                    tensorboard_log=f"{config['default']['augmentation']}/log/{version}/")
-    #
-    #     evaluation(f"{config['default']['augmentation']}/{version}.pt", is_render=False, indexing=True,
-    #                save_fig=True, save_samples=False)
-
-    # For sample numbering testing
-    # for i in [40, 100]: #5, 10
-    #     version = f'data_aug_2.7_{i}'
-    #     data_sampling(f"{config['default']['augmentation']}\\1\\training_samples_{version}.json", n=1000*i,
-    #                   threshold=0.7)
-    #     # mg.resampling(f"{config['default']['augmentation']}\\1\\training_samples_data_aug_0.7.json",
-    #     #               target_name=f"{config['default']['augmentation']}\\1\\training_samples_{version}.json",
-    #     #               n=i*1000)
-    #     start_training(f"{config['default']['augmentation']}/{version}.pt",
-    #                    f"{config['default']['augmentation']}\\1\\training_samples_{version}.json",
-    #                    tensorboard_log=f"{config['default']['augmentation']}/log/{version}/")
-    #
-    #     evaluation(f"{config['default']['augmentation']}/{version}.pt", is_render=False, indexing=True,
-    #                save_fig=True, save_samples=False)
-
-    # FNN
-    # training(version= 'data_aug_0.8_2')
+    # self_evolving_training(BoudaryEnv(read_polygon(domains_path / "random1_1.json")), version="self_evolve_0")
