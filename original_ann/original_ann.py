@@ -7,7 +7,7 @@ import numpy as np
 from general import data
 
 root_path = Path(__file__).parent.parent
-model_path = root_path / "output" / "model.pt"
+model_path = root_path / "original_ann" / "output" / "model.pt"
 pattern_path = root_path / "original_ann" / "patterns" / "pattern.txt"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -83,11 +83,14 @@ def predict(model, points):
     with torch.no_grad():
         predict = model.forward(x)
 
+    p0 = np.array([flattened_points[4], flattened_points[5]])
+    p1 = np.array([flattened_points[6], flattened_points[7]])
+    distance = np.linalg.norm(p0 - p1)  # base length used to scale during transformation
     detransformed_predict = data.detransformation(
         np.array([predict[0][1], predict[0][2]]),
-        #missing distance between p0 and p1
-        np.array([flattened_points[4], flattened_points[5]]),
-        np.array([flattened_points[6], flattened_points[7]]))
+        distance,
+        p0,
+        p1)
     return round(float(predict[0][0])), detransformed_predict
 
 if __name__ == "__main__":

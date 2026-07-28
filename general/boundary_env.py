@@ -493,6 +493,12 @@ class BoudaryEnv(MeshGeneration, gym.Env):
             # self.last_point_environment = None
             return None
 
+    def seed(self, seed=None):
+        # Old-gym seeding hook; kept so SB3's Gym->Gymnasium compatibility layer
+        # (which calls env.seed(seed) on reset) works. Meshing is deterministic
+        # given the boundary, so there is no RNG state to set here.
+        return [seed]
+
     def close(self):
         if self.viewer is not None:
             self.viewer.close()

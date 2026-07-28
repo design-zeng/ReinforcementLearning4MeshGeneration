@@ -51,7 +51,7 @@ def matrix_ops(arra):
 
 def detransformation(point, dist, p0, p1):
     # dist = np.linalg.norm(p0 - p1)
-    theta = 2 * np.math.pi - np.math.atan2((p1 - p0)[1], (p1 - p0)[0])
+    theta = 2 * math.pi - math.atan2((p1 - p0)[1], (p1 - p0)[0])
     original_point = np.empty(2)
 
     # remove rotation
