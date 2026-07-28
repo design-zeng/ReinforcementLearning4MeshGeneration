@@ -5,41 +5,11 @@ from pathlib import Path
 import vtk
 import meshio
 
-root = Path(__file__).parent.parent.parent / "general" / "output"
+# meshes are produced by sac/infer.py evaluation() (save_fig=True)
+root = Path(__file__).parent.parent.parent / "sac" / "output" / "evaluation"
 
-domains = [
-    # 't-d5',
-    # 't-d5-2',
-    # 'g-d5',
-    # 'g-d5-2',
-    # 't-d6',
-    # 't-d6-2',
-    # 'g-d6',
-    # 'g-d6-2',
-    # 't-d7',
-    # 't-d7-2',
-    # 'g-d7',
-    # 'g-d7-2',
-    # 't-d8',
-    # 't-d8-2',
-    # 'g-d8',
-    # 'g-d8-2',
-    # 'g_random',
-    # 'g_fly',
-    # 'g_dragon',
-    # 'pave_fly',
-    # 'pave_random',
-    # 'pave_dragon',
-    # 'sac_0_889_env_0_F',
-    # 'sac_0_889_env_1_F',
-    # 'sac_0_889_env_2_F'
-    # 'sac_0_1141_env_0_F',
-    # 'sac_0_1141_env_1_F',
-    # 'sac_0_1141_env_2_F'
-    # 'd0','d1', 'd2', 'd3', 'd4'
-    # 'g_d0', 'g_d1', 'g_d2', 'g_d3', 'g_d4',
-    'pave_d0', 'pave_d1', 'pave_d2', 'pave_d3', 'pave_d4'
-]
+# Auto-discover the produced meshes (relative stems under `root`).
+domains = sorted(str(p.relative_to(root))[:-4] for p in root.rglob("*.inp"))
 
 def render(domain):
     reader = vtk.vtkSTLReader()
@@ -156,4 +126,7 @@ def verdict_domain(domain, metrics):
         return metrics
 
 if __name__ == '__main__':
+    if not domains:
+        raise FileNotFoundError(
+            f"No .inp meshes under {root}. Run `python -m sac.infer` (save_fig=True) first.")
     verdict(domains)

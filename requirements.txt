@@ -1,21 +1,21 @@
 # Numerics
-numpy
-scipy
-torch
+numpy==2.2.5
+scipy==1.16.0
+torch==2.5.1
 
 # Reinforcement learning
-gym
-gymnasium
-stable-baselines3
-shimmy          # lets SB3 wrap the classic-gym BoudaryEnv
-tensorboard
+gym==0.26.2
+gymnasium==1.2.3
+stable-baselines3==2.9.0
+shimmy==2.0.1          # lets SB3 wrap the classic-gym BoudaryEnv
+tensorboard==2.21.0
 
 # Meshing / geometry
-meshio
-vtk
+meshio==5.3.5
+vtk==9.6.2
 
 # Plotting / UI
-matplotlib
-pandas
-seaborn
-pygame
+matplotlib==3.10.0
+pandas==2.3.1
+seaborn==0.13.2
+pygame==2.6.1

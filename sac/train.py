@@ -67,8 +67,8 @@ method_settings = {
 environments = [
     [
         1500000,
-        BoudaryEnv(read_polygon(base_path / "domains" / "random1_1.json")),
-        BoudaryEnv(read_polygon(base_path / "domains" / "random1_1.json"))
+        BoudaryEnv(read_polygon(base_path / "samples" / "domains" / "random1_1.json")),
+        BoudaryEnv(read_polygon(base_path / "samples" / "domains" / "random1_1.json"))
     ]
 ]
 

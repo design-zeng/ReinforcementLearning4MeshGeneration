@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 sns.set_theme(style="darkgrid")
 
 base_path = Path(__file__).parent.parent.parent
+# history-info files are produced by sac/infer.py's evaluation()
 experiments_path = base_path / "sac" / "output" / "experiments"
 
 def read_meshing_history_info(filename):
@@ -25,14 +26,13 @@ def read_meshing_history_info(filename):
 
 
 def geometries():
-    geometries = {
-        'Domain 4': f"{experiments_path}/sac_72_2 - Copy/sac_0_1141_env_0_history_info",
-        'Domain 5': f"{experiments_path}/sac_72_2 - Copy/sac_0_1141_env_2_history_info",
-        'Domain 6': f"{experiments_path}/sac_72_2 - Copy/sac_0_1141_env_4_history_info",
-        # 'Domain 10': f"{experiments_path}/sac_72_2 - Copy/sac_0_1141_env_1_history_info",
-        # 'Domain 11': f"{experiments_path}/sac_72_2 - Copy/sac_0_1141_env_3_history_info",
-        'Domain 7': f"{experiments_path}/sac_72_2 - Copy/sac_0_1167_env_5_history_info",
-    }
+    # Auto-discover the history-info files produced by sac/infer.py evaluation().
+    files = sorted(experiments_path.rglob("*_history_info"))
+    if not files:
+        raise FileNotFoundError(
+            f"No *_history_info under {experiments_path}. "
+            f"Run `python -m sac.infer` (save_fig=True) first.")
+    geometries = {f.name.replace("_history_info", ""): str(f) for f in files}
 
     data = pd.DataFrame({"Number": [], "Rule type": [], "Domains": []})
     all_data = pd.DataFrame({"Number": [], "Domains": []})

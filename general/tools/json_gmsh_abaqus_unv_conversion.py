@@ -97,14 +97,26 @@ def inp_to_unv(inp_file, unv_file):
 
 
 if __name__ == '__main__':
+    import os
     from pathlib import Path
     base_path = Path(__file__).parent.parent.parent
     output_path = base_path / "general" / "output"
+    os.makedirs(output_path, exist_ok=True)
 
-    # Convert a saved domain (a JSON list of [x, y] points) to Gmsh geometry
-    # (writes <domain>.json.txt next to the input):
-    # json_to_gmsh(base_path / "domains" / "basic1.json")
+    # A domain (JSON list of [x, y] points) -> Gmsh geometry. json_to_gmsh writes
+    # <input>.txt next to its input, so copy the domain into output/ first to keep
+    # samples/ read-only.
+    import shutil
+    domain_copy = output_path / "basic1.json"
+    shutil.copy(base_path / "samples" / "domains" / "basic1.json", domain_copy)
+    json_to_gmsh(str(domain_copy))
+    print("Wrote", output_path / "basic1.json.txt")
 
-    # Convert an Abaqus .inp mesh to a UNV mesh:
-    # inp_to_unv(output_path / "mesh.inp", output_path / "mesh.unv")
-    pass
+    # An Abaqus .inp mesh -> UNV. .inp meshes are produced by sac/infer.py, so run
+    # `python -m sac.infer` (save_fig=True) first; here we convert the first one.
+    meshes = sorted((base_path / "sac" / "output" / "evaluation").rglob("*.inp"))
+    if meshes:
+        inp_to_unv(str(meshes[0]), str(output_path / (meshes[0].stem + ".unv")))
+        print("Wrote", output_path / (meshes[0].stem + ".unv"))
+    else:
+        print("No produced .inp meshes yet; run `python -m sac.infer` (save_fig=True).")

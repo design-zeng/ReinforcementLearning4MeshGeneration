@@ -12,9 +12,10 @@ from general.polygon_generators import read_polygon
 from general.boundary_env import BoudaryEnv
 
 base_path = Path(__file__).parent.parent.parent
-domains_path = base_path / "domains"
+domains_path = base_path / "samples" / "domains"
 output_path = base_path / "general" / "output"
-root = output_path / "evaluation"
+# meshes are produced by sac/infer.py evaluation() (save_fig=True)
+root = base_path / "sac" / "output" / "evaluation"
 
 def clockwise_element(vertices):
     flatten_vs = [[v.x, v.y] for v in vertices]
@@ -338,5 +339,13 @@ def extract_samples_from_file(filename):
     print("Saved!")
 
 if __name__ == '__main__':
-    # metrics_4_domains()
-    extract_samples_from_file(f"{output_path}/g_d1.inp")
+    from collections import defaultdict
+    # Element-quality / singularity metrics for the meshes produced by sac.infer.
+    meshes = sorted(root.rglob("*.inp"))
+    if not meshes:
+        raise FileNotFoundError(
+            f"No .inp meshes under {root}. Run `python -m sac.infer` (save_fig=True) first.")
+    metrics = defaultdict(list)
+    for m in meshes:
+        final_metrics(str(m.relative_to(root))[:-4], metrics)
+    print({k: [round(float(x), 3) for x in v] for k, v in metrics.items()})

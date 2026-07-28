@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -6,6 +7,8 @@ from matplotlib import patches
 from general.components import Vertex, Segment
 
 output_path = Path(__file__).parent.parent.parent / "general" / "output"
+# mesh snapshots are produced by sac/infer.py evaluation() (save_fig=True)
+img_path = Path(__file__).parent.parent.parent / "sac" / "output" / "evaluation"
 
 def bad_cases():
     ax1 = plt.subplot(131)
@@ -138,39 +141,19 @@ def output_types():
     plt.show()
 
 def read_img():
+    # Assemble a panel from the mesh figures produced by sac.infer.
+    imgs = sorted(img_path.rglob("*.png"))[:6]
+    if not imgs:
+        raise FileNotFoundError(
+            f"No mesh figures under {img_path}. Run `python -m sac.infer` (save_fig=True) first.")
     fig = plt.figure()
-    ax1 = fig.add_subplot(231)
-    im1 = plt.imread(f"{output_path}/plots/625-1513-smoothed/6.png")
-    plt.imshow(im1)
-    ax1.set_title("(a) Original boundary")
-
-    ax2 = fig.add_subplot(232)
-    im2 = plt.imread(f"{output_path}/plots/625-1513-smoothed/1.png")
-    plt.imshow(im2)
-    ax2.set_title("(b) Sample 1")
-
-    ax3 = fig.add_subplot(233)
-    im3 = plt.imread(f"{output_path}/plots/625-1513-smoothed/12.png")
-    plt.imshow(im3)
-    ax3.set_title("(c) Sample 2")
-
-    ax4 = fig.add_subplot(234)
-    im4 = plt.imread(f"{output_path}/plots/625-1513-smoothed/19.png")
-    plt.imshow(im4)
-    ax4.set_title("(d) Sample 3")
-
-    ax5 = fig.add_subplot(235)
-    im5 = plt.imread(f"{output_path}/plots/625-1513-smoothed/22.png")
-    plt.imshow(im5)
-    ax5.set_title("(e) Sample 4")
-
-    ax6 = fig.add_subplot(236)
-    im6 = plt.imread(f"{output_path}/plots/625-1513-smoothed/34.png")
-    plt.imshow(im6)
-    ax6.set_title("(f) Sample 5")
-
+    for k, im in enumerate(imgs):
+        ax = fig.add_subplot(2, 3, k + 1)
+        ax.imshow(plt.imread(im))
+        ax.set_title(f"({chr(97 + k)})")
     [a.get_xaxis().set_visible(False) for a in fig.axes]
     [a.get_yaxis().set_visible(False) for a in fig.axes]
+    os.makedirs(output_path, exist_ok=True)
     plt.savefig(f"{output_path}/e.png", dpi=1000)
 
 if __name__ == "__main__":

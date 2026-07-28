@@ -16,7 +16,7 @@ from general.boundary_env import BoudaryEnv
 from ebrd.data_augmentation import sampling_main
 
 base_path = Path(__file__).parent.parent
-domains_path = base_path / "domains"
+domains_path = base_path / "samples" / "domains"
 output_path = base_path / "ebrd" / "output"
 augmentation_path = output_path / "data_augmentation"
 
@@ -325,20 +325,20 @@ def hyperparameter_search():
 
 
 if __name__ == '__main__':
-    version = '1_6000_3'
-    data_path = augmentation_path / "1" / f"training_samples_{version}.json"
+    version = 'run1'
+    data_path = augmentation_path / version / "training_samples.json"
     model_path = augmentation_path / f"{version}.pt"
 
-    # FreeMesh-S (Pan et al., 2021) pipeline. Run the steps in order by
-    # uncommenting them one at a time (each step's output feeds the next).
+    # FreeMesh-S (Pan et al., 2021) pipeline — run the steps in order. Each step's
+    # output (under ebrd/output/) feeds the next; only samples/domains is external.
 
     # 1. Experience Extraction: generate FNN training samples.
-    # data_sampling(data_path, n=40000, threshold=0.7)
+    data_sampling(data_path, n=40000, threshold=0.7)
 
     # 2. Train the FNN policy on the extracted samples.
-    # start_training(model_path, data_path, tensorboard_log=augmentation_path / "log" / version)
+    start_training(model_path, data_path, tensorboard_log=augmentation_path / "log" / version)
 
-    # 3. Evaluate a trained model on the test domains (prepare_eval_envs).
+    # 3. Evaluate the trained model on the test domains (prepare_eval_envs).
     evaluation(model_path, version, is_render=False, indexing=False,
                save_fig=True, save_samples=False)
 

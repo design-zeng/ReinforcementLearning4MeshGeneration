@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import traceback
 
@@ -156,12 +157,13 @@ if __name__ == '__main__':
     #     'Seed C': f"{logs_path}/sac_tensorboard/63/curriculum/0/SAC_1/events.out.tfevents.1641155959.fniss.15168.0",
     # }
 
-    radius_logs = {
-        'R1': f"{logs_path}/sac_tensorboard/76/curriculum/0/SAC_1/events.out.tfevents.1662335075.Jay.20700.0",
-        # 'R2': f"{logs_path}/sac_tensorboard/72/curriculum/0/SAC_1/events.out.tfevents.1641604788.frakta.11592.0",
-        'R2': f"{logs_path}/sac_tensorboard/sac_75/curriculum/0/SAC_1/events.out.tfevents.1662188104.Jay.22376.0",
-        'R3': f"{logs_path}/sac_tensorboard/77/curriculum/0/SAC_1/events.out.tfevents.1662358240.Jay.26836.0",
-    }
+    # Auto-discover TensorBoard runs written by sac/train.py under logs_path.
+    # Each event directory becomes one series, labelled by its path under logs_path.
+    event_dirs = sorted({p.parent for p in logs_path.rglob("events.out.tfevents.*")})
+    if not event_dirs:
+        raise FileNotFoundError(
+            f"No TensorBoard event files under {logs_path}. Run `python -m sac.train` first.")
+    runs = {str(d.relative_to(logs_path)): str(d) for d in event_dirs}
 
-    log_data = load_log(radius_logs, tags, MAX=1200000)
+    log_data = load_log(runs, tags, MAX=1200000)
     plot_tensorflow_log(log_data)
