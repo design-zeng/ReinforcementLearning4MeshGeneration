@@ -1,0 +1,21 @@
+# Numerics
+numpy
+scipy
+torch
+
+# Reinforcement learning
+gym
+gymnasium
+stable-baselines3
+shimmy          # lets SB3 wrap the classic-gym BoudaryEnv
+tensorboard
+
+# Meshing / geometry
+meshio
+vtk
+
+# Plotting / UI
+matplotlib
+pandas
+seaborn
+pygame

@@ -38,9 +38,9 @@ If you use this implementation in your work, please add a reference/citation to 
 
 ## Setup
 
-**Requirements:** Python 3 and the packages listed in the `requirements` file at
-the repository root (PyTorch, Stable-Baselines3, Gym/Gymnasium, NumPy, SciPy,
-pandas, seaborn, matplotlib, meshio, VTK, TensorBoard, Shapely).
+**Requirements:** Python 3.10+ and the packages listed in `requirements.txt` at
+the repository root (PyTorch, Stable-Baselines3, Gym, Gymnasium, Shimmy,
+TensorBoard, NumPy, SciPy, pandas, seaborn, matplotlib, meshio, VTK, pygame).
 
 ```bash
 # optional: an isolated environment
@@ -48,8 +48,11 @@ conda create --name mesh python=3.11
 conda activate mesh
 
 # from the repository root
-pip install -r requirements
+pip install -r requirements.txt
 ```
+
+On Intel (x86_64) macOS, install PyTorch with conda instead
+(`conda install pytorch -c pytorch`); PyPI no longer ships x86_64 macOS wheels.
 
 The code runs on current PyPI releases (last tested with torch 2.5,
 stable-baselines3 2.9, gym 0.26 + gymnasium, numpy 2.2).
