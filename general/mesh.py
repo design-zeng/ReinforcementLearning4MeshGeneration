@@ -1769,7 +1769,7 @@ class MeshGeneration:
             print("There are no elements generated!")
             return
 
-        nodes = []
+        nodes = list(self.original_vertices)  # boundary nodes (referenced by the B21 edge elements)
         for ele in self.generated_meshes:
             nodes.extend([n for n in ele.vertices if n not in nodes])
 

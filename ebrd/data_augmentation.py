@@ -166,12 +166,14 @@ class MeshAugmentation:
         #                  'outputs': actions[:, 1:].tolist()}
 
         observations, actions = np.asarray(observations), np.asarray(actions)
-        # training_data = {'samples': observations[:, [0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 14, 15, 16, 17]].tolist(),
-        #                  'output_types': actions[:, 0:1].tolist(),
-        #                  'outputs': actions[:, 1:].tolist()}
-        training_data = {'samples': observations.tolist(),
-                         'output_types': actions[:, 0:1].tolist(),
-                         'outputs': actions[:, 1:].tolist()}
+        if actions.size == 0:
+            # No samples cleared the quality threshold; return an empty dataset
+            # instead of indexing an empty array.
+            training_data = {'samples': [], 'output_types': [], 'outputs': []}
+        else:
+            training_data = {'samples': observations.tolist(),
+                             'output_types': actions[:, 0:1].tolist(),
+                             'outputs': actions[:, 1:].tolist()}
 
         print("Sampling completed in: ", time.time() - start_time, 's')
 
@@ -939,6 +941,8 @@ class MeshAugmentation:
 
 
 def sampling_worker(i, n, threshold, data):
+    random.seed(999 + i)      # per-worker seed for reproducible sampling
+    np.random.seed(999 + i)
     mg = MeshAugmentation([], [])
     data[i] = mg.sampling(n, threshold)
 

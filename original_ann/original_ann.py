@@ -12,6 +12,10 @@ pattern_path = root_path / "original_ann" / "patterns" / "pattern.txt"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+SEED = 999  # original training seed (paper / git history)
+torch.manual_seed(SEED)
+np.random.seed(SEED)
+
 learning_rate = 1e-4
 epoches = 300000
 D_in, H1, H2, D_out = 6, 500, 500, 3

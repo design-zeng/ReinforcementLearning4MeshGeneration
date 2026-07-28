@@ -22,6 +22,10 @@ augmentation_path = output_path / "data_augmentation"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+SEED = 999  # original training seed (paper / git history)
+torch.manual_seed(SEED)
+np.random.seed(SEED)
+
 
 class FNNPolicy(nn.Module):
     """Feedforward policy network of FreeMesh-S (Pan et al., 2021).
@@ -71,6 +75,10 @@ def load_training_data(file_name):
 
 
 def build_training_data(data):
+    if len(data['samples']) == 0:
+        raise ValueError(
+            "No training samples to build from — mesh extraction produced none. "
+            "Try a lower quality_threshold or a better-trained model.")
     inputs = np.array(data['samples'])
     outputs = np.array(data['outputs'])
     output_types = np.array(data['output_types'])
@@ -135,6 +143,7 @@ def train_fnn(train_data, model, num_epoches, batch_size, tensorboard_log, model
     """Train the FNN with split objectives: cross-entropy on the element type and
     MSE on the vertex coordinates (an improvement over the paper's single joint
     MSE in train_fnn_mse)."""
+    torch.manual_seed(SEED)  # reproducible weight init order / DataLoader shuffling
     optimizer = optim.Adam(model.parameters(), lr=lr or 1e-3)
 
     classification_loss_fn = nn.CrossEntropyLoss(reduction='sum')  # element type
@@ -224,6 +233,10 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
                          {'samples': samples, 'output_types': output_types, 'outputs': outputs},
                          _type=2)
 
+        if not samples:
+            print("No good-quality elements extracted this round; skipping retrain.")
+            continue
+
         x, y = build_training_data({'samples': samples,
                                     'output_types': output_types,
                                     'outputs': outputs})
@@ -242,8 +255,9 @@ def prepare_eval_envs():
 def data_sampling(data_path, n, threshold):
     """Experience Extraction: sample training data filtered by a mesh-quality
     threshold (FreeMesh-S)."""
+    os.makedirs(Path(data_path).parent, exist_ok=True)
     start_time = time.time()
-    sampling_main(10, n, threshold, file_name=data_path)
+    sampling_main(10, n, threshold, file_name=str(data_path))
     print('Sampling completed in', time.time() - start_time, 's!')
 
 
