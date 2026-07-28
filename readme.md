@@ -157,7 +157,7 @@ as module-level variables or `__main__` toggles — open the file to adjust them
 - `python -m general.tools.polygon_editor_ui_v2` — interactive Tkinter domain
   editor (requires a display).
 
-## `sac-ebd-style/` (informational — not a runnable entrypoint)
+## `sac-ebd-style-draft/` (informational — not a runnable entrypoint)
 
 A newer, from-scratch reimplementation of the Soft Actor-Critic approach
 (paper 2), written directly against the Gymnasium API with a cleaner geometry
