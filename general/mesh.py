@@ -33,19 +33,6 @@ class MeshGeneration:
 
 
     @staticmethod
-    def crossing_segments(closed_curve_vertices, ray_segment):
-
-        count = MeshGeneration.calculate_crossing_segments(closed_curve_vertices, ray_segment)
-
-        point_count = MeshGeneration.calculate_crossing_vertices(closed_curve_vertices, ray_segment)
-
-        if point_count >= 2:
-            return 2
-
-        # print("Count: ", count, point_count, count - point_count - 1)
-        return count - point_count
-
-    @staticmethod
     def calculate_crossing_segments(closed_curve_vertices, ray_segment):
         '''
         http://geomalgorithms.com/a03-_inclusion.html#:~:text=Inclusion%20of%20a%20Point%20in%20a%20Polygon&text=%2D%20which%20counts%20the%20number%20of,%22even%2Dodd%22%20test.
@@ -103,31 +90,6 @@ class MeshGeneration:
         return count
 
     @staticmethod
-    def calculate_crossing_vertices(closed_curve_vertices, ray_segment):
-        point_count = 0
-        v = ray_segment.point2.x - ray_segment.point1.x
-        for vertex in closed_curve_vertices:
-
-            # if abs(math.degrees(vertex.to_find_clockwise_angle(ray_segment.point1, ray_segment.point2)) - 180) <= 0.1 or \
-            #         vertex.to_find_clockwise_angle(ray_segment.point1, ray_segment.point2) == 0:
-            #
-            #     if vertex.y < min(ray_segment.point1.y, ray_segment.point2.y) or \
-            #             vertex.y > max(ray_segment.point1.y, ray_segment.point2.y):
-            #         continue
-            #     if vertex.x < min(ray_segment.point1.x, ray_segment.point2.x) or \
-            #             vertex.x > max(ray_segment.point1.x, ray_segment.point2.x):
-            #         continue
-            #     point_count += 1
-
-            _w = round(vertex.y - ray_segment.point1.y, 4)
-            _v = vertex.x - ray_segment.point1.x
-            if _w == 0:
-                if 0 <= _v / v <= 1:
-                    point_count += 1
-
-        return point_count
-
-    @staticmethod
     def calculate_crossing_vertices_2(closed_curve_vertices, ray_segment):
         slope, intercept = linear_fit(ray_segment.point1, ray_segment.point2)
         point_count = 0
@@ -144,15 +106,10 @@ class MeshGeneration:
 
     def count_crossing_segments(self, ray_segment):
         count = self.calculate_crossing_segments(self.updated_boundary.vertices, ray_segment)
-        # point_count = self.calculate_crossing_vertices(self.updated_boundary.vertices, ray_segment)
-
         return count
 
-    def is_inside(self, ray_segment, close_curve_vertices=None):
-        if close_curve_vertices:
-            re = self.crossing_segments(close_curve_vertices, ray_segment)
-        else:
-            re = self.count_crossing_segments(ray_segment)
+    def is_inside(self, ray_segment):
+        re = self.count_crossing_segments(ray_segment)
         # ray on the line
 
         if re % 2 == 0:

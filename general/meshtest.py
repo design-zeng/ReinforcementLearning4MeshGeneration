@@ -17,11 +17,6 @@ class MeshTest(unittest.TestCase):
 
         self.boundary = Boundary2D(points)
 
-    def test_calculate_crossing_vertices(self):
-        ray_segment = Segment(Vertex(-1, -1), Vertex(4, 4))
-        points = mg.calculate_crossing_vertices(self.boundary.vertices, ray_segment)
-        self.assertEqual(points, 2)
-
     def test_calculate_crossing_vertices_2(self):
         ray_segment = Segment(Vertex(0, 0), Vertex(4, 4))
         points = mg.calculate_crossing_vertices_2(self.boundary.vertices, ray_segment)

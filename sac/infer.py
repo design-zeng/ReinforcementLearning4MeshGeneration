@@ -62,15 +62,6 @@ def prepare_model(method_name, model_path, env):
     return model
 
 
-def plot_elements_area(elements):
-    fig, ax = plt.subplots()
-    area = sorted([e.compute_area()[0] for e in elements])
-    _min, _max = min(area), max(area)
-    ax.bar([], area, label='Area')
-
-    plt.show()
-
-
 def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=False, save_samples=False):
     os.makedirs(eval_path / version, exist_ok=True)
     envs = prepare_eval_envs()
@@ -150,7 +141,6 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
                 results[k][v.name]['completed'].append(info['is_complete'])
                 results[k][v.name]['n_elements'].append(len(env.generated_meshes))
                 results[k][v.name]['n_complete'] += 1 if info['is_complete'] else 0
-                # plot_elements_area(env.generated_meshes)
                 # env.smooth(env.boundary.vertices)
 
                 if save_fig:
@@ -224,7 +214,6 @@ def replication_evaluation(is_render=False, deterministic=False, indexing=False,
         results['sac']['completed'].append(info['is_complete'])
         results['sac']['n_elements'].append(len(env.generated_meshes))
         results['sac']['n_complete'] += 1 if info['is_complete'] else 0
-        # plot_elements_area(env.generated_meshes)
         # env.smooth(env.boundary.vertices)
 
         if save_fig:
