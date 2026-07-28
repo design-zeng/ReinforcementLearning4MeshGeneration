@@ -312,15 +312,22 @@ def hyperparameter_search():
 
 if __name__ == '__main__':
     version = '1_6000_3'
+    data_path = augmentation_path / "1" / f"training_samples_{version}.json"
+    model_path = augmentation_path / f"{version}.pt"
 
-    model_path = augmentation_path / "1_6000_2.pt"
+    # FreeMesh-S (Pan et al., 2021) pipeline. Run the steps in order by
+    # uncommenting them one at a time (each step's output feeds the next).
+
+    # 1. Experience Extraction: generate FNN training samples.
+    # data_sampling(data_path, n=40000, threshold=0.7)
+
+    # 2. Train the FNN policy on the extracted samples.
+    # start_training(model_path, data_path, tensorboard_log=augmentation_path / "log" / version)
+
+    # 3. Evaluate a trained model on the test domains (prepare_eval_envs).
     evaluation(model_path, version, is_render=False, indexing=False,
                save_fig=True, save_samples=False)
 
-    # Other entry points (uncomment as needed):
-    # data_sampling(augmentation_path / "1103" / "training_samples_1_6000.json", n=40000, threshold=0.7)
-    # start_training(augmentation_path / f"{version}.pt",
-    #                augmentation_path / "1103" / f"training_samples_{version}.json",
-    #                tensorboard_log=augmentation_path / "log" / version)
-    # hyperparameter_search()
-    # self_evolving_training(BoudaryEnv(read_polygon(domains_path / "random1_1.json")), version="self_evolve_0")
+    # Alternative experiments:
+    # hyperparameter_search()   # sweep the extraction quality threshold (paper Table 7)
+    # self_evolving_training(BoudaryEnv(read_polygon(domains_path / "random1_1.json")), version)  # paper Table 6

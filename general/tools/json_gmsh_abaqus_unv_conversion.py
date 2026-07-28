@@ -94,3 +94,17 @@ def inp_to_unv(inp_file, unv_file):
     """ Main function to convert .inp file to .unv format """
     nodes, elements = read_inp_file(inp_file)
     write_unv_file(unv_file, nodes, elements)
+
+
+if __name__ == '__main__':
+    from pathlib import Path
+    base_path = Path(__file__).parent.parent.parent
+    output_path = base_path / "general" / "output"
+
+    # Convert a saved domain (a JSON list of [x, y] points) to Gmsh geometry
+    # (writes <domain>.json.txt next to the input):
+    # json_to_gmsh(base_path / "domains" / "basic1.json")
+
+    # Convert an Abaqus .inp mesh to a UNV mesh:
+    # inp_to_unv(output_path / "mesh.inp", output_path / "mesh.unv")
+    pass

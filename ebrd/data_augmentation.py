@@ -976,45 +976,17 @@ def sampling_main(pool, N, threshold, file_name=None, is_plot=False):
     return sample_data
 
 if __name__ == '__main__':
-#     # observation_space = spaces.Box(np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-#     #                                np.array([1/2, 0, 1, 2 * math.pi,
-#     #                                          1, math.pi, 1, math.pi, 1, math.pi,
-#     #                                          1, 3 * math.pi / 2, 1/2, math.pi]), dtype=np.float32)
-#     # action_space = spaces.Box(np.array([-1, 0, 0]), np.array([1, 1/3, math.pi]), dtype=np.float32)
-    mg = MeshAugmentation([], [])
-    # mg.test()
-    # res = mg.sampling(1000000)
-    # for i in range(len(res[0])):
-    #     # mg.plot_sample(res[0][i], res[1][i])
-    #     print(mg.compute_quality([res[0][i], res[1][i]]))
-    # test()
-    # data = mg.load_samples(f"{augmentation_path}/1/training_samples_data_aug_2.7_100.json")
-    # data = mg.load_samples(f"{augmentation_path}/1/training_samples_data_aug_6.json")
-    # data = mg.sampling(40000, threshold=0.7,
-    #                    file_name=f"{augmentation_path}/1103/training_samples_1_40k_07.json")
+    # Experience Extraction (FreeMesh-S): sample FNN training data in parallel.
+    #   pool      = number of worker processes
+    #   N         = total number of samples to generate
+    #   threshold = minimum normalized element quality to keep a sample
+    out_file = augmentation_path / "1" / "training_samples.json"
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    sampling_main(10, 40000, 0.7, file_name=str(out_file), is_plot=False)
 
-    # mg.scatter_plot(data)
-    # mg.resampling(f"{augmentation_path}/1/training_samples_data_aug_0.7.json",
-    #               target_name=f"{augmentation_path}/1/training_samples_data_aug_0.7_1.json",
-    #               distr=[300, 400, 300])
-
-#     # multiprocessing for sampling
-#     sampling_main(10, 1000, 0.85,
-#                   file_name=f"{augmentation_path}/1/training_samples_data_aug_1.7_0.6.json",
-#                   is_plot=True)
-
-    ### draw sample comparison graphes
-    data1 = mg.load_samples(f"{augmentation_path}/1/data_aug.json")
-    data2 = mg.load_samples(f"{augmentation_path}/1/training_samples_1_40k_07.json")
-    mg.comparison_scatter_plot(data1, data2, include_quality=False)
-
-    # mg.scatter_plot(data2)
-
-    #### Dataset evaluation
-    # files = {
-    #     '0.6': f"{augmentation_path}/1/training_samples_data_aug_1.7_0.6.json",
-    #     '0.7': f"{augmentation_path}/1/training_samples_data_aug_1.7_0.7.json",
-    #     '0.75': f"{augmentation_path}/1/training_samples_data_aug_1.7_0.75.json",
-    #     '0.8': f"{augmentation_path}/1/training_samples_data_aug_1.7_0.7999999999999999.json",
-    # }
-    # mg.data_evaluation(files)
+    # Inspect / compare generated datasets (uncomment one):
+    # mg = MeshAugmentation([], [])
+    # mg.scatter_plot(mg.load_samples(str(out_file)))
+    # mg.comparison_scatter_plot(mg.load_samples(str(out_file)),
+    #                            mg.load_samples(str(augmentation_path / "1" / "other.json")),
+    #                            include_quality=False)
