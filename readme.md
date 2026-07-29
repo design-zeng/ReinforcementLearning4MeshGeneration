@@ -120,14 +120,17 @@ as module-level variables or `__main__` toggles — open the file to adjust them
 
 ### Supervised FNN element extraction (paper 1, `ebrd/`)
 
-- **Full pipeline** — `python -m ebrd.EBRD`  *(needs: domains)*
-  Runs the FreeMesh-S pipeline end to end and writes everything under
-  `ebrd/output/`: (1) `data_sampling` (Experience Extraction) → training samples,
-  (2) `start_training` → FNN policy, (3) `evaluation` → meshes/figures on the test
-  domains. It also offers `hyperparameter_search()` (quality-threshold sweep, paper
-  Table 7) and `self_evolving_training(...)` (the self-learning loop, paper Table 6).
+- **Train** — `python -m ebrd.train`  *(needs: domains)* — the FreeMesh-S producer
+  steps, written under `ebrd/output/`: (1) `data_sampling` (Experience Extraction) →
+  training samples, (2) `start_training` → FNN policy (`model.pt`). Also offers
+  `hyperparameter_search()` (quality-threshold sweep, paper Table 7) and
+  `self_evolving_training(...)` (the self-learning loop, paper Table 6).
+- **Infer** — `python -m ebrd.infer`  *(needs: an `ebrd.train` run)* — loads `model.pt`
+  and meshes the test domains, writing figures/samples under `ebrd/output/`.
 - **Sampling only** — `python -m ebrd.data_augmentation` writes a training-sample
   dataset to `ebrd/output/data_augmentation/` (adjust `pool`, `N`, `threshold`).
+
+The shared network definition (`FNNPolicy`) and checkpoint loading live in `ebrd/model.py`.
 
 ### Original ANN element extraction (paper 4, `original_ann/`)
 

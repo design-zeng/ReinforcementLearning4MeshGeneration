@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -14,59 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 from general.polygon_generators import read_polygon
 from general.boundary_env import BoudaryEnv
 from ebrd.data_augmentation import sampling_main
-
-base_path = Path(__file__).parent.parent
-domains_path = base_path / "samples" / "domains"
-output_path = base_path / "ebrd" / "output"
-augmentation_path = output_path / "data_augmentation"
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-SEED = 999  # original training seed (paper / git history)
-torch.manual_seed(SEED)
-np.random.seed(SEED)
-
-
-class FNNPolicy(nn.Module):
-    """Feedforward policy network of FreeMesh-S (Pan et al., 2021).
-
-    Maps a normalized partial-boundary state to (a) an element-type class and
-    (b) the coordinates of the new vertex. The hidden layers [64, 128, 64, 32, 16]
-    match the optimal FNN structure reported in the paper (Table 8).
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.state_space = 18
-        self.action_space = 2
-        self.type_space = 3
-
-        self.fc1 = nn.Linear(self.state_space, 64)
-        self.fc2 = nn.Linear(64, 128)
-        self.fc3 = nn.Linear(128, 64)
-        self.fc4 = nn.Linear(64, 32)
-        self.fc5 = nn.Linear(32, 16)
-        self.action_head = nn.Linear(16, self.action_space)
-        self.type_head = nn.Linear(16, self.type_space)
-
-    def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
-        x = F.relu(self.fc5(x))
-        return self.action_head(x), self.type_head(x)
-
-
-def get_action(state, model):
-    """Run the policy and decode its output into (vertex coords, element type).
-
-    The type head's argmax class {0, 1, 2} is mapped to the environment's type
-    encoding {0, 0.5, 1.0} via the division by 2.
-    """
-    state = torch.FloatTensor(state).to(device)
-    action, type_values = model(state)
-    return action.tolist(), float(torch.argmax(type_values) / 2)
+from ebrd.model import FNNPolicy, get_action, device, SEED, domains_path, output_path, augmentation_path
 
 
 def load_training_data(file_name):
@@ -96,7 +43,7 @@ variant that splits the type (classification) and coordinate (regression)
 objectives, and is what start_training() uses in practice.
 """
 # def train_fnn_mse(model, x, y, model_path, tensorboard_log, epoches=500000):
-    
+
 #     loss_fn = torch.nn.MSELoss(reduction='sum')
 
 #     learning_rate = 3e-4
@@ -246,12 +193,6 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
         print("%d: done %d games, running reward %.3f" % (step, i_episode, running_reward))
 
 
-def prepare_eval_envs():
-    """Test domains of varying difficulty (FreeMesh-S generalizability set)."""
-    names = ["engeer", "star1", "random1_1", "tool2", "test2", "test3"]
-    return [BoudaryEnv(read_polygon(domains_path / f"{name}.json")) for name in names]
-
-
 def data_sampling(data_path, n, threshold):
     """Experience Extraction: sample training data filtered by a mesh-quality
     threshold (FreeMesh-S)."""
@@ -261,51 +202,10 @@ def data_sampling(data_path, n, threshold):
     print('Sampling completed in', time.time() - start_time, 's!')
 
 
-def evaluation(model_path, version, is_render=False, indexing=False, save_fig=False, save_samples=False):
-    """Evaluate a trained FNN policy on the test domains (generalizability)."""
-    out_dir = augmentation_path / version
-    os.makedirs(out_dir, exist_ok=True)
-
-    envs = prepare_eval_envs()
-    model = FNNPolicy().to(device)
-    model.load_state_dict(torch.load(model_path))
-    model.eval()
-
-    for i, env in enumerate(envs):
-        print(f'Starting for model with env {i}')
-        state = env.reset(static=True)
-
-        while True:
-            action, type_value = get_action(state, model)
-            state, reward, done, info = env.move(action, round(type_value, 2))
-            if is_render:
-                env.render()
-            if done:
-                break
-
-        env.close()
-
-        if save_fig:
-            if info['is_complete']:
-                env.smooth(env.boundary.vertices)
-                env.save_meshes(out_dir / f"ebrd_env_{i}__smoothed.png",
-                                meshes=env.generated_meshes,
-                                indexing=indexing, style='k-')
-            else:
-                env.save_meshes(out_dir / f"ebrd_env_{i}.png",
-                                meshes=env.generated_meshes,
-                                indexing=indexing, style='k-')
-        if save_samples:
-            if len(env.generated_meshes):
-                samples, output_types, outputs = env.extract_samples_2(env.generated_meshes, 2, 3, radius=4)
-                env.save_samples(out_dir / f"ebrd_env_{i}.json",
-                                 {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
-                print("Saved!")
-
-
 def hyperparameter_search():
     """Quality-threshold ablation (FreeMesh-S, Table 7): sweep the extraction
     quality threshold, then sample -> train -> evaluate for each value."""
+    from ebrd.infer import evaluation  # local import: the sweep also evaluates
     quality_thresholds = [i / 100 for i in range(60, 90, 2)]
     for q in quality_thresholds:
         version = f'1_2k_{q}'
@@ -329,18 +229,16 @@ if __name__ == '__main__':
     data_path = augmentation_path / version / "training_samples.json"
     model_path = augmentation_path / f"{version}.pt"
 
-    # FreeMesh-S (Pan et al., 2021) pipeline — run the steps in order. Each step's
-    # output (under ebrd/output/) feeds the next; only samples/domains is external.
+    # FreeMesh-S (Pan et al., 2021), producer steps. The output under ebrd/output/
+    # feeds ebrd.infer; only samples/domains is external.
 
     # 1. Experience Extraction: generate FNN training samples.
     data_sampling(data_path, n=40000, threshold=0.7)
 
-    # 2. Train the FNN policy on the extracted samples.
+    # 2. Train the FNN policy on the extracted samples -> writes model.pt.
     start_training(model_path, data_path, tensorboard_log=augmentation_path / "log" / version)
 
-    # 3. Evaluate the trained model on the test domains (prepare_eval_envs).
-    evaluation(model_path, version, is_render=False, indexing=False,
-               save_fig=True, save_samples=False)
+    # Then evaluate with:  python -m ebrd.infer
 
     # Alternative experiments:
     # hyperparameter_search()   # sweep the extraction quality threshold (paper Table 7)
