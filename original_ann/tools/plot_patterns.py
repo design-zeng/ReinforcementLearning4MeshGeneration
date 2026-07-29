@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from general import data
 
-root_path = Path(__file__).parent.parent
+root_path = Path(__file__).parent.parent.parent
 pattern_path = root_path / "original_ann" / "patterns" / "pattern.txt"
 
 def plot_patterns():
