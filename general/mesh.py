@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from original_ann import infer as predict_model
 from general.components import *
-from general.data import matrix_ops, transformation
+from general.lin_alg import transformation
 
 def linear_fit(point1, point2):
     slope = (point2.y - point1.y) / (point2.x - point1.x)
@@ -1519,9 +1519,8 @@ class MeshGeneration:
         p0, p1 = np.array([sample[4], sample[5]]), np.array([sample[6], sample[7]])
         base_length = sum([math.sqrt((sample[2*i]-sample[2*i-2]) ** 2 + (sample[2*i+1]-sample[2*i-1]) **2)
                        for i in range(1, 5)]) / 4
-        mat = matrix_ops(sample)
-        return list(transformation(mat, base_length, p0, p1)), \
-               list(transformation(matrix_ops(output), base_length, p0, p1))
+        return list(transformation(sample, base_length, p0, p1)), \
+               list(transformation(output, base_length, p0, p1))
 
     def get_radius_neighbors(self, base_point, start_point, end_point, exclusion, radius, N=3):
         def radius_neighbors_with_angle(start_angle, end_angle):

@@ -2,13 +2,13 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from general import data
+from original_ann.pattern_loader import get_patterns
 
 root_path = Path(__file__).parent.parent.parent
 pattern_path = root_path / "original_ann" / "patterns" / "pattern.txt"
 
 def plot_patterns():
-    inputs, output_types, outputs = data.get_patterns(pattern_path)
+    inputs, output_types, outputs = get_patterns(pattern_path)
 
     points = inputs
     for i, point in enumerate(points):

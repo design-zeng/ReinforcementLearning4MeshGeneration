@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from general.mesh import MeshGeneration
 from general.components import Vertex, Segment, Boundary2D, Mesh, PointEnvironment
-from general.data import matrix_ops, transformation, detransformation
+from general.lin_alg import transformation, detransformation
 from general.boundary_renderer import MeshFrame
 
 base_path = Path(__file__).parent.parent
@@ -93,8 +93,7 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         arra = self.current_point_environment.state
         p0, p1 = self.get_middle_points(arra)
 
-        mat = matrix_ops(arra)
-        return transformation(mat, self.current_point_environment.base_length, p0, p1)
+        return transformation(arra, self.current_point_environment.base_length, p0, p1)
 
     def detransformation(self, point, is_move=False):
         v1, v2 = self.get_middle_points(self.current_point_environment.points_as_array(self.current_point_environment.neighbors))
