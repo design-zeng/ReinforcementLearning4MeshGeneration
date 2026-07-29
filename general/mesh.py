@@ -5,7 +5,7 @@ import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 
-from original_ann import original_ann as predict_model
+from original_ann import infer as predict_model
 from general.components import *
 from general.data import matrix_ops, transformation
 

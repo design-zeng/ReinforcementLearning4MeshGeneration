@@ -131,12 +131,15 @@ as module-level variables or `__main__` toggles — open the file to adjust them
 
 ### Original ANN element extraction (paper 4, `original_ann/`)
 
-- **Train** — `python -m original_ann.original_ann`  *(needs: the shipped
-  `original_ann/patterns/pattern.txt`)* — trains the back-propagation MLP and saves
-  to `original_ann/output/model.pt`. In `__main__` swap `new_model()` for
-  `load_model()` to resume; `predict(model, points)` runs inference. `epoches` at
-  the top defaults to a long run.
+- **Train** — `python -m original_ann.train`  *(needs: the shipped
+  `original_ann/patterns/pattern.txt`)* — trains the back-propagation MLP and saves it
+  to `original_ann/output/model.pt`. In `__main__` swap `new_model()` for `load_model()`
+  to resume from a checkpoint; `epoches`/`learning_rate` are at the top of `train.py`.
+- **Infer** — `python -m original_ann.infer`  *(needs: a `original_ann.train` run)* —
+  loads `model.pt` and runs `predict(model, points)` on a boundary configuration.
 - **Visualize patterns** — `python -m original_ann.plot_patterns`
+
+The shared network definition and checkpoint loading live in `original_ann/model.py`.
 
 ### Mesh quality & geometry tools (`general/tools/`)
 
