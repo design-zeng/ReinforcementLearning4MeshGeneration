@@ -10,7 +10,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from general.polygon_generators import read_polygon
+from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
 from ebrd.data_augmentation import sampling_main
 from ebrd.model import FNNPolicy, get_action, device, SEED, domains_path, output_path, augmentation_path

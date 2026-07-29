@@ -1,6 +1,6 @@
 import os
 
-from general.polygon_generators import read_polygon
+from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
 from ebrd.model import get_action, load_model, domains_path, augmentation_path
 

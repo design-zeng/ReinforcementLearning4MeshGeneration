@@ -8,7 +8,7 @@ from scipy.spatial import ConvexHull
 
 from general.components import Mesh, Vertex, Boundary2D
 from general.mesh import MeshGeneration
-from general.polygon_generators import read_polygon
+from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
 
 base_path = Path(__file__).parent.parent.parent

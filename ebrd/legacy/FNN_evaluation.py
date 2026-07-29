@@ -7,11 +7,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
-from general.polygon_generators import boundary, read_polygon
+from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
 
-# env = BoudaryEnv(boundary())
-# env.boundary.show(style='k.-')
 version = 'ea_experiments_0'
 # version = 'ea_experiments_slim_8'
 
@@ -182,7 +180,6 @@ def evaluation():
 
 
     envs = [BoudaryEnv(read_polygon(name)) for name in domains]
-    # envs = [BoudaryEnv(boundary())]
     # envs[0].boundary.show()
     # [print(e.boundary.poly_area()) for e in envs]
 

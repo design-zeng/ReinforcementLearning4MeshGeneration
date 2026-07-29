@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
-from general.polygon_generators import read_polygon
+from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
 from sac.custom_callback import CustomCallback
 
