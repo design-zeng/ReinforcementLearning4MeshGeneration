@@ -20,15 +20,10 @@ class MeshFrame():
         screen.fill(self.WHITE)
         pygame.display.set_caption(self.window_name)
 
-        # while True:
-        #     for event in pygame.event.get():
-        #         if event.type == pygame.QUIT:
-        #             quit()
         _surface = pygame.transform.flip(self.surface, False, True)
 
         screen.blit(_surface, (5, 5))
         pygame.display.update()
-        # pygame.display.flip()
 
     def draw_line(self, point1, point2, color=CYAN):
         pygame.draw.line(self.surface, color, (point1[0], point1[1]), (point2[0], point2[1]))

@@ -9,7 +9,8 @@ from gym import spaces
 import matplotlib.pyplot as plt
 
 from general.mesh import MeshGeneration
-from general.components import Vertex, Mesh, PointEnvironment
+from general.components import Vertex, Mesh
+from general.point_environment import PointEnvironment
 from general.lin_alg import transformation, detransformation
 from general.boundary_renderer import MeshFrame
 
