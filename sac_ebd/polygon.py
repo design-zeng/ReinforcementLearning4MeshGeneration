@@ -7,7 +7,7 @@ from geometry_lib import segment_intersect
 # array of N 2-tuples, counter-clockwise
 class Polygon:
     def __init__(self, vertices: npt.NDArray[np.floating]):
-        self.vertices = vertices.copy()
+        self.vertices = vertices.astype(float)
         if self.is_self_intersecting():
             raise Exception("Boundary self-intersects")
         

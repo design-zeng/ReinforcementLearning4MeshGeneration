@@ -45,13 +45,17 @@ method_settings = {
     "sac": (SAC, {
         "policy_kwargs": {
             "activation_fn": torch.nn.ReLU,
-            "net_arch": [128, 128, 128] # alt: 32,128,128,128,64,32
+            "net_arch": [128, 128, 128]
+            # [32, 32], [64, 64, 64, 64, 64], [32, 128, 128, 128, 64, 32]
         },
-        "seed": 999,
+        "seed": 999, # 356, 567
         "learning_rate": 3e-4,
         "learning_starts": 10000,
-        "batch_size": 100,
-        "device": device
+        "batch_size": 100, #256
+        "device": device,
+        #"gamma": 0.99,
+        #"gradient_steps": 1,
+        #"tau": 5e-3
     }),
     "td3": (TD3, {
         "policy_kwargs": {

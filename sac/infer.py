@@ -198,6 +198,9 @@ def final_mesh(domain="boundary6",
 if __name__ == '__main__':
     # One command -> one finished mesh (retries until the domain fully meshes).
     final_mesh()
+    final_mesh(domain="dolphine1")
+    final_mesh(domain="basic")
+    final_mesh(domain="basic1")
     # evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
     # replication_evaluation(save_fig=True)
     # element_number_box_plot()

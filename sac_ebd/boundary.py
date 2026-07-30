@@ -130,7 +130,7 @@ class Boundary(Polygon):
         neighbors = np.array([local_boundary[(sharpest_index + i) % N] for i in range(-self.n_rv, self.n_rv + 1)]) / max(radius, 1e-6)
         opposite_neighbors = self.get_opposite_neighbors_local(sharpest_index) / max(radius, 1e-6)
         area_ratio = np.array([self.get_area() / self.initial_area])
-        return np.concatenate([neighbors.flatten(), opposite_neighbors.flatten(), area_ratio])
+        return np.concatenate([neighbors.flatten(), opposite_neighbors.flatten(), area_ratio]).astype(np.float32)
 
     def get_reward(self, action_type: Literal[-1, 0, 1], polar_pair=(None, None)) -> tuple[float, bool]:
         if action_type == 0:
@@ -282,7 +282,7 @@ class Boundary(Polygon):
         opening_angle = self.get_angle_at_index(vertex_index)
 
         angle = (0.9 * new_normalized_polar_pair[0] + 0.05) * opening_angle
-        radius = 0.9 * new_normalized_polar_pair[1] * 0.05
+        radius = 0.9 * new_normalized_polar_pair[1] + 0.05
         return np.array([radius * math.cos(angle), radius * math.sin(angle)])
     
     def type0_update_boundary_with_polar_pair(self, new_normalized_polar_pair: tuple[float, float]):
@@ -299,7 +299,8 @@ class Boundary(Polygon):
         right_vertex = self.v_at(right_vertex_index)
 
         new_normalized_local_vertex = self.type0_normalized_polar_to_local_Cartesian(new_normalized_polar_pair)
-        actual_vertex = self.get_inverse_transformed_vertex(new_normalized_local_vertex, vertex_index)
+        r = self.get_coordinate_space_radius(vertex_index)
+        actual_vertex = self.get_inverse_transformed_vertex(new_normalized_local_vertex * r, vertex_index)
 
         new_edge1 = (left_vertex, actual_vertex)
         new_edge2 = (actual_vertex, right_vertex)

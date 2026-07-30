@@ -1,14 +1,17 @@
 import numpy as np
+import numpy.typing as npt
 import gymnasium as gym
 
 from boundary import Boundary
+from mesh import Mesh
 
 class Gym_Env(gym.Env):
-    def __init__(self, initial_boundary):
+    def __init__(self, initial_boundary: npt.NDArray[np.floating]):
         super().__init__()
 
         self.initial_boundary = initial_boundary.copy()
         self.boundary_env = Boundary(self.initial_boundary.copy())
+        self.mesh = Mesh(self.boundary_env)
 
         self.action_space = gym.spaces.Box(
             low=np.array([-1, 0, 0]),
@@ -29,6 +32,10 @@ class Gym_Env(gym.Env):
         super().reset(seed=seed)
 
         self.boundary_env.reset_with_boundary(self.initial_boundary.copy())
+        self.mesh = Mesh(self.boundary_env)
+
+        self.n_fails = 0
+        self.n_steps = 0
 
         observation = self.boundary_env.get_state()
 
@@ -50,6 +57,7 @@ class Gym_Env(gym.Env):
         reward, is_valid = self.boundary_env.get_reward(action_type, polar_pair)
 
         if is_valid:
+            self.mesh.update_mesh(action_type, polar_pair)
             self.boundary_env.update_boundary(action_type, polar_pair)
             self.n_fails = 0
         else:

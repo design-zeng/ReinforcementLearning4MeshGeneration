@@ -54,8 +54,8 @@ pip install -r requirements.txt
 On Intel (x86_64) macOS, install PyTorch with conda instead
 (`conda install pytorch -c pytorch`); PyPI no longer ships x86_64 macOS wheels.
 The pinned versions were validated together (torch 2.5, stable-baselines3 2.9,
-gym 0.26 + gymnasium, numpy 2.2). Training uses seed `999` throughout for
-reproducibility.
+gym 0.26 + gymnasium, numpy 2.2). Training uses seeds from the paper, such as `999`, for
+reproducibility, 
 
 ## Repository layout
 
@@ -73,7 +73,7 @@ reproducibility.
   ships its training patterns in `original_ann/patterns/`.
 - `sac/` — **FreeMesh-RL** (paper 2): Soft Actor-Critic training/evaluation and
   the associated plotting tools.
-- `sac-ebd-style-draft/` — a work-in-progress from-scratch reimplementation (see last section).
+- `sac_ebd/` — a work-in-progress from-scratch reimplementation (see last section).
 - **`samples/domains/`** — the only inputs you provide: domain geometries (JSON
   boundary-vertex lists), loaded with `read_polygon(...)`. Everything else is
   generated.
@@ -85,15 +85,7 @@ reproducibility.
 
 The only external input is `samples/domains/`. Everything else is *produced* by
 running a script, written into a `<package>/output/` folder, and then *consumed*
-by the next script. So run **producers before consumers**.
-
-Run **every** entrypoint as a module from the repository root (the scripts use
-absolute imports, so running a file by path fails):
-
-```bash
-python -m sac.train      # correct
-python sac/train.py      # ImportError
-```
+by the next script. So **run producers before consumers**.
 
 Most scripts pop up matplotlib figures via `plt.show()` and expose their settings
 as module-level variables or `__main__` toggles — open the file to adjust them.
@@ -242,13 +234,18 @@ The shared network definition and checkpoint loading live in `original_ann/model
   python -m general.tools.polygon_editor_ui_v2
   ```
 
-## `sac-ebd-style-draft/` (informational — not a runnable entrypoint)
+## `sac_ebd/` (paper 2, 3, in progress)
 
 A newer, from-scratch reimplementation of the Soft Actor-Critic approach
-(paper 2), written directly against the Gymnasium API with a cleaner geometry
-core (`polygon.py`, `boundary.py`, `mesh.py`, `geometry_lib.py`) and a
-`gym_env.py` environment. It is a work in progress ("not yet in EBD style") and
-ships without a training script: `Gym_Env` can be instantiated, stepped, and is
-Stable-Baselines3-compatible, but there is no packaged run command, and the
-directory name contains a hyphen so it cannot be imported as a module. Treat it
-as a reference for the ongoing rewrite rather than a runnable pipeline.
+(paper 2), following the EBD framework detailed in paper 3, written directly against the Gymnasium API with a cleaner geometry
+core. To train:
+  ```bash
+  cd sac_ebd
+  python train.py
+  ```
+To run:
+  ```bash
+  cd sac_ebd
+  python infer.py
+  ```
+You can change the domains and timestep per domain at the top of the training file, as well as the inference domain in the inference file.
