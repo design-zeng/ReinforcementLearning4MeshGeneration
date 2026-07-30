@@ -20,7 +20,6 @@ class MeshGeneration:
         self.rp_index = 0
         self.average_edge_length = self.boundary.average_edge_length()
 
-
     @staticmethod
     def calculate_crossing_segments(closed_curve_vertices, ray_segment):
         '''
@@ -38,8 +37,7 @@ class MeshGeneration:
                 continue
             if seg.is_cross(ray_segment):
                 if round(closed_curve_vertices[i].y - ray_segment.point2.y, 4) == 0:
-                    next_orientation = round(closed_curve_vertices[(i + 1) % len(closed_curve_vertices)].y -
-                                             closed_curve_vertices[i].y, 4)
+                    next_orientation = round(closed_curve_vertices[(i + 1) % len(closed_curve_vertices)].y - closed_curve_vertices[i].y, 4)
                     if next_orientation == 0:
                         continue
                     elif next_orientation * orientation < 0:
@@ -51,8 +49,7 @@ class MeshGeneration:
                             continue
                 else:
                     if round(closed_curve_vertices[i - 1].y - ray_segment.point2.y, 4) == 0:
-                        pre_orientation = round(closed_curve_vertices[i - 1].y -
-                                                 closed_curve_vertices[i - 2].y, 4)
+                        pre_orientation = round(closed_curve_vertices[i - 1].y - closed_curve_vertices[i - 2].y, 4)
 
                         if pre_orientation == 0:
                             continue
@@ -119,9 +116,6 @@ class MeshGeneration:
 
         if self.num_ref_neighbor % 2 != 0:
             raise ValueError('Wrong number of reference neighbors')
-        # valid_segts = self.find_valid_segts(vertex)
-        # if valid_segts:
-            # print(valid_segts[0], valid_segts[1])
         sum_angle = 0
         if self.num_ref_neighbor // 2 == 2:
             lam = 0.618
@@ -132,7 +126,8 @@ class MeshGeneration:
         for i in range(self.num_ref_neighbor // 2):
             clockwise_angle = vertex.to_find_clockwise_angle(
                 self.updated_boundary.vertices[(index + 1 + i) % len(self.updated_boundary.vertices)],
-                self.updated_boundary.vertices[index - 1 - i])
+                self.updated_boundary.vertices[index - 1 - i]
+            )
             if i == 0:
                 if clockwise_angle >= self.maximum_reference_angle or clockwise_angle == 0:  # 175
                     return
@@ -176,8 +171,7 @@ class MeshGeneration:
         # q1 = product
 
         close_vs = []
-        dist = add_v.distance_to(self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)]) + \
-                add_v.distance_to(self.updated_boundary.vertices[index - 1])
+        dist = add_v.distance_to(self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)]) + add_v.distance_to(self.updated_boundary.vertices[index - 1])
         for i, v in enumerate(self.updated_boundary.vertices):
             if v in [self.updated_boundary.vertices[index],
                      self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)],
@@ -216,11 +210,10 @@ class MeshGeneration:
         return math.pow(smoothness * q1 * q2, pow)
 
     def compute_ele_boundary_quality(self, element):
-        new_vs = [v for v in element.vertices if len(v.get_connected_vertices()) == 2
-                  and v in self.updated_boundary.vertices]
+        new_vs = [v for v in element.vertices
+                  if len(v.get_connected_vertices()) == 2 and v in self.updated_boundary.vertices]
 
         if len(new_vs):
-            # print(self.compute_boundary_quality(new_vs[0]), self.compute_boundary_narrowness(new_vs[0]))
             return self.compute_boundary_quality(new_vs[0]) # * self.compute_boundary_narrowness(new_vs[0])
         else:
             targt_vs = [v for v in element.vertices if v in self.updated_boundary.vertices]
@@ -248,8 +241,12 @@ class MeshGeneration:
             targt_len = targt_vs[0].distance_to(targt_vs[1])
 
             dists = [(index + i) % len(self.updated_boundary.vertices) for i in range(-2, 4)]
-            mean_dist = sum([self.updated_boundary.vertices[dists[i]].distance_to(
-                self.updated_boundary.vertices[dists[i+1]]) for i in range(len(dists) - 1)]) / (len(dists) - 1)
+            mean_dist = sum([
+                self.updated_boundary.vertices[dists[i]].distance_to(
+                    self.updated_boundary.vertices[dists[i+1]]
+                )
+                for i in range(len(dists) - 1)
+            ]) / (len(dists) - 1)
 
             smoothness = min(mean_dist, targt_len) / max(mean_dist, targt_len)
             angle_quality = 3 * min(angles) / math.pi if len(angles) else 1
@@ -288,8 +285,7 @@ class MeshGeneration:
                         return True
 
                 if self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)] not in mesh.vertices:
-                    if c_g.is_cross(Segment(v, self.updated_boundary.vertices[(index + 1)
-                                                % len(self.updated_boundary.vertices)])):
+                    if c_g.is_cross(Segment(v, self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)])):
                         return True
 
         return False
@@ -306,7 +302,6 @@ class MeshGeneration:
         return list({m for m in self.generated_meshes if vertex in m.vertices})
 
     def update_boundary(self, reference_point, mesh):
-
         new_vertices = []
         for v in mesh.vertices:
             if v not in self.updated_boundary.vertices:
@@ -320,9 +315,12 @@ class MeshGeneration:
                 self.boundary.vertices.append(new_vertices[0])
             # update candidate reference points
             ref_neighbors = []
-            [ref_neighbors.extend([self.updated_boundary.vertices[(id + i + 1) % len(self.updated_boundary.vertices)],
-                              self.updated_boundary.vertices[id - i - 1]])
-                              for i in range(self.num_ref_neighbor // 2)]
+            [ref_neighbors.extend([
+                    self.updated_boundary.vertices[(id + i + 1) % len(self.updated_boundary.vertices)],
+                    self.updated_boundary.vertices[id - i - 1]
+                ])
+                for i in range(self.num_ref_neighbor // 2)
+            ]
             self.remove_reference_candidates(ref_neighbors + [mesh.vertices[mesh.vertices.index(new_vertices[0]) - 2]])
             self.add_reference_candidates(ref_neighbors)
 
@@ -338,11 +336,14 @@ class MeshGeneration:
 
             # update candidate reference points
             id = max([self.updated_boundary.vertices.index(v) for v in mesh.vertices
-                       if v not in removable_vertices])
+                      if v not in removable_vertices])
             ref_neighbors = []
-            [ref_neighbors.extend([self.updated_boundary.vertices[(id + i) % len(self.updated_boundary.vertices)],
-                                   self.updated_boundary.vertices[id - i - 1]])
-             for i in range(self.num_ref_neighbor // 2)]
+            [ref_neighbors.extend([
+                    self.updated_boundary.vertices[(id + i) % len(self.updated_boundary.vertices)],
+                    self.updated_boundary.vertices[id - i - 1]
+                ])
+                for i in range(self.num_ref_neighbor // 2)
+            ]
 
             self.remove_reference_candidates(removable_vertices + ref_neighbors)
             self.add_reference_candidates(ref_neighbors)
@@ -388,12 +389,7 @@ class MeshGeneration:
             M = -A / B
             N = A * m_v.x / B + m_v.y
 
-            x1, x2 = (-2 * M * N + 2 * m_v.x + 2 * M * m_v.y + math.sqrt(
-                math.fabs((-2 * M * N + 2 * m_v.x + 2 * M * m_v.y) ** 2
-                          - 4 * (M ** 2 + 1) * ((N - m_v.y) ** 2 + m_v.x ** 2 - D ** 2)))) / (2 * (M ** 2 + 1)), \
-                     (-2 * M * N + 2 * m_v.x + 2 * M * m_v.y - math.sqrt(
-                         math.fabs((-2 * M * N + 2 * m_v.x + 2 * M * m_v.y) ** 2
-                                   - 4 * (M ** 2 + 1) * ((N - m_v.y) ** 2 + m_v.x ** 2 - D ** 2)))) / (2 * (M ** 2 + 1))
+            x1, x2 = (-2 * M * N + 2 * m_v.x + 2 * M * m_v.y + math.sqrt(math.fabs((-2 * M * N + 2 * m_v.x + 2 * M * m_v.y) ** 2 - 4 * (M ** 2 + 1) * ((N - m_v.y) ** 2 + m_v.x ** 2 - D ** 2)))) / (2 * (M ** 2 + 1)), (-2 * M * N + 2 * m_v.x + 2 * M * m_v.y - math.sqrt(math.fabs((-2 * M * N + 2 * m_v.x + 2 * M * m_v.y) ** 2 - 4 * (M ** 2 + 1) * ((N - m_v.y) ** 2 + m_v.x ** 2 - D ** 2)))) / (2 * (M ** 2 + 1))
             y1, y2 = M * x1 + N, M * x2 + N
         V1, V2 = Vertex(x1, y1), Vertex(x2, y2)
         if V1.distance_to(vertex) < V2.distance_to(vertex):
@@ -414,17 +410,9 @@ class MeshGeneration:
             x1, x2 = a + math.sqrt(dist**2-(W/B)**2), a - math.sqrt(dist**2-(W/B)**2)
             y1, y2 = W/B + b, W/B + b
         else:
-
             M = -A / B
             N = (W + A * a + B * b) / B
-            x1, x2 = (2 * M * b - 2 * M * N + 2 * a + math.sqrt(math.fabs((2 * M * b - 2 * M * N + 2 * a) ** 2
-                                                                          - 4 * (M ** 2 + 1) * ((
-                                                                                                            N - b) ** 2 + a ** 2 - dist ** 2)))) / (
-                                 2 * (M ** 2 + 1)), \
-                     (2 * M * b - 2 * M * N + 2 * a - math.sqrt(math.fabs((2 * M * b - 2 * M * N + 2 * a) ** 2
-                                                                          - 4 * (M ** 2 + 1) * ((
-                                                                                                            N - b) ** 2 + a ** 2 - dist ** 2)))) / (
-                                 2 * (M ** 2 + 1))
+            x1, x2 = (2 * M * b - 2 * M * N + 2 * a + math.sqrt(math.fabs((2 * M * b - 2 * M * N + 2 * a) ** 2 - 4 * (M ** 2 + 1) * ((N - b) ** 2 + a ** 2 - dist ** 2)))) / (2 * (M ** 2 + 1)), (2 * M * b - 2 * M * N + 2 * a - math.sqrt(math.fabs((2 * M * b - 2 * M * N + 2 * a) ** 2 - 4 * (M ** 2 + 1) * ((N - b) ** 2 + a ** 2 - dist ** 2)))) / (2 * (M ** 2 + 1))
             y1, y2 = M * x1 + N, M * x2 + N
         V1, V2 = Vertex(x1, y1), Vertex(x2, y2)
         if V1.distance_to(vertex) < V2.distance_to(vertex):
@@ -434,9 +422,7 @@ class MeshGeneration:
 
     def inner_vertex(self, vertex, angle):
         index = self.updated_boundary.vertices.index(vertex)
-        left_v = self.updated_boundary.vertices[
-            (index + 1) % len(
-                self.updated_boundary.vertices)]
+        left_v = self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)]
         right_v = self.updated_boundary.vertices[index - 1]
 
         m_v = (left_v + right_v) / 2
@@ -465,12 +451,7 @@ class MeshGeneration:
         else:
             M = -A / B
             N = (W + A * a + B * b) / B
-            x1, x2 = (2 * M * b - 2 * M * N + 2 * a + math.sqrt(math.fabs((2 * M * b - 2 * M * N + 2 * a) ** 2
-                                                                          - 4 * (M ** 2 + 1) * ((N - b) ** 2 + a ** 2 - dist ** 2)))) / (
-                             2 * (M ** 2 + 1)), \
-                     (2 * M * b - 2 * M * N + 2 * a - math.sqrt(math.fabs((2 * M * b - 2 * M * N + 2 * a) ** 2
-                                                                          - 4 * (M ** 2 + 1) * ((N - b) ** 2 + a ** 2 - dist ** 2)))) / (
-                             2 * (M ** 2 + 1))
+            x1, x2 = (2 * M * b - 2 * M * N + 2 * a + math.sqrt(math.fabs((2 * M * b - 2 * M * N + 2 * a) ** 2 - 4 * (M ** 2 + 1) * ((N - b) ** 2 + a ** 2 - dist ** 2)))) / (2 * (M ** 2 + 1)), (2 * M * b - 2 * M * N + 2 * a - math.sqrt(math.fabs((2 * M * b - 2 * M * N + 2 * a) ** 2 - 4 * (M ** 2 + 1) * ((N - b) ** 2 + a ** 2 - dist ** 2)))) / (2 * (M ** 2 + 1))
             y1, y2 = M * x1 + N, M * x2 + N
         V1, V2 = Vertex(x1, y1), Vertex(x2, y2)
         if V1.to_find_clockwise_angle(left_v, right_v) < V2.to_find_clockwise_angle(left_v, right_v):
@@ -479,24 +460,18 @@ class MeshGeneration:
             return V2
 
     def find_side_vertex(self, vertex, _next_v, next_v, nn_v, v_angle):
-        dist = (vertex.distance_to(
-                    _next_v) +
-                    vertex.distance_to(next_v) +
-                    next_v.distance_to(nn_v)) / 3
+        dist = (vertex.distance_to(_next_v) + vertex.distance_to(next_v) + next_v.distance_to(nn_v)) / 3
 
         target_angle = 45
         failed = False
         while True:
-            n_v = self.side_vertex(vertex, next_v, nn_v, target_angle,
-                                   dist
-                                   )
+            n_v = self.side_vertex(vertex, next_v, nn_v, target_angle, dist)
 
             connected_vs = vertex.get_connected_vertices()
             if target_angle <= v_angle:
                 failed = True
                 break
-            clockwise_boundaey = self.clockwise_vertices(vertex,
-                                                         connected_vs)
+            clockwise_boundaey = self.clockwise_vertices(vertex, connected_vs)
             if self.is_inside_boundary(vertex, n_v, clockwise_boundaey, _next_v, next_v):
                 break
             else:
@@ -515,32 +490,34 @@ class MeshGeneration:
                 i += 1
                 continue
 
-            v_angle = math.degrees(self.updated_boundary.vertices[index].
-                                   to_find_clockwise_angle(self.updated_boundary.vertices[
-                                                               (index + 1) % len(self.updated_boundary.vertices)],
-                                                           self.updated_boundary.vertices[
-                                                               index - 1]))
+            v_angle = math.degrees(self.updated_boundary.vertices[index].to_find_clockwise_angle(
+                self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)],
+                self.updated_boundary.vertices[index - 1]
+            ))
 
             if v_angle <= 90:
                 target_angle = v_angle if v_angle >= 45 else 45
                 failed = False
                 while True:
-                    new_v = self.middle_vertex(self.updated_boundary.vertices[index],
-                                               self.updated_boundary.vertices[
-                                                   (index + 1) % len(self.updated_boundary.vertices)],
-                                               self.updated_boundary.vertices[index - 1],
-                                               target_angle)
+                    new_v = self.middle_vertex(
+                        self.updated_boundary.vertices[index],
+                        self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)],
+                        self.updated_boundary.vertices[index - 1],
+                        target_angle
+                    )
                     # print('Target angle:', target_angle)
                     connected_vs = self.updated_boundary.vertices[index].get_connected_vertices()
                     if target_angle >= 135:
                         failed = True
                         break
                     clockwise_boundaey = self.clockwise_vertices(self.updated_boundary.vertices[index], connected_vs)
-                    if self.is_inside_boundary(self.updated_boundary.vertices[index], new_v, clockwise_boundaey,
-                                               self.updated_boundary.vertices[
-                                                   (index + 1) % len(self.updated_boundary.vertices)],
-                                               self.updated_boundary.vertices[
-                                                   index - 1]):
+                    if self.is_inside_boundary(
+                        self.updated_boundary.vertices[index],
+                        new_v,
+                        clockwise_boundaey,
+                        self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)],
+                        self.updated_boundary.vertices[index - 1]
+                    ):
                         break
                     else:
                         target_angle += 5
@@ -548,18 +525,17 @@ class MeshGeneration:
                     self.updated_boundary.vertices[index].x = new_v.x
                     self.updated_boundary.vertices[index].y = new_v.y
 
-
             elif 90 < v_angle <= 180:
-                left_angle = self.updated_boundary.compute_boundary_angle(self.updated_boundary.vertices[
-                                                                              (index + 1) % len(
-                                                                                  self.updated_boundary.vertices)])
-                right_angle = self.updated_boundary.compute_boundary_angle(self.updated_boundary.vertices[
-                                                                               index - 1])
+                left_angle = self.updated_boundary.compute_boundary_angle(
+                    self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)]
+                )
+                right_angle = self.updated_boundary.compute_boundary_angle(
+                    self.updated_boundary.vertices[index - 1]
+                )
 
                 if right_angle < 45:
                     n_v = self.find_side_vertex(self.updated_boundary.vertices[index],
-                                                self.updated_boundary.vertices[
-                                                    (index + 1) % len(self.updated_boundary.vertices)],
+                                                self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)],
                                                 self.updated_boundary.vertices[index - 1],
                                                 self.updated_boundary.vertices[index - 2], right_angle)
 
@@ -568,10 +544,8 @@ class MeshGeneration:
                 elif left_angle < 45:
                     n_v = self.find_side_vertex(self.updated_boundary.vertices[index],
                                                 self.updated_boundary.vertices[index - 1],
-                                                self.updated_boundary.vertices[
-                                    (index + 1) % len(self.updated_boundary.vertices)],
-                                   self.updated_boundary.vertices[
-                                       (index + 2) % len(self.updated_boundary.vertices)], left_angle)
+                                                self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)],
+                                                self.updated_boundary.vertices[(index + 2) % len(self.updated_boundary.vertices)], left_angle)
 
                     self.updated_boundary.vertices[index].x = n_v.x
                     self.updated_boundary.vertices[index].y = n_v.y
@@ -605,23 +579,25 @@ class MeshGeneration:
         right_v = self.updated_boundary.vertices[index - 1]
         dist = (vertex.distance_to(left_v) + vertex.distance_to(right_v)) / 2
 
-        c_neighbors = Boundary2D.get_closet_points(self.updated_boundary.vertices, self.updated_boundary.vertices[index],
-                                     [self.updated_boundary.vertices[index - 2],
-                                      right_v,
-                                      left_v,
-                                       self.updated_boundary.vertices[
-                                                     (index + 2) % len(self.updated_boundary.vertices)]],
-                                     dist)
+        c_neighbors = Boundary2D.get_closet_points(
+            self.updated_boundary.vertices,
+            self.updated_boundary.vertices[index],
+            [
+                self.updated_boundary.vertices[index - 2],
+                right_v,
+                left_v,
+                self.updated_boundary.vertices[(index + 2) % len(self.updated_boundary.vertices)]
+            ],
+            dist
+        )
 
-        neighbors = self.find_closest_segments(self.updated_boundary, vertex,
-                                               dist)
+        neighbors = self.find_closest_segments(self.updated_boundary, vertex, dist)
+
         if len(neighbors) or len(c_neighbors):
-
             failed = False
             times = 4
             while True:
-                n_v = self.indention_vertex(vertex, left_v, right_v,
-                                            (360 - v_angle) / 2, dist / times)
+                n_v = self.indention_vertex(vertex, left_v, right_v, (360 - v_angle) / 2, dist / times)
                 # print('Target angle:', target_angle)
                 connected_vs = vertex.get_connected_vertices()
                 if times >= 10:
@@ -737,15 +713,18 @@ class MeshGeneration:
                         origin = [v for v in origins if v is not vertex]
                         origin = Boundary2D.compute_dist(origin, vertex)[0][0]
 
-                        p_dist = Boundary2D.compute_dist([v for v in self.updated_boundary.vertices
-                                                 if v not in connected_vertices and v is not vertex],
-                                                origin)
+                        p_dist = Boundary2D.compute_dist(
+                            [
+                                v for v in self.updated_boundary.vertices
+                                if v not in connected_vertices and v is not vertex
+                            ],
+                            origin
+                        )
                         if not len(p_dist):
                             continue
                         cloest_p, dist = p_dist[0]
 
-                        estimate_vertex = Mesh.estimate_4th_vertex(origin, connected_vertices[0],
-                                                                   connected_vertices[1], suggest_dist=dist)
+                        estimate_vertex = Mesh.estimate_4th_vertex(origin, connected_vertices[0], connected_vertices[1], suggest_dist=dist)
 
                         vertex.x = estimate_vertex.x
                         vertex.y = estimate_vertex.y
@@ -755,8 +734,6 @@ class MeshGeneration:
                         for connect_v in connected_vertices:
                             vertex.x = lr * vertex.x + (1 - lr) * connect_v.x
                             vertex.y = lr * vertex.y + (1 - lr) * connect_v.y
-                    # else:
-                    # continue
 
                 elif len(near_meshes) == 2:
                     update_boundary_vertices = []
@@ -778,15 +755,12 @@ class MeshGeneration:
                         common_v1 = common_v1s[0]
                         common_v2 = common_v2s[0]
 
-                        estimate_vertex_1 = Mesh.estimate_4th_vertex(common_v1, update_boundary_vertices[0],
-                                                                     inside_vertex, factor=0.7)
+                        estimate_vertex_1 = Mesh.estimate_4th_vertex(common_v1, update_boundary_vertices[0], inside_vertex, factor=0.7)
 
-                        estimate_vertex_2 = Mesh.estimate_4th_vertex(common_v2, update_boundary_vertices[1],
-                                                                     inside_vertex, factor=0.7)
+                        estimate_vertex_2 = Mesh.estimate_4th_vertex(common_v2, update_boundary_vertices[1], inside_vertex, factor=0.7)
 
                         vertex.x = (estimate_vertex_1.x + estimate_vertex_2.x) / 2
                         vertex.y = (estimate_vertex_1.y + estimate_vertex_2.y) / 2
-                        # self.boundary.show()
 
                     else:
                         lr = lr_2
@@ -843,12 +817,20 @@ class MeshGeneration:
                     r_p_path, r_p_paths, exclusion = [], [], [rp, l_p]
                     self.get_nodes(r_p, exclusion, n_neighbor - 1, r_p_path, r_p_paths, n_neighbor)
 
-                    radius_neighbors = self.get_radius_neighbors(rp, l_p, r_p, [rp, l_p, r_p, target], radius=radius,
-                                                                 N=n_radius)
+                    radius_neighbors = self.get_radius_neighbors(rp, l_p, r_p, [rp, l_p, r_p, target], radius=radius, N=n_radius)
 
-                    samples = list(itertools.product([_path for _path in r_p_paths if len(_path) == n_neighbor],
-                                                     radius_neighbors,
-                                                     [_path for _path in l_p_paths if len(_path) == n_neighbor]))
+                    samples = list(itertools.product(
+                        [
+                            _path for _path in r_p_paths
+                            if len(_path) == n_neighbor
+                        ],
+                        radius_neighbors,
+                        [
+                            _path for _path in l_p_paths
+                            if len(_path) == n_neighbor
+                        ]
+                    ))
+
                     for rr, mm, ll in samples:
                         if target in rr and target in ll:
                             continue
@@ -859,11 +841,14 @@ class MeshGeneration:
                             rp.distance_to(ll[0])) / (2 * n_neighbor)
 
                         [_sample.extend([rp.distance_to(p) / (base_length * radius),
-                                         rp.to_find_clockwise_angle(p, r_p) % round(2 * math.pi, 4)]) for p in rr]
+                                         rp.to_find_clockwise_angle(p, r_p) % round(2 * math.pi, 4)])
+                            for p in rr]
                         [_sample.extend([rp.distance_to(p) / (base_length * radius),
-                                         rp.to_find_clockwise_angle(p, r_p) % round(2 * math.pi, 4)]) for p in mm]
+                                         rp.to_find_clockwise_angle(p, r_p) % round(2 * math.pi, 4)])
+                            for p in mm]
                         [_sample.extend([rp.distance_to(p) / (base_length * radius),
-                                         rp.to_find_clockwise_angle(p, r_p) % round(2 * math.pi, 4)]) for p in reversed(ll)]
+                                         rp.to_find_clockwise_angle(p, r_p) % round(2 * math.pi, 4)])
+                            for p in reversed(ll)]
                         _target = [rp.distance_to(target) / (base_length * radius),
                                    rp.to_find_clockwise_angle(target, r_p) % round(2 * math.pi, 4)]
 
@@ -878,25 +863,20 @@ class MeshGeneration:
         print("Done!")
         return all_samples, types, outputs
 
-
     def get_radius_neighbors(self, base_point, start_point, end_point, exclusion, radius, N=3):
         def radius_neighbors_with_angle(start_angle, end_angle):
             # find closest point in circle
-            base_length = radius * (0.5 * base_point.distance_to(start_point) +
-                                    0.5 * base_point.distance_to(end_point))
+            base_length = radius * (0.5 * base_point.distance_to(start_point) + 0.5 * base_point.distance_to(end_point))
             closet_neighbors = self.boundary.get_closet_points(
-                self.boundary.get_points_within_angle(self.boundary.vertices,
-                                                      base_point,
-                                                      start_point,
-                                                      start_angle,
-                                                      end_angle
-                                                      ),
-                base_point, exclusion=exclusion,
-                S_T=base_length)
+                self.boundary.get_points_within_angle(
+                    self.boundary.vertices, base_point, start_point, start_angle, end_angle
+                ),
+                base_point,
+                exclusion=exclusion,
+                S_T=base_length
+            )
 
-            _angle = base_point. \
-                to_find_clockwise_angle(start_point,
-                                        Vertex(base_point.x + 1, base_point.y))
+            _angle = base_point.to_find_clockwise_angle(start_point, Vertex(base_point.x + 1, base_point.y))
 
             closet_neighbors.append(base_point +
                                     Vertex(base_length * math.cos(_angle - (start_angle + end_angle) / 2),
