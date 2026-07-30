@@ -167,8 +167,36 @@ def element_number_box_plot():
     plt.show()
 
 
+def final_mesh(domain="boundary6",
+               ckpt=logs_path / method / "78" / "1" / "best_model.zip",
+               attempts=60):
+    """Mesh one domain with the trained policy until it fully completes, then save
+    the finished mesh. One command in, one finished mesh out."""
+    os.makedirs(eval_path, exist_ok=True)
+    env = BoudaryEnv(read_polygon(domains_path / f"{domain}.json"))
+    model = prepare_model(method, ckpt, env)   # loaded once so the stochastic retries differ
+    out = eval_path / f"final_mesh_{domain}.png"
+    for k in range(attempts):
+        obs = env.reset()
+        while True:
+            action, _states = model.predict(obs, deterministic=False)
+            obs, rewards, dones, info = env.step(action)
+            if dones:
+                break
+        coverage = sum(m.compute_area()[0] for m in env.generated_meshes) / env.original_area
+        if info['is_complete']:
+            env.smooth(env.boundary.vertices)
+            env.save_meshes(out, meshes=env.generated_meshes, quality=False, type=4, style='k-')
+            print(f"Completed {domain} on attempt {k + 1} "
+                  f"({len(env.generated_meshes)} elements, {coverage * 100:.0f}% area). Saved {out}")
+            return
+    env.save_meshes(out, meshes=env.generated_meshes, quality=False, type=4, style='k-')
+    print(f"No full completion in {attempts} attempts; saved best-effort partial to {out}")
+
+
 if __name__ == '__main__':
-    # Downstream: requires a run from `python -m sac.train` (writes logs_path).
-    evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
+    # One command -> one finished mesh (retries until the domain fully meshes).
+    final_mesh()
+    # evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
     # replication_evaluation(save_fig=True)
     # element_number_box_plot()
