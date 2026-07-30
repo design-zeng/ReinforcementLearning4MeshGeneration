@@ -1,6 +1,7 @@
 import math
 import json
 import itertools
+from typing import Any
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +15,8 @@ class MeshGeneration:
         self.updated_boundary = boundary.copy()
         self.all_vertices = boundary.vertices
         self.original_vertices = list(boundary.vertices)
-        self.candidate_vertices = None
+        self.candidate_vertices: Any = None
+        self.test_candidate_vertices: Any = []
         self.maximum_reference_angle = math.pi * 0.972
         self.num_ref_neighbor = 4
         self.rp_index = 0
@@ -147,6 +149,7 @@ class MeshGeneration:
         if self.candidate_vertices is None:
             self.find_reference_candidates(target_angle)
 
+        assert self.candidate_vertices is not None
         if len(self.candidate_vertices):
             if not_valid_points:
                 for v in self.candidate_vertices:
@@ -941,6 +944,7 @@ class MeshGeneration:
             # print(2 * e_reward / 9, 4 * (b_reward - 1) / 9)
             # return math.sqrt(e_reward * b_reward)
             return e_reward + 1 * (b_reward - 1)
+        raise ValueError(f"Unknown quality index: {index}")
 
     def generate_meshes_canvas(self, meshes, quality, indexing, type, style):
         self.boundary.plot(style=style, linewidth=1)
@@ -951,9 +955,9 @@ class MeshGeneration:
                 plt.text(center.x, center.y, f"{id}; {_quality}", fontsize=6)
             elif quality:
                 _quality = round(self.get_quality(element=m, index=type), 4)
-                plt.text(center.x, center.y, _quality, fontsize=6)
+                plt.text(center.x, center.y, str(_quality), fontsize=6)
             elif indexing:
-                plt.text(center.x, center.y, id, fontsize=4)
+                plt.text(center.x, center.y, str(id), fontsize=4)
 
     def save_meshes(self, name, meshes, quality=False, indexing=False, type=0, dpi=300, style='k.-'):
         plt.clf()
@@ -977,6 +981,7 @@ class MeshGeneration:
             for id, node in enumerate(nodes):
                 fw.write(f"{id+1}, {node.x}, {node.y}" + "\n")
 
+            i = 0
             for i in range(1, len(self.original_vertices)):
                 fw.write(f'*ELEMENT, TYPE=B21, ELSET=EB{i}\n {i+1}, {nodes.index(self.original_vertices[i-1]) + 1}, {nodes.index(self.original_vertices[i]) + 1}\n')
             fw.write(f'*ELEMENT, TYPE=S4R, ELSET=EB{i+1} \n')

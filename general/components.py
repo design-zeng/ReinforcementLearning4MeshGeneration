@@ -183,8 +183,8 @@ class Boundary2D:
 
         ax.set_frame_on(False)
         # ax.margins(0.05)
-        plt.gca().set_xlim([min(x) - 0.1, max(x) + 0.1])
-        plt.gca().set_ylim([min(y) - 0.1, max(y) + 0.1])
+        plt.gca().set_xlim((min(x) - 0.1, max(x) + 0.1))
+        plt.gca().set_ylim((min(y) - 0.1, max(y) + 0.1))
         plt.xticks([])
         plt.yticks([])
 
@@ -206,8 +206,8 @@ class Boundary2D:
 
         ax.set_frame_on(False)
         # ax.margins(0.05)
-        plt.gca().set_xlim([min(x) - 0.1, max(x) + 0.1])
-        plt.gca().set_ylim([min(y) - 0.1, max(y) + 0.1])
+        plt.gca().set_xlim((min(x) - 0.1, max(x) + 0.1))
+        plt.gca().set_ylim((min(y) - 0.1, max(y) + 0.1))
         plt.xticks([])
         plt.yticks([])
         plt.gca().set_aspect('equal', adjustable='box')
@@ -251,8 +251,8 @@ class Boundary2D:
 
         ax.set_frame_on(False)
         # ax.margins(0.05)
-        plt.gca().set_xlim([min(x) - 0.1, max(x) + 0.1])
-        plt.gca().set_ylim([min(y) - 0.1, max(y) + 0.1])
+        plt.gca().set_xlim((min(x) - 0.1, max(x) + 0.1))
+        plt.gca().set_ylim((min(y) - 0.1, max(y) + 0.1))
         plt.xticks([])
         plt.yticks([])
         plt.gca().set_aspect('equal', adjustable='box')
@@ -278,8 +278,8 @@ class Boundary2D:
 
         ax.set_frame_on(False)
         # ax.margins(0.05)
-        plt.gca().set_xlim([min(x) - 0.1, max(x) + 0.1])
-        plt.gca().set_ylim([min(y) - 0.1, max(y) + 0.1])
+        plt.gca().set_xlim((min(x) - 0.1, max(x) + 0.1))
+        plt.gca().set_ylim((min(y) - 0.1, max(y) + 0.1))
         plt.xticks([])
         plt.yticks([])
         plt.gca().set_aspect('equal', adjustable='box')
@@ -733,6 +733,7 @@ class Mesh:
         elif type == 'area':
             q1, q2 = self.get_quality_3()
             return q1 * q2
+        raise ValueError(f"Unknown quality type: {type}")
 
     def compute_area(self):
         length_of_edges = [self.vertices[i].distance_to(self.vertices[i - 1]) for i in range(4)]
@@ -800,7 +801,7 @@ class Mesh:
             center = self.get_centriod()
             q1, q2 = self.get_quality_3()
             _quality = round(math.sqrt(q1 * q2), 2)
-            plt.text(center.x*0.8, center.y * 0.8, _quality, fontsize=15)
+            plt.text(center.x*0.8, center.y * 0.8, str(_quality), fontsize=15)
         # plt.xlim(-0.3,1.5)
         # plt.ylim(-0.3, 1.5)
         # plt.show()

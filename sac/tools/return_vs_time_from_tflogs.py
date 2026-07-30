@@ -34,6 +34,7 @@ def load_log(path, tags, name=None, MAX=None):
         for k, v in path.items():
             runlog_data = pd.concat([runlog_data, load_log(v, tags, k, MAX=MAX)])
         return runlog_data
+    return pd.DataFrame({"metric": [], "Averaged return": [], "Time step": [], "method": []})
 
 
 def plot_tensorflow_log(data_frame, title="Run"):

@@ -21,6 +21,7 @@ ACTION_TYPES = [0, 0.5, 1]
 
 
 def sample_state(angle, action_type):
+    obs = []
     if action_type == ACTION_TYPES[1]:
         obs = [uniform(0.01, 0.45), 0,
                uniform(0.1, 0.77), uniform(-0.5, 0.9) * math.pi,

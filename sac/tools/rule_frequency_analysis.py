@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 sns.set_theme(style="darkgrid")
 
@@ -37,6 +38,7 @@ def load_action_counts():
 def plot_action_counts(data_frame):
     ax = sns.barplot(x="Domains", y="Number of actions", hue="Action type", data=data_frame)
     for p in ax.patches:
+        assert isinstance(p, Rectangle)
         ax.annotate(format(p.get_height(), ".0f"),
                     (p.get_x() + p.get_width() / 2., p.get_height()),
                     ha="center", va="center", xytext=(0, 9), textcoords="offset points")

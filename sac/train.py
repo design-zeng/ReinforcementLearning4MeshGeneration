@@ -85,8 +85,8 @@ def train_all():
             previous_model_path = base_path / "sac" / "output" / "logs" / method_name / f"{version}" / f"{i - 1}" / "model.zip"
             model = Algo.load(previous_model_path, env=train_env)
 
-        eval_callback = CustomCallback(eval_env, best_model_save_path=output_path,
-                                           log_path=output_path, eval_freq=1000,
+        eval_callback = CustomCallback(eval_env, best_model_save_path=str(output_path),
+                                           log_path=str(output_path), eval_freq=1000,
                                            n_eval_episodes=1,
                                            deterministic=False, render=False)
 

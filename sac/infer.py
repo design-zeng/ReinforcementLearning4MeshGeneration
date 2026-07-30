@@ -7,6 +7,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.image as mpimg
 from matplotlib import pyplot as plt
+from matplotlib.gridspec import GridSpec
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
 from general.polygon_reader import read_polygon
@@ -150,7 +151,7 @@ def element_number_box_plot():
 
     panels = sorted((eval_path / version).glob("*.png"))[:3]
     fig = plt.figure(figsize=(6, 6))
-    grid = plt.GridSpec(2, 2)
+    grid = GridSpec(2, 2)
     titles = ['(a) Sparse density', '(b) Medium density', '(c) Dense density']
     for k, cell in enumerate([grid[:1, :1], grid[:1, 1:], grid[1:, :1]]):
         ax = fig.add_subplot(cell)

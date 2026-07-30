@@ -25,7 +25,7 @@ class Gym_Env(gym.Env):
         self.n_steps = 0
         self.max_steps = 1000
     
-    def reset(self, seed=None, options=None):
+    def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
 
         self.boundary_env.reset_with_boundary(self.initial_boundary.copy())

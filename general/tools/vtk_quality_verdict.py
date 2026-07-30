@@ -115,10 +115,14 @@ def verdict_domain(domain, metrics):
                 res += '\n%s\n%s' % (measure[1],
                                      DumpQualityStats(iq, 'Mesh ' + meshType[1] + ' Quality'))
                 p = re.compile('average: [0-9.]+')
-                str = p.search(DumpQualityStats(iq, 'Mesh ' + meshType[1] + ' Quality')).group()
+                match = p.search(DumpQualityStats(iq, 'Mesh ' + meshType[1] + ' Quality'))
+                assert match is not None
+                str = match.group()
                 ave = str.split(' ')[1]
                 p = re.compile('standard deviation: [0-9.]+')
-                str = p.search(DumpQualityStats(iq, 'Mesh ' + meshType[1] + ' Quality')).group()
+                match = p.search(DumpQualityStats(iq, 'Mesh ' + meshType[1] + ' Quality'))
+                assert match is not None
+                str = match.group()
                 std = str.split(' ')[2]
                 metrics[measure[0]].append([float(ave), float(std)])
 

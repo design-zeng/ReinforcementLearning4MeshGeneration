@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import torchvision.transforms as T
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -74,7 +73,7 @@ def plot(file_name):
     # plt.show()
 
     r = pd.DataFrame([[i, d] for i, d in enumerate(res)],
-        columns=['Epoch', 'Reward'])
+        columns=pd.Index(['Epoch', 'Reward']))
 
     ss = list(zip(range(len(res)), res))
     tt = sorted(ss, key=lambda k: k[1], reverse=True)
@@ -135,7 +134,7 @@ def plot(file_name):
 # plot("D:\\meshingData\\A2C\\plots\\test_58\\total_rewards.txt")
 
 def write_csv(data, file_name):
-    r = pd.DataFrame(data, columns=['state', 'action', 'reward', 'done', 'state value'])
+    r = pd.DataFrame(data, columns=pd.Index(['state', 'action', 'reward', 'done', 'state value']))
     r.to_csv(file_name)
 
 def plot_rewarding(data, save=False, name=None):

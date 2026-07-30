@@ -1,4 +1,5 @@
 import math
+from typing import Any
 
 import numpy as np
 
@@ -9,11 +10,11 @@ class PointEnvironment(object):
     def __init__(self, reference_point, boundary, neighbor_num=4, radius_num=3,
                  average_edge_length=1, area_ratio=1, radius=6, static=False):
         self.reference_point = reference_point
-        self.neighbors = None
-        self.radius_neighbors = None
-        self.base_length = None
-        self.available_radius = None
-        self.state = None
+        self.neighbors: Any = None
+        self.radius_neighbors: Any = None
+        self.base_length: Any = None
+        self.available_radius: Any = None
+        self.state: Any = None
         self.boundary = boundary
         self.neighbor_num = neighbor_num
         self.radius_num = radius_num

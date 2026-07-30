@@ -2,6 +2,7 @@ import math
 import json
 import time
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import gym
@@ -33,13 +34,13 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         self.radius = 4
         self.observation_space = spaces.Box(low=-999, high=999,
                                             shape=(2 * (self.neighbor_num + self.radius_num), ), dtype=np.float32)
-        self.current_point_environment = None
+        self.current_point_environment: Any = None
         self.not_valid_points = []
         self.last_not_valid_points = []
 
         self.target_angle = 0
         self.rewarding = []
-        self.estimated_area_range = None
+        self.estimated_area_range: Any = None
         self.window_size = (500, 500)
         self.current_state = None
 
@@ -52,7 +53,7 @@ class BoudaryEnv(MeshGeneration, gym.Env):
             0: []
         }
 
-    def reset(self, static=False):
+    def reset(self, static=False):  # pyright: ignore[reportIncompatibleMethodOverride]
         self.viewer = None
         self.boundary = self.original_boundary.deep_copy()
         self.updated_boundary = self.boundary.copy()
@@ -96,7 +97,7 @@ class BoudaryEnv(MeshGeneration, gym.Env):
             return Mesh([v[index - 2], v[index - 1], v[index], v[(index + 1) % n]])
         return Mesh([new_point, v[index - 1], v[index], v[(index + 1) % n]])
 
-    def step(self, action):
+    def step(self, action):  # pyright: ignore[reportIncompatibleMethodOverride]
         done = False
         failed = True
         reward = 0
@@ -202,6 +203,7 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         done = False
         next_state = None
         not_valid_element = True
+        is_complete = True
 
         reference_point = self.current_point_environment.reference_point
 

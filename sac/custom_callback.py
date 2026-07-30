@@ -81,5 +81,6 @@ class CustomCallback(BaseCallback):
             if self.best_model_save_path is not None:
                 self.model.save(os.path.join(self.best_model_save_path, "best_model"))
 
-        self.model.save(os.path.join(self.log_path, f"{num_freq}"))
+        if self.log_path is not None:
+            self.model.save(os.path.join(self.log_path, f"{num_freq}"))
         return True

@@ -1,8 +1,8 @@
 import math
 import json
+from typing import Any, cast
 
-from tkinter import *
-from tkinter import filedialog
+from tkinter import BOTH, END, Button, Canvas, Entry, Frame, Label, Text, Tk, Toplevel, filedialog
 
 class MeshFrame(Frame):
     def __init__(self, master):
@@ -14,13 +14,13 @@ class MeshFrame(Frame):
         self.window_name = "Mesh Generation UI"
         self.fore_color = '#502c69'
         self.back_color = '#000000'
-        self.canvas = None
-        self.last_draw = None
-        self.area = None
+        self.canvas: Any = None
+        self.last_draw: Any = None
+        self.area: Any = None
         self.initUI()
 
     def initUI(self):
-        self.master.title(self.window_name)
+        cast(Tk, self.master).title(self.window_name)
         self.pack(fill=BOTH, expand=True)
 
         self.columnconfigure(1, weight=1)
@@ -182,12 +182,12 @@ class Density(Frame):
         self.window_name = "Density setting"
         self.points = points
         self.base_frame = base_frame
-        self.base_entry = None
+        self.base_entry: Any = None
         self.density_entries = []
         self.initUI()
 
     def initUI(self):
-        self.master.title(self.window_name)
+        cast(Toplevel, self.master).title(self.window_name)
         self.pack(fill=BOTH, expand=True)
 
         # scrollbar = Scrollbar(self.master)
