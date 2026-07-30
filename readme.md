@@ -60,18 +60,20 @@ reproducibility.
 ## Repository layout
 
 - `general/` — shared geometry/meshing library (`components.py`, `mesh.py`,
-  `data.py`, `boundary_env.py`, `polygon_generators.py`, `boundary_renderer.py`)
-  plus standalone utilities in `general/tools/`. The geometry classes
-  (`Vertex`, `Segment`, `Boundary2D`, `Mesh`, `PointEnvironment`, …) live in
-  `general/components.py`.
+  `boundary_env.py`, `point_environment.py`, `lin_alg.py`, `polygon_reader.py`,
+  `boundary_renderer.py`) plus standalone utilities in `general/tools/`. The
+  geometry classes (`Vertex`, `Segment`, `Boundary2D`, `Mesh`) live in
+  `general/components.py`; the RL state encoder `PointEnvironment` is in
+  `general/point_environment.py`.
 - `ebrd/` — **FreeMesh-S** (paper 1): the supervised feed-forward network (FNN)
-  element-extraction model (`EBRD.py`) and its training-sample generator
+  element-extraction model (`model.py`), its training/inference entrypoints
+  (`train.py`, `infer.py`), and its training-sample generator
   (`data_augmentation.py`).
 - `original_ann/` — the original ANN element-extraction predecessor (paper 4);
   ships its training patterns in `original_ann/patterns/`.
 - `sac/` — **FreeMesh-RL** (paper 2): Soft Actor-Critic training/evaluation and
   the associated plotting tools.
-- `sac-ebd-style/` — a work-in-progress from-scratch reimplementation (see last section).
+- `sac-ebd-style-draft/` — a work-in-progress from-scratch reimplementation (see last section).
 - **`samples/domains/`** — the only inputs you provide: domain geometries (JSON
   boundary-vertex lists), loaded with `read_polygon(...)`. Everything else is
   generated.
@@ -98,70 +100,147 @@ as module-level variables or `__main__` toggles — open the file to adjust them
 
 ### Reinforcement learning — Soft Actor-Critic (paper 2, `sac/`)
 
-1. **Train** — `python -m sac.train`  *(needs: domains)*
+1. **Train** *(needs: domains)*
+
+   ```bash
+   python -m sac.train
+   ```
+
    Trains an agent and writes numbered checkpoints, `best_model`, and TensorBoard
    logs to `sac/output/logs/<method>/<version>/<stage>/`. Configure the globals at
    the top of `sac/train.py`: `method_name` (`sac`/`ppo`/`ddpg`/`td3`/`a2c`),
    `version`, `environments` (curriculum stages `[total_timesteps, train_env,
    eval_env]`), `method_settings`. Full training is long — lower `total_timesteps`
    for a quick run.
-2. **Evaluate** — `python -m sac.infer`  *(needs: a `sac.train` run)*
+2. **Evaluate** *(needs: a `sac.train` run)*
+
+   ```bash
+   python -m sac.infer
+   ```
+
    Auto-discovers the checkpoints from step 1 (`version`/`stage` at the top of
    `sac/infer.py` must match your train run), meshes the test domains, and
    **produces** figures, `.inp` meshes, samples (`sac/output/evaluation/<version>/`)
    and rule histories (`sac/output/experiments/<version>/`). `__main__` also offers
    `replication_evaluation()` and `element_number_box_plot()`.
-3. **Plot training curves** — `python -m sac.tools.return_vs_time_from_tflogs`
-   *(needs: a `sac.train` run)* — auto-discovers TensorBoard runs under
-   `sac/output/logs/` and plots averaged return vs. time step.
-4. **Rule-usage analysis** — `python -m sac.tools.rule_frequency_analysis`
-   *(needs: a `sac.infer` run)* — bar chart of rule (type 0/1/2) usage from the
-   histories in `sac/output/experiments/`.
+3. **Plot training curves** *(needs: a `sac.train` run)*
+
+   ```bash
+   python -m sac.tools.return_vs_time_from_tflogs
+   ```
+
+   Auto-discovers TensorBoard runs under `sac/output/logs/` and plots averaged
+   return vs. time step.
+4. **Rule-usage analysis** *(needs: a `sac.infer` run)*
+
+   ```bash
+   python -m sac.tools.rule_frequency_analysis
+   ```
+
+   Bar chart of rule (type 0/1/2) usage from the histories in
+   `sac/output/experiments/`.
 
 ### Supervised FNN element extraction (paper 1, `ebrd/`)
 
-- **Train** — `python -m ebrd.train`  *(needs: domains)* — the FreeMesh-S producer
-  steps, written under `ebrd/output/`: (1) `data_sampling` (Experience Extraction) →
-  training samples, (2) `start_training` → FNN policy (`model.pt`). Also offers
-  `hyperparameter_search()` (quality-threshold sweep, paper Table 7) and
-  `self_evolving_training(...)` (the self-learning loop, paper Table 6).
-- **Infer** — `python -m ebrd.infer`  *(needs: an `ebrd.train` run)* — loads `model.pt`
-  and meshes the test domains, writing figures/samples under `ebrd/output/`.
-- **Sampling only** — `python -m ebrd.data_augmentation` writes a training-sample
-  dataset to `ebrd/output/data_augmentation/` (adjust `pool`, `N`, `threshold`).
+- **Train** *(needs: domains)*
+
+  ```bash
+  python -m ebrd.train
+  ```
+
+  The FreeMesh-S producer steps, written under `ebrd/output/`: (1) `data_sampling`
+  (Experience Extraction) → training samples, (2) `start_training` → FNN policy
+  (`model.pt`). Also offers `hyperparameter_search()` (quality-threshold sweep,
+  paper Table 7) and `self_evolving_training(...)` (the self-learning loop, paper
+  Table 6).
+- **Infer** *(needs: an `ebrd.train` run)*
+
+  ```bash
+  python -m ebrd.infer
+  ```
+
+  Loads `model.pt` and meshes the test domains, writing figures/samples under
+  `ebrd/output/`.
+- **Sampling only**
+
+  ```bash
+  python -m ebrd.data_augmentation
+  ```
+
+  Writes a training-sample dataset to `ebrd/output/data_augmentation/` (adjust
+  `pool`, `N`, `threshold`).
 
 The shared network definition (`FNNPolicy`) and checkpoint loading live in `ebrd/model.py`.
 
 ### Original ANN element extraction (paper 4, `original_ann/`)
 
-- **Train** — `python -m original_ann.train`  *(needs: the shipped
-  `original_ann/patterns/pattern.txt`)* — trains the back-propagation MLP and saves it
-  to `original_ann/output/model.pt`. In `__main__` swap `new_model()` for `load_model()`
-  to resume from a checkpoint; `epoches`/`learning_rate` are at the top of `train.py`.
-- **Infer** — `python -m original_ann.infer`  *(needs: a `original_ann.train` run)* —
-  loads `model.pt` and runs `predict(model, points)` on a boundary configuration.
-- **Visualize patterns** — `python -m original_ann.plot_patterns`
+- **Train** *(needs: the shipped `original_ann/patterns/pattern.txt`)*
+
+  ```bash
+  python -m original_ann.train
+  ```
+
+  Trains the back-propagation MLP and saves it to `original_ann/output/model.pt`.
+  In `__main__` swap `new_model()` for `load_model()` to resume from a checkpoint;
+  `epoches`/`learning_rate` are at the top of `train.py`.
+- **Infer** *(needs: a `original_ann.train` run)*
+
+  ```bash
+  python -m original_ann.infer
+  ```
+
+  Loads `model.pt` and runs `predict(model, points)` on a boundary configuration.
+- **Visualize patterns**
+
+  ```bash
+  python -m original_ann.tools.plot_patterns
+  ```
 
 The shared network definition and checkpoint loading live in `original_ann/model.py`.
 
 ### Mesh quality & geometry tools (`general/tools/`)
 
-- `python -m general.tools.vtk_quality_verdict` *(needs: a `sac.infer` run)* —
-  VTK/Verdict metrics (min/max angle, scaled Jacobian, stretch, taper) over the
-  `.inp` meshes produced under `sac/output/evaluation/`.
-- `python -m general.tools.mesh_quality_comparison` *(needs: a `sac.infer` run)* —
-  element-quality and singularity metrics over the produced `.inp` meshes.
-- `python -m general.tools.json_gmsh_abaqus_unv_conversion` — converts a domain to
-  Gmsh geometry (works immediately) and, if present, a produced `.inp` to UNV.
-- `python -m general.tools.quad_quality_fourth_vertex_sweep` — self-contained;
-  sweeps a quad's fourth vertex and plots element quality vs. geometry.
-- `python -m general.tools.generate_airfoil_domain` — self-contained; generates and
-  plots an airfoil-in-a-box domain.
-- `python -m general.tools.paper_diagram_generator` — the rule/coordinate/type
-  figures are self-contained; `read_img()` assembles a panel from meshes produced
-  by `sac.infer`. Uncomment the desired function in `__main__`.
-- `python -m general.tools.polygon_editor_ui_v2` — interactive Tkinter domain
-  editor (requires a display).
+- VTK/Verdict metrics (min/max angle, scaled Jacobian, stretch, taper) over the
+  `.inp` meshes produced under `sac/output/evaluation/`. *(needs: a `sac.infer` run)*
+
+  ```bash
+  python -m general.tools.vtk_quality_verdict
+  ```
+- Element-quality and singularity metrics over the produced `.inp` meshes.
+  *(needs: a `sac.infer` run)*
+
+  ```bash
+  python -m general.tools.mesh_quality_comparison
+  ```
+- Converts a domain to Gmsh geometry (works immediately) and, if present, a
+  produced `.inp` to UNV.
+
+  ```bash
+  python -m general.tools.json_gmsh_abaqus_unv_conversion
+  ```
+- Self-contained; sweeps a quad's fourth vertex and plots element quality vs.
+  geometry.
+
+  ```bash
+  python -m general.tools.quad_quality_fourth_vertex_sweep
+  ```
+- Self-contained; generates and plots an airfoil-in-a-box domain.
+
+  ```bash
+  python -m general.tools.generate_airfoil_domain
+  ```
+- The rule/coordinate/type figures are self-contained; `read_img()` assembles a
+  panel from meshes produced by `sac.infer`. Uncomment the desired function in
+  `__main__`.
+
+  ```bash
+  python -m general.tools.paper_diagram_generator
+  ```
+- Interactive Tkinter domain editor (requires a display).
+
+  ```bash
+  python -m general.tools.polygon_editor_ui_v2
+  ```
 
 ## `sac-ebd-style-draft/` (informational — not a runnable entrypoint)
 
