@@ -9,7 +9,7 @@ from gym import spaces
 import matplotlib.pyplot as plt
 
 from general.mesh import MeshGeneration
-from general.components import Vertex, Segment, Boundary2D, Mesh, PointEnvironment
+from general.components import Vertex, Mesh, PointEnvironment
 from general.lin_alg import transformation, detransformation
 from general.boundary_renderer import MeshFrame
 
@@ -26,30 +26,16 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         self.current_area = self.original_area
         self.max_radius = 2 # change from 3 to 2
         self.action_space = spaces.Box(np.array([-1, -1.5, 0]), np.array([1, 1.5, 1.5]), dtype=np.float32)
-        # self.action_space = spaces.Box(np.array([-1, -2, 0]), np.array([1, 2, 2]), dtype=np.float32)
-        # self.action_space = spaces.Box(np.array([-1, -1, 0]), np.array([1, 1, 1]), dtype=np.float32)
-        # self.action_space = spaces.Box(np.array([-1, -3, 0]), np.array([1, 3, 3]), dtype=np.float32)
 
         self.neighbor_num = 6 # from 4 to 6
         self.radius_num = 3
-        self.POOL_SIZE = 10
         self.radius = 4
-        # self.observation_space = spaces.Box(low=-999, high=999,
-        #                                     shape=(2 * (self.neighbor_num + self.radius_num + 1), ), dtype=np.float32)
         self.observation_space = spaces.Box(low=-999, high=999,
                                             shape=(2 * (self.neighbor_num + self.radius_num), ), dtype=np.float32)
-        # self.observation_space = spaces.Box(low=-999, high=999,
-        #                                     shape=(self.POOL_SIZE, 2 * (self.neighbor_num + self.radius_num)), dtype=np.float32)
         self.current_point_environment = None
-        self.test_point_environments = []
-        self.no_state_change = 0
-        self.smoothed = False
-        self.MIN_TRANSITION_QUALITY = 0.2
         self.not_valid_points = []
         self.last_not_valid_points = []
 
-        self.reward_method = 10 # from 2 to 0
-        self.last_index = 0
         self.target_angle = 0
         self.rewarding = []
         self.estimated_area_range = None
@@ -75,7 +61,6 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         self.rewarding = []
         self.current_area = self.original_area
         self.current_point_environment = None
-        self.test_point_environments = []
         self.candidate_vertices = None
         self.test_candidate_vertices = []
         self.failed_num = 0
@@ -101,119 +86,97 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         de_point = detransformation(point, self.current_point_environment.base_length if not is_move else 1, v1, v2)
         return Vertex(round(de_point[0], 4), round(de_point[1], 4))
 
+    def rule_element(self, rule, index, new_point=None):
+        v = self.updated_boundary.vertices
+        n = len(v)
+        if rule == -1:
+            return Mesh([v[index - 1], v[index], v[(index + 1) % n], v[(index + 2) % n]])
+        if rule == 1:
+            return Mesh([v[index - 2], v[index - 1], v[index], v[(index + 1) % n]])
+        return Mesh([new_point, v[index - 1], v[index], v[(index + 1) % n]])
+
     def step(self, action):
         done = False
         failed = True
         reward = 0
 
-        skip = 0.9
         rule_type = action[0]
         rule = None
         new_point = self.action_2_point(action[1:])
-        if skip < 0.5:
-            reward += -1
+        reference_point = self.current_point_environment.reference_point
+        index = self.updated_boundary.vertices.index(reference_point)
+
+        if len(self.updated_boundary.vertices) <= 5:
+            reward = 10
+            done = True
         else:
-            reference_point = self.current_point_environment.reference_point
-            index = self.updated_boundary.vertices.index(reference_point)
-
-            if len(self.updated_boundary.vertices) <= 5:
-                reward = 10
-                done = True
+            if rule_type <= -0.5: #self.TYPE_THRESHOLD:
+                mesh = self.rule_element(-1, index)
+                rule = -1
+            elif rule_type >= 0.5: #1 - self.TYPE_THRESHOLD:
+                mesh = self.rule_element(1, index)
+                rule = 1
             else:
-
-                if rule_type <= -0.5: #self.TYPE_THRESHOLD:
-                    mesh = Mesh([
-                        self.updated_boundary.vertices[index - 1],
-                        self.updated_boundary.vertices[index],
-                        self.updated_boundary.vertices[
-                            (index + 1) % len(self.updated_boundary.vertices)],
-                        self.updated_boundary.vertices[(index + 2) % len(self.updated_boundary.vertices)],
-                    ])
-                    rule = -1
-                elif rule_type >= 0.5: #1 - self.TYPE_THRESHOLD:
-                    mesh = Mesh([
-                        self.updated_boundary.vertices[index - 2],
-                        self.updated_boundary.vertices[index - 1],
-                        self.updated_boundary.vertices[index],
-                        self.updated_boundary.vertices[
-                            (index + 1) % len(self.updated_boundary.vertices)],
-                    ])
-                    rule = 1
+                # reward -= 0.1 * math.fabs(rule_type)
+                if self.is_point_inside_area(new_point):
+                    mesh = self.rule_element(-1, index) if self.find_same_point(new_point) \
+                        else self.rule_element(0, index, new_point)
                 else:
-                    # reward -= 0.1 * math.fabs(rule_type)
-                    if self.is_point_inside_area(new_point):
-                        existing_new_point = self.find_same_point(new_point)
-                        if existing_new_point:
-                            mesh = Mesh([
-                                         self.updated_boundary.vertices[index - 1],
-                                         self.updated_boundary.vertices[index],
-                                         self.updated_boundary.vertices[
-                                             (index + 1) % len(self.updated_boundary.vertices)],
-                                         self.updated_boundary.vertices[(index + 2) % len(self.updated_boundary.vertices)],
-                                         ])
-                        else:
-                            mesh = Mesh([new_point,
-                                         self.updated_boundary.vertices[index - 1],
-                                         self.updated_boundary.vertices[index],
-                                         self.updated_boundary.vertices[
-                                             (index + 1) % len(self.updated_boundary.vertices)],
-                                         ])
+                    reward += -1 / len(self.generated_meshes) if len(self.generated_meshes) else -1
+                    mesh = None
+                rule = 0
+
+            if mesh is not None:
+                if self.validate_mesh(mesh, quality_method=0) and \
+                        not self.check_intersection_with_boundary(mesh, reference_point): # intersection check remove for type 1 2
+                    mesh.connect_vertices()
+                    self.generated_meshes.append(mesh)
+
+                    # update boundary and reference points
+                    # remove_references, add_references = self.update_boundary(reference_point, mesh)
+
+                    self.update_boundary(reference_point, mesh)
+                    # self.boundary.show()
+                    mesh_area = mesh.compute_area()[0]
+                    self.current_area -= mesh_area
+
+                    # if len(self.generated_meshes) % 5 == 0:
+                    # self.boundary.save_intermediate_boundary_fig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png",
+                    #                                              mesh.vertices, style='k.-', dpi=200, r_vertices=self.updated_boundary.vertices)
+                    # self.boundary.save_vertices_into_fig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_action.png",
+                    #                                              mesh.vertices, style='r.-', dpi=200)
+                    # self.updated_boundary.savefig(
+                    #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_left_boundary.png",
+                    #     style='b.-')
+                    # self.boundary.savefig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png", style='k.-')
+
+                    quality = self.get_quality(mesh, 2)
+
+                    speed_penalty = self.get_speed_penalty(mesh_area)
+                    reward += quality + speed_penalty
+
+                    self.history_info[rule].append(reward)
+
+                    failed = False
+                    if len(self.updated_boundary.vertices) <= 5:
+                        reward += 10
+                        done = True
+                        if len(self.updated_boundary.vertices) == 4:
+                            mesh = Mesh(self.updated_boundary.vertices)
+                            mesh.connect_vertices()
+                            self.generated_meshes.append(mesh)
+                        # self.boundary.save_intermediate_boundary_fig(
+                        #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png",
+                        #     self.updated_boundary.vertices, style='k.-', dpi=200)
+                        # self.boundary.save_vertices_into_fig(
+                        #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_action.png",
+                        #     self.updated_boundary.vertices, style='r.-', dpi=200)
                     else:
-                        reward += -1 / len(self.generated_meshes) if len(self.generated_meshes) else -1
-                        mesh = None
-                    rule = 0
-
-                if mesh is not None:
-                    if self.validate_mesh(mesh, quality_method=0) and \
-                            not self.check_intersection_with_boundary(mesh, reference_point): # intersection check remove for type 1 2
-                        mesh.connect_vertices()
-                        self.generated_meshes.append(mesh)
-
-                        # update boundary and reference points
-                        # remove_references, add_references = self.update_boundary(reference_point, mesh)
-
-                        self.update_boundary(reference_point, mesh)
-                        # self.boundary.show()
-                        mesh_area = mesh.compute_area()[0]
-                        self.current_area -= mesh_area
-
-                        # if len(self.generated_meshes) % 5 == 0:
-                        # self.boundary.save_intermediate_boundary_fig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png",
-                        #                                              mesh.vertices, style='k.-', dpi=200, r_vertices=self.updated_boundary.vertices)
-                        # self.boundary.save_vertices_into_fig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_action.png",
-                        #                                              mesh.vertices, style='r.-', dpi=200)
-                        # self.updated_boundary.savefig(
-                        #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_left_boundary.png",
-                        #     style='b.-')
-                        # self.boundary.savefig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png", style='k.-')
-
-                        quality = self.get_quality(mesh, 2)
-
-                        speed_penalty = self.get_speed_penalty(mesh_area, reference_point)
-                        reward += quality + speed_penalty
-
-                        self.history_info[rule].append(reward)
-
-                        failed = False
-                        if len(self.updated_boundary.vertices) <= 5:
-                            reward += 10
-                            done = True
-                            if len(self.updated_boundary.vertices) == 4:
-                                mesh = Mesh(self.updated_boundary.vertices)
-                                mesh.connect_vertices()
-                                self.generated_meshes.append(mesh)
-                            # self.boundary.save_intermediate_boundary_fig(
-                            #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png",
-                            #     self.updated_boundary.vertices, style='k.-', dpi=200)
-                            # self.boundary.save_vertices_into_fig(
-                            #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_action.png",
-                            #     self.updated_boundary.vertices, style='r.-', dpi=200)
-                        else:
-                            done = False
-                    else:
-                        reward += -1 / len(self.generated_meshes) if len(self.generated_meshes) else -1
+                        done = False
+                else:
+                    reward += -1 / len(self.generated_meshes) if len(self.generated_meshes) else -1
         is_complete = True
-        next_state = self.find_next_state(self.not_valid_points, last_failed=failed)
+        next_state = self.find_next_state(self.not_valid_points)
         # if next_state is None:
         #     self.not_valid_points = []
         #     next_state = self.find_next_state(self.not_valid_points)
@@ -250,29 +213,13 @@ class BoudaryEnv(MeshGeneration, gym.Env):
             mesh = None
 
             if type <= self.TYPE_THRESHOLD:
-                mesh = Mesh([
-                    self.updated_boundary.vertices[index - 1],
-                    self.updated_boundary.vertices[index],
-                    self.updated_boundary.vertices[
-                        (index + 1) % len(self.updated_boundary.vertices)],
-                    self.updated_boundary.vertices[(index + 2) % len(self.updated_boundary.vertices)],
-                ])
+                mesh = self.rule_element(-1, index)
                 # reward -= 0.1 * math.fabs(rule_type + 1)
             elif type >= 1 - self.TYPE_THRESHOLD:
-                mesh = Mesh([
-                    self.updated_boundary.vertices[index - 2],
-                    self.updated_boundary.vertices[index - 1],
-                    self.updated_boundary.vertices[index],
-                    self.updated_boundary.vertices[
-                        (index + 1) % len(self.updated_boundary.vertices)],
-                ])
+                mesh = self.rule_element(1, index)
             else:
                 if self.is_point_inside_area(new_point):
-                    mesh = Mesh([new_point,
-                                 self.updated_boundary.vertices[index - 1],
-                                 self.updated_boundary.vertices[index],
-                                 self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)],
-                                 ])
+                    mesh = self.rule_element(0, index, new_point)
 
             if mesh is None:
                 pass
@@ -322,31 +269,6 @@ class BoudaryEnv(MeshGeneration, gym.Env):
             #     done = True
 
 
-            ## new handling
-
-            # if not_valid_element:
-            #     if len(self.not_valid_points) > 100:
-            #
-            #         if len(self.not_valid_points) == len(self.last_not_valid_points) and \
-            #                 self.last_not_valid_points[0] == self.not_valid_points[0] and \
-            #                 self.last_not_valid_points[-1] == self.not_valid_points[-1]:
-            #
-            #             done = True
-            #         else:
-            #             self.smooth_pave(self.boundary.vertices, self.updated_boundary.vertices, iteration=100)
-            #             self.last_not_valid_points = self.not_valid_points
-            #             self.not_valid_points = []
-            #     else:
-            #         if reference_point not in self.not_valid_points:
-            #             self.not_valid_points.append(reference_point)
-            #
-            #
-            #     next_state = self.find_next_state(self.not_valid_points, static=True)
-            #     if next_state is None:
-            #         done = True
-            # else:
-            #     self.not_valid_points = []
-
             if len(self.updated_boundary.vertices) > 4:
                 is_complete = False
                 if next_state is None:
@@ -375,7 +297,7 @@ class BoudaryEnv(MeshGeneration, gym.Env):
 
         return next_state, 0, done, {'is_complete': is_complete}
 
-    def get_speed_penalty(self, mesh_area, reference_p):
+    def get_speed_penalty(self, mesh_area):
         min_area = self.estimated_area_range[0] ** 2 #* 0.5 #*1.5
         critical_area = self.estimated_area_range[1] ** 2 #* 0.5# *1.5
 
@@ -387,87 +309,8 @@ class BoudaryEnv(MeshGeneration, gym.Env):
             speed_penalty = 0
         return speed_penalty
 
-    def get_reward(self, mesh, method=0):
-        reward = None
-
-        if method == 0:
-            mesh_quality = mesh.get_quality()
-            reward = mesh_quality
-        elif method == 1:
-            mesh_quality = mesh.get_quality()
-            transition_quality = self.get_transition_quality(mesh)
-            reward = mesh_quality * transition_quality
-        elif method == 2:
-            mesh_quality = mesh.get_quality()
-            transition_quality = self.get_transition_quality(mesh)
-
-            forward_quality = 5 / len(self.updated_boundary.vertices)
-
-            reward = mesh_quality * transition_quality + forward_quality
-        elif method == 3:
-            mesh_quality = mesh.get_quality()
-            forward_quality = 5 / len(self.updated_boundary.vertices)
-            reward = forward_quality + mesh_quality
-
-        elif method == 4:
-            forward_quality = 5 / len(self.updated_boundary.vertices)
-            reward = forward_quality
-
-        elif method == 5:
-            transition_quality = self.get_transition_quality(mesh)
-
-            forward_quality = 5 / len(self.updated_boundary.vertices)
-
-            reward = transition_quality + forward_quality
-        elif method == 9:
-            mesh_quality = mesh.get_quality()
-            transition_quality = self.get_transition_quality(mesh)
-
-            forward_quality = 5 / len(self.updated_boundary.vertices)
-
-            reward = mesh_quality * transition_quality * forward_quality
-        elif method == 10:
-
-            reward = self.get_quality(mesh, index=1)
-
-        return reward
-
-    def find_next_state(self, not_valid_points=None, last_failed=False, static=False):
-        r_p = None
-        # if len(self.next_references):
-        #     max_angle = 120
-        #     while len(self.next_references):
-        #         v, angle = self.next_references[0]
-        #         if not_valid_points:
-        #             if v in not_valid_points:
-        #                 self.next_references.pop(0)
-        #                 continue
-        #         if angle <= max_angle:
-        #             r_p = v
-        #             break
-        #         else:
-        #             self.next_references.pop(0)
-
-        # if len(self.test_candidate_vertices) == 0:
-        #     self.find_reference_candidates(target_angle=0)
-        #
-        # if not last_failed:
-        #     rp_length = len(self.test_candidate_vertices) if len(self.test_candidate_vertices) < self.POOL_SIZE \
-        #         else self.POOL_SIZE
-        #
-        #     self.test_point_environments = [
-        #         PointEnvironment(reference_point=self.test_candidate_vertices[i][0], boundary=self.updated_boundary,
-        #                            neighbor_num=self.neighbor_num, radius_num=self.radius_num,
-        #                            average_edge_length=self.average_edge_length,
-        #                            area_ratio=self.current_area / self.original_area) for i in range(rp_length)]
-        #     state = [p.state for p in self.test_point_environments]
-        #     state.extend([[0] * 2 * (self.neighbor_num + self.radius_num) for i in range(self.POOL_SIZE - rp_length)])
-        #     self.current_state = state
-
-        # return np.array(self.current_state).astype(np.float32)
-
-        if r_p is None:
-            r_p = self.find_reference_point(not_valid_points, target_angle=self.target_angle)
+    def find_next_state(self, not_valid_points=None, static=False):
+        r_p = self.find_reference_point(not_valid_points, target_angle=self.target_angle)
 
         if r_p:
             # print(r_p)
@@ -538,92 +381,6 @@ class BoudaryEnv(MeshGeneration, gym.Env):
             y = round(math.sin(math.radians(n_action[0])), 1) * n_action[1]
         return self.detransformation([round(x, 4), round(y, 4)])
 
-    def is_action_valid(self, action, state):
-        v = self.action_2_point(action)
-        if self.is_point_inside_area(v):
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def read_2_object(filename):
-        with open(filename, 'r') as fr:
-            data = json.load(fr)
-            fr.close()
-
-        vertices = {}
-        for x, y in data['nodes'].items():
-            vertices[x] = Vertex(y['coordinates'][0], y['coordinates'][1])
-
-        for x, y in data['nodes'].items():
-            for partner in y['connected']:
-                sg = Segment(vertices[x], vertices[str(partner)])
-                if vertices[x].segments is not None:
-                    for s in vertices[x].segments:
-                        if vertices[x] in [s.point1, s.point2] and vertices[str(partner)] in [s.point1, s.point2]:
-                            break
-                    else:
-                        vertices[x].assign_segment(sg)
-                        vertices[str(partner)].assign_segment(sg)
-                else:
-                    vertices[x].assign_segment(sg)
-                    vertices[str(partner)].assign_segment(sg)
-
-        env = BoudaryEnv(Boundary2D(list(vertices.values())))
-
-        elements = []
-
-        for i, e in data["elements"].items():
-            _vertices = [vertices[str(id)] for id in e]
-            element = Mesh(_vertices)
-            elements.append(element)
-        plt.gca().set_aspect('equal', adjustable='box')
-        env.generated_meshes = elements
-
-        segts = env.boundary.all_segments()
-        for segt in segts:
-            if segt.point1 not in env.boundary.vertices or segt.point2 not in env.boundary.vertices:
-                continue
-            segt.show(style='k-')
-
-        circle2 = plt.Circle((10.09, -0.13), 3.3, color='black', linestyle='--', fill=False)
-        # ax.add_artist(circle2)
-        plt.gcf().gca().add_artist(circle2)
-        # env.plot_points(elements[15].vertices)
-        # p_l_r = [elements[15].vertices[0], elements[15].vertices[3], elements[15].vertices[2], elements[15].vertices[1],
-        #          vertices['15']]
-        # p_theta = [vertices['20'], vertices['44'], vertices['46']]
-        # p_l_r = [elements[15].vertices[0], elements[15].vertices[1], elements[15].vertices[2], elements[15].vertices[3],
-        #          vertices['34']]
-        # p_theta = [vertices['20'], vertices['44'], vertices['46']]
-        p_l_r = [ vertices['15'], elements[15].vertices[1], elements[15].vertices[2], elements[15].vertices[3],
-                 vertices['34']]
-        p_theta = [vertices['20'], vertices['44'], vertices['46']]
-
-        env.plot_points(p_l_r, 'r-o')
-        env.plot_points(p_theta)
-        env.plot_points([elements[15].vertices[0]], 'ko')
-
-        plt.show()
-
-        #env.plot_points([vertices['15'], vertices['20'],  vertices['44'], vertices['46']])
-        #env.plot_points([vertices['15']])
-
-        #env.plot_points([vertices['34'], vertices['20'],  vertices['44'], vertices['46']])
-        #env.plot_points([vertices[34], vertices[20],  vertices[44], vertices[46]])
-
-        #
-        env.save_meshes(f"{output_path}/test_1.png", env.generated_meshes, quality=True,
-                        indexing=True,
-                        type=1, dpi=300)
-        print()
-        env.extract_samples(elements)
-
-        samples, output_types, outputs = env.extract_samples(elements)
-        env.save_samples(f"{output_path}/A2C/domain/ebrd_1.json",
-                         {'samples': samples, 'output_types': output_types, 'outputs': outputs})
-
-
     def plot_sample(self, state, action):
         L = len(state)
         N = int((L - 6) / 2)
@@ -650,4 +407,3 @@ class BoudaryEnv(MeshGeneration, gym.Env):
     def save_history_info(self, filename):
         with open(filename, 'w') as fw:
             json.dump(self.history_info, fw)
-            fw.close()
