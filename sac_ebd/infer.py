@@ -7,6 +7,7 @@ from stable_baselines3 import SAC
 
 from gym_env import Gym_Env
 
+
 base_path = Path(__file__).parent.parent
 
 DOMAIN = "basic1"

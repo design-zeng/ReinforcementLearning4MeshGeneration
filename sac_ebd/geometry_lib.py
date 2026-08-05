@@ -3,6 +3,7 @@ import math
 import numpy as np
 import numpy.typing as npt
 
+
 def segment_intersect(a1: npt.NDArray[np.floating], a2: npt.NDArray[np.floating], b1: npt.NDArray[np.floating], b2: npt.NDArray[np.floating]) -> bool:
     ux, uy = b1[0] - b2[0], b1[1] - b2[1]
     c1 = ux * (a1[1] - b2[1]) - uy * (a1[0] - b2[0])
@@ -19,14 +20,17 @@ def segment_intersect(a1: npt.NDArray[np.floating], a2: npt.NDArray[np.floating]
 
     return s1 != s2 and s3 != s4
 
+
 def rotation_matrix(angle: float) -> npt.NDArray[np.floating]:
     return np.array([
         [math.cos(angle), -math.sin(angle)],
         [math.sin(angle), math.cos(angle)]
     ])
 
+
 def vector_angle(vector: npt.NDArray[np.floating]) -> float:
     return math.atan2(vector[1], vector[0]) % (2 * math.pi)
+
 
 def polar_to_Cartesian(angle: float, mag: float):
     return np.array([mag * math.cos(angle), mag * math.sin(angle)])

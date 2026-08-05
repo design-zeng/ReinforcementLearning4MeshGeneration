@@ -33,7 +33,6 @@ class PointEnvironment(object):
         self.base_length = round(sum([vertices[i].distance_to(vertices[i-1])
                                       for i in range(1, len(vertices))]) / self.neighbor_num, 4)
 
-
     def get_closest_radius_neighbors(self, boundary, base_point, start_point, end_point, radius):
         def radius_neighbors_with_angle(start_angle, end_angle):
             closet_neighbor = boundary.get_closet_point(

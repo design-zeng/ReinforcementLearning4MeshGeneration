@@ -34,13 +34,13 @@ def load_log(path, tags, name=None, MAX=None):
             print("Event file possibly corrupt: {}".format(path))
 
         return runlog_data
-    
+
     elif isinstance(path, dict):
         runlog_data = pd.DataFrame({"metric": [], "Averaged return": [], "Time step": [], "method": []})
         for k, v in path.items():
             runlog_data = pd.concat([runlog_data, load_log(v, tags, k, MAX=MAX)])
         return runlog_data
-    
+
     return pd.DataFrame({"metric": [], "Averaged return": [], "Time step": [], "method": []})
 
 

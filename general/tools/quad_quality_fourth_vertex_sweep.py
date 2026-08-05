@@ -9,7 +9,9 @@ import seaborn as sns
 from general.components import Mesh, Vertex
 from general.component_plotting import plot_point
 
+
 sns.set_theme(style="whitegrid")
+
 
 def compute():
     v1 = Vertex(0, 0)
@@ -38,7 +40,7 @@ def compute():
     # fig = plt.figure()
     # ax = Axes3D(fig)
     # ax.plot_surface(x, y, z, rstride=1, cstride=1, cmap=cm.viridis)
-    
+
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 

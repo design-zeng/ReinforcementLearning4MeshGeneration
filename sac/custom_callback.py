@@ -25,11 +25,9 @@ class CustomCallback(BaseCallback):
 
         self.best_mean_reward = -np.inf
 
-
     def _init_callback(self) -> None:
         os.makedirs(self.best_model_save_path, exist_ok=True)
         os.makedirs(self.log_path, exist_ok=True)
-
 
     def _run_episode(self, num_freq: int, episode_idx: int) -> float:
         obs = self.eval_env.reset()
@@ -50,7 +48,6 @@ class CustomCallback(BaseCallback):
                     indexing=True, style='k-', dpi=30)
         return episode_reward
 
-
     def _on_step(self) -> bool:
         if self.eval_freq <= 0 or self.n_calls % self.eval_freq != 0:
             return True
@@ -61,7 +58,7 @@ class CustomCallback(BaseCallback):
 
         if self.verbose > 0:
             print(f"Eval num_timesteps={self.num_timesteps}, episode_reward={mean_reward:.2f} +/- {np.std(rewards):.2f}")
-            
+
         self.logger.record("eval/mean_reward", mean_reward)
 
         if mean_reward > self.best_mean_reward:

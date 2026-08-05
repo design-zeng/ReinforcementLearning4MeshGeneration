@@ -4,6 +4,7 @@ from typing import Any, cast
 
 from tkinter import BOTH, END, Button, Canvas, Entry, Frame, Label, Text, Tk, Toplevel, filedialog
 
+
 class MeshFrame(Frame):
     def __init__(self, master):
         super().__init__()
@@ -168,12 +169,14 @@ class MeshFrame(Frame):
                 clockwise = not clockwise
             return clockwise
 
+
 def clockwise_angle(A, B):
     AB = (B[0] - A[0], B[1] - A[1])
 
     theta = - math.atan2(- AB[1], AB[0])
 
     return theta if math.copysign(1, theta) >= 0 else 2 * math.pi + theta
+
 
 class Density(Frame):
     def __init__(self, master, points, base_frame):
@@ -216,7 +219,6 @@ class Density(Frame):
             e1.grid(row=i + 2, column=1)
             self.density_entries.append(e1)
             count += 1
-
 
     def calculate_max_base_length(self):
         max_length = 0

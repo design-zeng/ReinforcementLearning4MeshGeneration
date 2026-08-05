@@ -2,6 +2,7 @@ import math, random
 
 from PIL import Image, ImageDraw
 
+
 def generatePolygon(ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts):
     '''Start with the centre of the polygon at ctrX, ctrY,
     then creates the polygon by sampling points on a circle around the centre.
@@ -47,6 +48,7 @@ def generatePolygon(ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts):
 
         angle = angle + angleSteps[i]
     return points
+
 
 def clip(x, min, max):
     if (min > max):

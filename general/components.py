@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 
+
 class Point2D:
     def __init__(self, x, y):
         self.x = x
@@ -27,6 +28,7 @@ class Point2D:
 
     def length(self):
         return math.sqrt(self.x ** 2 + self.y ** 2)
+
 
 class Vertex(Point2D):
     def __init__(self, x, y):
@@ -122,6 +124,7 @@ class Vertex(Point2D):
             v = (1, (self.x - another_vertex.x) / (another_vertex.y - self.y))
             return v
 
+
 class Boundary2D:
     def __init__(self, vertices):
         self.vertices = vertices
@@ -175,7 +178,6 @@ class Boundary2D:
             for v in dists:
                 if v[0] not in exclusion and v[1] <= S_T:
                     points.append(v[0])
-
                 if v[1] > S_T:
                     break
         else:
@@ -188,8 +190,8 @@ class Boundary2D:
 
     @staticmethod
     def get_points_within_angle(vertices, base_point, start_point, start_angle, end_angle):
-        target_points = [v for v in vertices if start_angle < base_point.to_find_clockwise_angle(start_point, v)
-                         < end_angle]
+        target_points = [v for v in vertices
+            if start_angle < base_point.to_find_clockwise_angle(start_point, v) < end_angle]
         return target_points
 
     def get_centriod(self):
@@ -285,29 +287,24 @@ class Segment:
         return self.straddle(another_segment) and another_segment.straddle(self)
 
     def seg_angle(self):
-        theta = math.atan2(self.point2.y - self.point1.y,
-                            self.point2.x - self.point1.x)
+        theta = math.atan2(self.point2.y - self.point1.y, self.point2.x - self.point1.x)
         return theta
 
     @staticmethod
     def get_ray_segment(segment, another_segment, remote_dist):
-
         ray_point1 = Vertex((segment.point1 + another_segment.point1).x / 2,
-                             (segment.point1 + another_segment.point1).y / 2)
+                            (segment.point1 + another_segment.point1).y / 2)
 
         ray_point2 = Vertex((segment.point2 + another_segment.point2).x / 2,
-                             (segment.point2 + another_segment.point2).y / 2)
+                            (segment.point2 + another_segment.point2).y / 2)
 
         average_segment = Segment(ray_point1, ray_point2)
         return Segment.build_ray(average_segment, remote_dist)
-
 
     @staticmethod
     def build_ray(segment, remote_dist):
         average_segment = Segment(segment.point1.copy(), segment.point2.copy())
         theta = average_segment.seg_angle()
-
-        # print(average_segment, remote_dist, math.degrees(theta), )
 
         average_segment.point2.x = average_segment.point1.x + remote_dist * math.cos(theta)
         average_segment.point2.y = average_segment.point1.y + remote_dist * math.sin(theta)
@@ -350,8 +347,7 @@ class Segment:
                 s = (another_seg.point1.x - self.point1.x) / u.x
                 h = (self.point1.y - another_seg.point1.y + s * u.y) / w.y
             else:
-                s = ((self.point1.x - another_seg.point1.x) / w.x - (self.point1.y - another_seg.point1.y) / w.y) / \
-                    (u.y/w.y - u.x/w.x)
+                s = ((self.point1.x - another_seg.point1.x) / w.x - (self.point1.y - another_seg.point1.y) / w.y) / (u.y/w.y - u.x/w.x)
                 h = (self.point1.x - another_seg.point1.x + s * u.x) / w.x
         is_inside = True if 0 < s < 1 and 0 < h < 1 else False
         return is_inside, Vertex(self.point1.x + s * u.x, self.point1.y + s * u.y)
@@ -380,6 +376,7 @@ class Segment:
         else:
             raise ValueError('Not recognized object type!')
 
+
 class Mesh:
     def __init__(self, vertices):
         self.vertices = vertices
@@ -404,7 +401,6 @@ class Mesh:
                 degree = self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1])
                 if degree > self.max_degree or degree < self.min_degree:
                     return False
-
         elif quality_method == 1:
             if self.get_quality() < 0.3:
                 return False
@@ -424,12 +420,10 @@ class Mesh:
                 # degree = self.vertices[i].to_find_clockwise_angle(self.vertices[i - 1], self.vertices[(i + 1) % 4])
 
                 if degree > self.max_degree or degree < self.min_degree:
-                    # print(f"This mesh's corner degree is {d}")
                     return False
 
             if self.get_quality() < 0.3:
                 return False
-
         elif quality_method == 6:
             for i in range(len(self.vertices)):
 
@@ -437,7 +431,6 @@ class Mesh:
                 # degree = self.vertices[i].to_find_clockwise_angle(self.vertices[i - 1], self.vertices[(i + 1) % 4])
 
                 if degree > self.max_degree or degree < self.min_degree:
-                    # print(f"This mesh's corner degree is {d}")
                     return False
 
             q1, q2 = self.get_quality_3()
@@ -452,7 +445,6 @@ class Mesh:
                 # degree = self.vertices[i].to_find_clockwise_angle(self.vertices[i - 1], self.vertices[(i + 1) % 4])
 
                 if degree > self.max_degree or degree < self.min_degree:
-                    # print(f"This mesh's corner degree is {d}")
                     return False
 
             q1, q2 = self.get_quality_3()
@@ -500,41 +492,31 @@ class Mesh:
     def inner_angles(self):
         angles = []
         for i in range(4):
-            angles.append(math.degrees(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4],
-                                                                             self.vertices[i - 1]) - math.pi / 2)))
-            # angles.append(math.degrees(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4],
-            #                                                                               self.vertices[i - 1])))
+            angles.append(math.degrees(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1]) - math.pi / 2)))
+            # angles.append(math.degrees(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1])))
         return angles
 
     def get_ave_error_angle(self):
         angles = []
         for i in range(4):
-            angles.append(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4],
-                                                                             self.vertices[i - 1]) -
-                          math.pi / 2))
+            angles.append(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1]) - math.pi / 2))
         return max(angles)
 
     def get_quality(self, type='default'):
         if type == 'default':
             aspect_ratio = self.get_aspect_ratio()
             ave_error_angle = self.get_ave_error_angle()
-            # print("aspect:", aspect_ratio)
-            # print("angle error:", ave_error_angle)
             return 1 / (aspect_ratio + ave_error_angle)
         elif type =='stretch':
-            return math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]),
-                                                               self.vertices[1].distance_to(self.vertices[3]))
+            return math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]), self.vertices[1].distance_to(self.vertices[3]))
         elif type == 'robust':
-            q1 = math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]),
-                                                               self.vertices[1].distance_to(self.vertices[3]))
+            q1 = math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]), self.vertices[1].distance_to(self.vertices[3]))
             # segts = self.length_4_segments()
             # q1 = min(segts) / max(segts)
             angles = []
             for i in range(4):
-                angles.append(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4],
-                                        self.vertices[i - 1]))
+                angles.append(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1]))
             q2 = min(angles) / max(angles)
-            # print(f"Edge: {q1}, Angle: {q2}")
             return math.sqrt(q1 * q2) #(q1 + q2) /2
         elif type == 'taper':
             p0, p1, p2, p3 = self.vertices[0], self.vertices[-1], self.vertices[-2], self.vertices[-3]
@@ -560,27 +542,20 @@ class Mesh:
                      a3 / (l2.length() * l3.length())])
         elif type == 'strong':
             q1, _ = self.get_quality_3()
-            # q1 = math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]),
-            #                                                         self.vertices[1].distance_to(self.vertices[3]))
+            # q1 = math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]), self.vertices[1].distance_to(self.vertices[3]))
             angles = []
             for i in range(4):
-                angles.append(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4],
-                                                                       self.vertices[i - 1])))
+                angles.append(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1])))
             q2 = min(angles) / max(angles)
             # angle_product = 1
             # for i in range(4):
-            #     angle_product *= 1 - (
-            #                 math.fabs(math.degrees(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4],
-            #                                                                                 self.vertices[
-            #                                                                                     i - 1])) - 90) / 90)
-            # print(angle_product)
+            #     angle_product *= 1 - (math.fabs(math.degrees(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1])) - 90) / 90)
             # if angle_product < 0:
             #     q2 = 0
             # else:
             #     q2 = math.pow(angle_product, 1 / 4)
             # q2 = angle_product
 
-            # print(f"Edge: {q1}, Angle: {q2}")
             return math.sqrt(q1 * q2)
         elif type == 'area':
             q1, q2 = self.get_quality_3()
@@ -616,9 +591,7 @@ class Mesh:
 
         angle_product = 1
         for i in range(4):
-            angle_product *= 1 - (math.fabs(math.degrees(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4],
-                                                                                 self.vertices[i - 1])) - 90) / 90)
-        # print(angle_product)
+            angle_product *= 1 - (math.fabs(math.degrees(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1])) - 90) / 90)
         if angle_product < 0:
             q2 = 0
         else:
@@ -633,13 +606,10 @@ class Mesh:
 
     @staticmethod
     def estimate_4th_vertex(origin_p, left_p, right_p, factor=0.5, suggest_dist=None):
-        distance = (origin_p.distance_to(left_p) + \
-                   origin_p.distance_to(right_p)) * factor
+        distance = (origin_p.distance_to(left_p) + origin_p.distance_to(right_p)) * factor
 
         if suggest_dist is not None:
             distance = min(distance, 0.6 * suggest_dist)
 
-        s = Segment.get_ray_segment(Segment(origin_p, left_p),
-                                    Segment(origin_p, right_p),
-                                    distance)
+        s = Segment.get_ray_segment(Segment(origin_p, left_p), Segment(origin_p, right_p), distance)
         return s.point2

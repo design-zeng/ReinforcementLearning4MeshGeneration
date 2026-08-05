@@ -53,7 +53,6 @@ and coordinate (regression) objectives, and is what start_training() uses in pra
 #         loss = loss_fn(y_pred, y)
 #         if loss < 0.01:
 #             break
-#         print(t, loss.item())
 #         optimizer.zero_grad()
 #         loss.backward()
 #         optimizer.step()

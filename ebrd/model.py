@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 base_path = Path(__file__).parent.parent
 domains_path = base_path / "samples" / "domains"
 output_path = base_path / "ebrd" / "output"

@@ -7,6 +7,7 @@ import numpy as np
 
 from general.components import *
 
+
 class MeshGeneration:
     def __init__(self, boundary):
         self.boundary = boundary
@@ -207,7 +208,6 @@ class MeshGeneration:
         else:
             q2 = 1
 
-        # print(f"Smoothness: {smoothness}; Angle: {q1}; Dist: {q2}; Boundary quality: {smoothness * q1 * q2}")
         pow = 1/3
         return math.pow(smoothness * q1 * q2, pow)
 
@@ -252,9 +252,6 @@ class MeshGeneration:
 
             smoothness = min(mean_dist, targt_len) / max(mean_dist, targt_len)
             angle_quality = 3 * min(angles) / math.pi if len(angles) else 1
-            # print(f"Smoothness: {smoothness}, Angle: {angle_quality}; Boundary quality: {smoothness * angle_quality}")
-            # print(f"Boundary quality 2: {2 * angle_quality / 3 + smoothness / 3}")
-            # print(f"Boundary quality 3: {math.pow(angle_quality * smoothness, 1/2)}")
             pow = 1/2
             return math.pow(angle_quality * smoothness, pow)
 
@@ -507,7 +504,6 @@ class MeshGeneration:
                         self.updated_boundary.vertices[index - 1],
                         target_angle
                     )
-                    # print('Target angle:', target_angle)
                     connected_vs = self.updated_boundary.vertices[index].get_connected_vertices()
                     if target_angle >= 135:
                         failed = True
@@ -600,7 +596,6 @@ class MeshGeneration:
             times = 4
             while True:
                 n_v = self.indention_vertex(vertex, left_v, right_v, (360 - v_angle) / 2, dist / times)
-                # print('Target angle:', target_angle)
                 connected_vs = vertex.get_connected_vertices()
                 if times >= 10:
                     failed = True
@@ -924,8 +919,6 @@ class MeshGeneration:
             b_reward = self.compute_ele_boundary_quality(element)
             # e_reward = self.compute_element_quality(element)
             e_reward = element.get_quality(type='robust')
-            # print(f'boundary quality: {b_reward}; element quality: {e_reward}')
-            # print(2 * e_reward / 9, 4 * (b_reward - 1) / 9)
             # return math.sqrt(e_reward * b_reward)
             return e_reward + 1 * (b_reward - 1)
             # return e_reward * b_reward
@@ -940,7 +933,6 @@ class MeshGeneration:
             # e_reward = self.compute_element_quality(element)
             e_reward = element.get_quality(type='area')
             print(f'boundary quality: {b_reward}; element quality: {e_reward}')
-            # print(2 * e_reward / 9, 4 * (b_reward - 1) / 9)
             # return math.sqrt(e_reward * b_reward)
             return e_reward + 1 * (b_reward - 1)
         raise ValueError(f"Unknown quality index: {index}")
@@ -969,6 +961,7 @@ class MeshGeneration:
                          f"{nodes.index(ele.vertices[2]) + 1}, "
                          f"{nodes.index(ele.vertices[3]) + 1}" + "\n")
         print("Document writing is finished!")
+
 
 def connect_vertices(points):
     for i in range(len(points)):

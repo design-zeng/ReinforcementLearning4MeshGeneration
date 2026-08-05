@@ -13,8 +13,10 @@ from general.point_environment import PointEnvironment
 from general.lin_alg import transformation, detransformation
 from general.boundary_env_plotting import render_boundary, close_render
 
+
 base_path = Path(__file__).parent.parent
 output_path = base_path / "general" / "output"
+
 
 class BoudaryEnv(MeshGeneration, gym.Env):
     TYPE_THRESHOLD = 0.3
@@ -30,8 +32,10 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         self.neighbor_num = 6 # from 4 to 6
         self.radius_num = 3
         self.radius = 4
-        self.observation_space = spaces.Box(low=-999, high=999,
-                                            shape=(2 * (self.neighbor_num + self.radius_num), ), dtype=np.float32)
+        self.observation_space = spaces.Box(
+            low=-999, high=999,
+            shape=(2 * (self.neighbor_num + self.radius_num), ),
+            dtype=np.float32)
         self.current_point_environment: Any = None
         self.not_valid_points = []
         self.last_not_valid_points = []
@@ -134,19 +138,8 @@ class BoudaryEnv(MeshGeneration, gym.Env):
                     # remove_references, add_references = self.update_boundary(reference_point, mesh)
 
                     self.update_boundary(reference_point, mesh)
-                    # self.boundary.show()
                     mesh_area = mesh.compute_area()[0]
                     self.current_area -= mesh_area
-
-                    # if len(self.generated_meshes) % 5 == 0:
-                    # self.boundary.save_intermediate_boundary_fig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png",
-                    #                                              mesh.vertices, style='k.-', dpi=200, r_vertices=self.updated_boundary.vertices)
-                    # self.boundary.save_vertices_into_fig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_action.png",
-                    #                                              mesh.vertices, style='r.-', dpi=200)
-                    # self.updated_boundary.savefig(
-                    #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_left_boundary.png",
-                    #     style='b.-')
-                    # self.boundary.savefig(f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png", style='k.-')
 
                     quality = self.get_quality(mesh, 2)
 
@@ -163,12 +156,6 @@ class BoudaryEnv(MeshGeneration, gym.Env):
                             mesh = Mesh(self.updated_boundary.vertices)
                             mesh.connect_vertices()
                             self.generated_meshes.append(mesh)
-                        # self.boundary.save_intermediate_boundary_fig(
-                        #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_boundary.png",
-                        #     self.updated_boundary.vertices, style='k.-', dpi=200)
-                        # self.boundary.save_vertices_into_fig(
-                        #     f"{output_path}/experiments/{self.experiment_version}/{self.env_name}_{len(self.generated_meshes)}_action.png",
-                        #     self.updated_boundary.vertices, style='r.-', dpi=200)
                     else:
                         done = False
                 else:
@@ -190,10 +177,11 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         return next_state, np.float64(reward), done, {'is_complete': is_complete}
 
     def move(self, new_point, type, lr_1=None, lr_2=None):
-        x, y = self.current_point_environment.base_length * self.radius * new_point[0] * math.cos(new_point[1]), \
-               self.current_point_environment.base_length * self.radius * new_point[0] * math.sin(new_point[1])
+        x = self.current_point_environment.base_length * self.radius * new_point[0] * math.cos(new_point[1])
+        y = self.current_point_environment.base_length * self.radius * new_point[0] * math.sin(new_point[1])
         # x, y = np.clip(self.radius * new_point[0] * math.cos(new_point[1]), -1.5, 1.5), \
         #        np.clip(self.radius * new_point[0] * math.sin(new_point[1]), -1.5, 1.5)
+
         new_point = self.detransformation([round(x, 6), round(y, 6)], is_move=True)
 
         done = False
@@ -229,13 +217,7 @@ class BoudaryEnv(MeshGeneration, gym.Env):
                 not_valid_element = False
                 self.generated_meshes.append(mesh)
 
-                # self.boundary.save_intermediate_boundary_fig(f"boundary/{len(self.generated_meshes)}_boundary.png",
-                #                                              self.updated_boundary.vertices, style='b.-', dpi=300)
-
                 self.update_boundary(reference_point, mesh)
-
-                # self.boundary.save_intermediate_boundary_fig(f"{output_path}/data_augmentation/test/{len(self.generated_meshes)}_left_boundary.png",
-                #                                              mesh.vertices, style='k.-', dpi=400, r_vertices=self.updated_boundary.vertices)
 
                 next_state = self.find_next_state(self.not_valid_points, static=True)
 
@@ -244,10 +226,6 @@ class BoudaryEnv(MeshGeneration, gym.Env):
                     if len(self.updated_boundary.vertices) == 4:
                         mesh = Mesh(self.updated_boundary.vertices)
                         self.generated_meshes.append(mesh)
-
-                        # self.boundary.save_intermediate_boundary_fig(
-                        #     f"{output_path}/data_augmentation/test/{len(self.generated_meshes)}_left_boundary.png",
-                        #     self.updated_boundary.vertices, style='k.-', dpi=400)
 
             ## old handling
             if not_valid_element:
@@ -267,13 +245,11 @@ class BoudaryEnv(MeshGeneration, gym.Env):
             #     is_complete = True
             #     done = True
 
-
             if len(self.updated_boundary.vertices) > 4:
                 is_complete = False
                 if next_state is None:
                     if lr_1 and lr_2:
-                        self.smooth_pave(self.boundary.vertices, self.updated_boundary.vertices,
-                                         lr_1, lr_2, iteration=400)
+                        self.smooth_pave(self.boundary.vertices, self.updated_boundary.vertices, lr_1, lr_2, iteration=400)
                         # self.smooth(self.boundary.vertices, lr_1, lr_2, iteration=500)
                     else:
                         self.smooth_pave(self.boundary.vertices, self.updated_boundary.vertices, iteration=400)
@@ -312,7 +288,6 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         r_p = self.find_reference_point(not_valid_points, target_angle=self.target_angle)
 
         if r_p:
-            # print(r_p)
             p_e = PointEnvironment(reference_point=r_p, boundary=self.updated_boundary,
                                    neighbor_num=self.neighbor_num, radius_num=self.radius_num,
                                    average_edge_length=self.average_edge_length,

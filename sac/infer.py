@@ -105,7 +105,7 @@ def replication_evaluation(is_render=False, deterministic=False, indexing=False,
     ckpt = logs_path / method / version / stage / "best_model.zip"
     if not ckpt.exists():
         raise FileNotFoundError(f"{ckpt} not found. Run `python -m sac.train` first.")
-    
+
     env = BoudaryEnv(read_polygon(domains_path / "boundary_fly_r2.json"))
 
     model = prepare_model(method, ckpt, env)
@@ -176,7 +176,7 @@ def full_mesh(domain="boundary6",
             print(f"Completed {domain} on attempt {k + 1} "
                   f"({len(env.generated_meshes)} elements, {coverage * 100:.0f}% area). Saved {out}")
             return
-        
+
     save_meshes(env, out, meshes=env.generated_meshes, quality=False, type=4, style='k-')
     print(f"No full completion in {attempts} attempts; saved best-effort partial to {out}")
 

@@ -10,6 +10,7 @@ from multiprocessing import Process, Manager
 
 from general.components import Segment, Vertex, Mesh
 
+
 base_path = Path(__file__).parent.parent
 augmentation_path = base_path / "ebrd" / "output" / "data_augmentation"
 

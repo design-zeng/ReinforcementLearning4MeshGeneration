@@ -7,9 +7,11 @@ from matplotlib import patches
 from general.components import Vertex, Segment
 from general.component_plotting import plot_segment
 
+
 output_path = Path(__file__).parent.parent.parent / "general" / "output"
 # mesh snapshots are produced by sac/infer.py evaluation() (save_fig=True)
 img_path = Path(__file__).parent.parent.parent / "sac" / "output" / "evaluation"
+
 
 def bad_cases():
     ax1 = plt.subplot(131)
@@ -53,6 +55,7 @@ def bad_cases():
 
     plt.show()
 
+
 def primitive_rules():
     fig = plt.figure()
     ax1 = fig.add_subplot(131)
@@ -74,6 +77,7 @@ def primitive_rules():
     [a.get_yaxis().set_visible(False) for a in fig.axes]
     plt.show()
 
+
 def generation_partial_boundary():
     fig = plt.figure(figsize=(5,5))
     ax2 = fig.add_subplot(111)
@@ -92,6 +96,7 @@ def generation_partial_boundary():
     plt.yticks([])
     plt.gca().set_aspect('equal', adjustable='box')
     plt.show()
+
 
 def coordinate_system():
     fig = plt.figure(figsize=(5,5))
@@ -117,6 +122,7 @@ def coordinate_system():
 
     plt.show()
 
+
 def output_types():
     fig = plt.figure()
     ax1 = fig.add_subplot(131)
@@ -140,6 +146,7 @@ def output_types():
     [a.get_xaxis().set_visible(False) for a in fig.axes]
     [a.get_yaxis().set_visible(False) for a in fig.axes]
     plt.show()
+
 
 def read_img():
     # Assemble a panel from the mesh figures produced by sac.infer.

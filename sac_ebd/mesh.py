@@ -4,6 +4,7 @@ import numpy as np
 
 from boundary import Boundary
 
+
 class Mesh:
     def __init__(self, initial_boundary: Boundary):
         self.vertices = initial_boundary.vertices.copy()
@@ -14,7 +15,7 @@ class Mesh:
 
         self.boundary = initial_boundary
         self.boundary_indices_mapping = np.arange(N)
-    
+
     def type0_update_mesh(self, polar_pair=(None, None)):
         N = self.boundary.vertices.shape[0]
 
@@ -40,7 +41,7 @@ class Mesh:
         self.vertices = np.vstack((self.vertices, new_actual_vertex))
 
         self.edges = np.vstack((self.edges, new_edge1, new_edge2))
-    
+
     def type1_update_mesh(self, direction: Literal["left", "right"]):
         N = self.boundary.vertices.shape[0]
 
@@ -53,7 +54,7 @@ class Mesh:
         self.edges = np.vstack((self.edges, new_edge))
 
         self.boundary_indices_mapping = np.delete(self.boundary_indices_mapping, [boundary_index1, boundary_index2])
-    
+
     def update_mesh(self, action_type: Literal[-1, 0, 1], polar_pair=(None, None)):
         if action_type == 0:
             self.type0_update_mesh(polar_pair)

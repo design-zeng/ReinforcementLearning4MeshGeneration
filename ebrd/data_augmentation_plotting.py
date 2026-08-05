@@ -6,6 +6,7 @@ import seaborn as sns
 
 from ebrd.data_augmentation import ACTION_TYPES, decode_geometry, compute_quality, load_samples
 
+
 sns.set_theme(style="darkgrid")
 
 

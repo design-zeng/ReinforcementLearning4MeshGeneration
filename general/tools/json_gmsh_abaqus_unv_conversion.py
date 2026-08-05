@@ -1,5 +1,6 @@
 import json
 
+
 def json_to_gmsh(filename):
     with open(filename, 'r') as fr:
         result = json.loads(fr.read())
@@ -18,6 +19,7 @@ def json_to_gmsh(filename):
             fw.write(point + "\n")
         for line in lines:
             fw.write(line + "\n")
+
 
 def read_inp_file(inp_file):
     """ Reads the .inp file and extracts node and element data """
@@ -65,6 +67,7 @@ def read_inp_file(inp_file):
 
     return nodes, elements
 
+
 def write_unv_file(unv_file, nodes, elements):
     """ Writes nodes and elements to a .unv file """
     with open(unv_file, 'w') as f:
@@ -89,6 +92,7 @@ def write_unv_file(unv_file, nodes, elements):
             f.write("".join([f"{n:10d}" for n in node_ids]))
             f.write("\n")
         f.write("    -1\n")
+
 
 def inp_to_unv(inp_file, unv_file):
     """ Main function to convert .inp file to .unv format """

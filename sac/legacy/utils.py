@@ -12,6 +12,7 @@ import seaborn as sns
 import pandas as pd
 import math
 
+
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
@@ -133,9 +134,11 @@ def plot(file_name):
 # plot("A2C/plots/test_58/total_rewards.txt")
 # plot("D:\\meshingData\\A2C\\plots\\test_58\\total_rewards.txt")
 
+
 def write_csv(data, file_name):
     r = pd.DataFrame(data, columns=pd.Index(['state', 'action', 'reward', 'done', 'state value']))
     r.to_csv(file_name)
+
 
 def plot_rewarding(data, save=False, name=None):
     quality = []
@@ -172,6 +175,7 @@ def plot_rewarding(data, save=False, name=None):
     else:
         plt.plot(x, quality, 'r--', x, boundary, 'b--', x, area, 'g-', x, rewards[1:], 'ko')
         plt.show()
+
 
 def read_json(file_name):
     with open(file_name, 'r') as fr:

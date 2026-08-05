@@ -10,12 +10,14 @@ import matplotlib.pyplot as plt
 from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
 
+
 version = 'ea_experiments_0'
 # version = 'ea_experiments_slim_8'
 
 base_path = 'D:\\meshingData\\ANN\\'
 
 device = torch.device("cuda")
+
 
 def mkdir_p(mypath):
     '''Creates a directory. equivalent to using mkdir -p on the command line'''
@@ -32,6 +34,7 @@ def mkdir_p(mypath):
 
 mkdir_p(f'{base_path}plots/{version}/')
 mkdir_p(f'{base_path}elements/{version}/')
+
 
 def load_model(model_path):
     model = Policy().to(device)

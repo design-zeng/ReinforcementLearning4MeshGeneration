@@ -3,6 +3,7 @@ import json
 from general.components import *
 from general.mesh import connect_vertices
 
+
 def read_polygon(filename):
     with open(filename, 'r') as fr:
         vertices = json.loads(fr.readline())

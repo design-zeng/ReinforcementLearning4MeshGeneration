@@ -8,10 +8,11 @@ import numpy.typing as npt
 from polygon import Polygon
 from geometry_lib import segment_intersect, rotation_matrix, vector_angle, polar_to_Cartesian
 
+
 class Boundary(Polygon):
     def __init__(self, initial_boundary: npt.NDArray[np.floating], v=1, k=4, M_angle=math.pi/3, alpha=1, beta=2, n_rv=2, g=3):
         super().__init__(initial_boundary)
-        
+
         self.initial_area = self.get_area()
 
         self.v = v
@@ -48,17 +49,17 @@ class Boundary(Polygon):
         right_angle = vector_angle(right_vector)
         rotation_matrix_at = rotation_matrix(-right_angle)
         return rotation_matrix_at
-    
+
     # inverse transformation of vertex relative to the vertex at vertex_index
     def get_inverse_transformed_vertex(self, local_vertex: npt.NDArray[np.floating], vertex_index: np.intp) -> npt.NDArray[np.floating]:
         transform_matrix = self.get_rotation_matrix_at(vertex_index)
         inverse_matrix = transform_matrix.T #inverse of orthogonal transformation is transpose
         return inverse_matrix @ local_vertex + self.v_at(vertex_index)
-    
+
     def get_transformed_vertex(self, local_vertex: npt.NDArray[np.floating], vertex_index: np.intp) -> npt.NDArray[np.floating]:
         transform_matrix = self.get_rotation_matrix_at(vertex_index)
         return transform_matrix @ (local_vertex - self.v_at(vertex_index))
-    
+
     # relative to the vertex at vertex_index
     def get_transformed_boundary(self, vertex_index: np.intp) -> npt.NDArray[np.floating]:
         rotation_matrix = self.get_rotation_matrix_at(vertex_index)
@@ -120,6 +121,7 @@ class Boundary(Polygon):
     - reward
     - update (D = D - s)
     """
+
     def get_state(self) -> npt.NDArray[np.floating]:
         N = self.vertices.shape[0]
         sharpest_index = self.get_sharpest_vertex_index()
@@ -162,7 +164,7 @@ class Boundary(Polygon):
             return 0
         else:
             return (quad_area - A_min) / (A_max - A_min)
-    
+
     def n_b_type0(self, new_vertex: npt.NDArray[np.floating], vertex_index: np.intp) -> float:
         N = self.vertices.shape[0]
 
@@ -217,7 +219,7 @@ class Boundary(Polygon):
         min_angle = min(a1, a2, self.M_angle)
 
         return math.sqrt(min_angle / self.M_angle) - 1
-    
+
     def n_e(self, quad: Polygon) -> float:
         angles = quad.get_angles()
         q_angle = np.min(angles) / max(np.max(angles), 1e-6)
@@ -234,7 +236,7 @@ class Boundary(Polygon):
         q_edge = math.sqrt(2) * L_min / max(d_max, 1e-6)
 
         return math.sqrt(q_angle * q_edge)
-    
+
     def type0_r(self, new_normalized_polar_pair: tuple[float, float]) -> tuple[float, bool]:
         new_normalized_local_vertex = self.type0_normalized_polar_to_local_Cartesian(new_normalized_polar_pair)
         N = self.vertices.shape[0]
@@ -262,12 +264,12 @@ class Boundary(Polygon):
 
         mt = n_e + n_b + u
         return mt, True
-    
+
     def type0_update_boundary_with_normalized_local(self, new_normalized_local_vertex: npt.NDArray[np.floating]):
         vertex_index = self.get_sharpest_vertex_index()
         actual_vertex = self.type0_local_Cartesian_to_actual(new_normalized_local_vertex)
         self.vertices[vertex_index] = actual_vertex
-    
+
     def type0_local_Cartesian_to_actual(self, new_normalized_local_vertex: npt.NDArray[np.floating]) -> npt.NDArray[np.floating]:
         vertex_index = self.get_sharpest_vertex_index()
         r = self.get_coordinate_space_radius(vertex_index)
@@ -284,11 +286,11 @@ class Boundary(Polygon):
         angle = (0.9 * new_normalized_polar_pair[0] + 0.05) * opening_angle
         radius = 0.9 * new_normalized_polar_pair[1] + 0.05
         return np.array([radius * math.cos(angle), radius * math.sin(angle)])
-    
+
     def type0_update_boundary_with_polar_pair(self, new_normalized_polar_pair: tuple[float, float]):
         new_normalized_local_vertex = self.type0_normalized_polar_to_local_Cartesian(new_normalized_polar_pair)
         self.type0_update_boundary_with_normalized_local(new_normalized_local_vertex)
-    
+
     def type0_is_intersecting(self, new_normalized_polar_pair: tuple[float, float]) -> bool:
         N = self.vertices.shape[0]
         vertex_index = self.get_sharpest_vertex_index()
@@ -319,7 +321,7 @@ class Boundary(Polygon):
                 ):
                     return True
         return False
-    
+
     def type1_is_intersecting(self, direction: Literal["left", "right"]) -> bool:
         N = self.vertices.shape[0]
         vertex_index1, vertex_index2 = self.get_type1_selected_indices(direction)
@@ -340,7 +342,7 @@ class Boundary(Polygon):
             return (vertex_index - 1) % N, vertex_index
         else:
             return vertex_index, (vertex_index + 1) % N
-    
+
     def type1_r(self, direction: Literal["left", "right"]) -> tuple[float, bool]:
         vertex_index1, vertex_index2 = self.get_type1_selected_indices(direction)
 
@@ -353,7 +355,7 @@ class Boundary(Polygon):
             ]))
         except:
             return -10.0, False
-        
+
         if self.type1_is_intersecting(direction):
             return -10.0, False
 
@@ -367,10 +369,10 @@ class Boundary(Polygon):
     def type1_update_boundary(self, direction: Literal["left", "right"]):
         vertex_index1, vertex_index2 = self.get_type1_selected_indices(direction)
         self.vertices = np.delete(self.vertices, [vertex_index1, vertex_index2], axis=0)
-    
+
     def reset_with_boundary(self, boundary: npt.NDArray[np.floating]):
         super().__init__(boundary)
-    
+
     # not quad left, more like pentagon left
     def is_quad_left(self) -> bool:
         return self.vertices.shape[0] <= 5

@@ -5,11 +5,13 @@ from pathlib import Path
 import vtk
 import meshio
 
+
 # meshes are produced by sac/infer.py evaluation() (save_fig=True)
 root = Path(__file__).parent.parent.parent / "sac" / "output" / "evaluation"
 
 # Auto-discover the produced meshes (relative stems under `root`).
 domains = sorted(str(p.relative_to(root))[:-4] for p in root.rglob("*.inp"))
+
 
 def render(domain):
     reader = vtk.vtkSTLReader()
@@ -41,6 +43,7 @@ def render(domain):
     renWin.Render()
     iren.Start()
 
+
 def DumpQualityStats(iq, arrayname):
     an = iq.GetOutput().GetFieldData().GetArray(arrayname)
     cardinality = an.GetComponent(0, 4)
@@ -55,6 +58,7 @@ def DumpQualityStats(iq, arrayname):
         '  average: ', average, '  , standard deviation: ', stdDev)
     return outStr
 
+
 def verdict(domains):
     metrics = {
         'QualityMeasureToMinAngle': [],
@@ -67,6 +71,7 @@ def verdict(domains):
         verdict_domain(d, metrics)
     for k, v in metrics.items():
         print(k, sum([_v[0] for _v in v]) / len(v), sum([_v[1] for _v in v]) / len(v))
+
 
 def verdict_domain(domain, metrics):
     filename = f"{root}/{domain}.inp"

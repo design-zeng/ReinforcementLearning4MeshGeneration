@@ -5,6 +5,7 @@ import gymnasium as gym
 from boundary import Boundary
 from mesh import Mesh
 
+
 class Gym_Env(gym.Env):
     def __init__(self, initial_boundary: npt.NDArray[np.floating]):
         super().__init__()
@@ -22,12 +23,12 @@ class Gym_Env(gym.Env):
             high=np.inf,
             shape=(17,),
             dtype=np.float32)
-        
+
         self.n_fails = 0
 
         self.n_steps = 0
         self.max_steps = 1000
-    
+
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
 
@@ -40,7 +41,7 @@ class Gym_Env(gym.Env):
         observation = self.boundary_env.get_state()
 
         return observation, {}
-    
+
     def step(self, action):
         terminated = False
         truncated = False
@@ -65,7 +66,7 @@ class Gym_Env(gym.Env):
 
         if self.n_fails > 100:
             terminated = True
-        
+
         self.n_steps += 1
 
         if self.n_steps >= self.max_steps:

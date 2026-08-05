@@ -13,11 +13,13 @@ from general.mesh import MeshGeneration
 from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
 
+
 base_path = Path(__file__).parent.parent.parent
 domains_path = base_path / "samples" / "domains"
 output_path = base_path / "general" / "output"
 # meshes are produced by sac/infer.py evaluation() (save_fig=True)
 root = base_path / "sac" / "output" / "evaluation"
+
 
 def clockwise_element(vertices):
     flatten_vs = [[v.x, v.y] for v in vertices]
@@ -30,6 +32,7 @@ def clockwise_element(vertices):
         return res
     else:
         raise ValueError('Not enough vertices!')
+
 
 def generate_mesh_from_inp(filename):
     m = meshio.Mesh.read(filename, "abaqus")
@@ -44,6 +47,7 @@ def generate_mesh_from_inp(filename):
             elements.append(element)
             existing_eles.append(vs)
     return vertices, elements, len(m.cells_dict['triangle']) if 'triangle' in m.cells_dict else 0
+
 
 def discover_meshes():
     meshes = sorted(root.rglob("*.inp"))
@@ -167,6 +171,7 @@ def metrics_4_domains():
 
     print(metrics_data)
 
+
 def final_metrics(domain, metrics):
     filename = f"{root}/{domain}.inp"
     vertices, elements, tri_elements = generate_mesh_from_inp(filename)
@@ -191,6 +196,7 @@ def final_metrics(domain, metrics):
     if 'Triangles' in metrics.keys():
         metrics['Triangles'].append(tri_elements)
     calculate_metrics(real_vertices, real_elements, metrics, ["Element quality",  'Singularity'])
+
 
 def computational_cost_a2c():
     logs = sorted((base_path / "ebrd" / "output").rglob("*rewardings*"))
@@ -233,6 +239,7 @@ def computational_cost_a2c():
     plt.title('Average number of elements per 100 episodes')
     plt.show()
 
+
 # computational_cost_a2c()
 def calculate_initial_boundaries_features():
     domains = sorted(domains_path.glob("*.json"))
@@ -241,6 +248,7 @@ def calculate_initial_boundaries_features():
     for e in envs:
         print(len(e.all_vertices), e.boundary.get_perimeter())
         print(len(e.all_vertices) / e.boundary.get_perimeter())
+
 
 # calculate_initial_boundaries_features()
 def draw_elements():
@@ -263,12 +271,14 @@ def draw_elements():
 
 # draw_elements()
 
+
 def read_inp_file(filename):
     vertices, elements, _ = generate_mesh_from_inp(filename)
     boundary = Boundary2D([])
     mesh = MeshGeneration(boundary)
     mesh.generated_meshes = elements
     return mesh
+
 
 def extract_samples_from_file():
     for m in discover_meshes():
