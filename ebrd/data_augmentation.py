@@ -6,13 +6,9 @@ from pathlib import Path
 
 import numpy as np
 from numpy.random import uniform
-import matplotlib.pyplot as plt
-import seaborn as sns
 from multiprocessing import Process, Manager
 
 from general.components import Segment, Vertex, Mesh
-
-sns.set_theme(style="darkgrid")
 
 base_path = Path(__file__).parent.parent
 augmentation_path = base_path / "ebrd" / "output" / "data_augmentation"
@@ -423,104 +419,13 @@ def load_samples(filename):
     return data
 
 
-def samples_2_plot_data(samples, quality_threshold=0, include_quality=True):
-    data = {
-        'Type 0': {
-            'Neighbors': {'x': [], 'y': []},
-            'RNeighbors': {'x': [], 'y': []},
-            'Angles': [],
-            'Quality': []
-        },
-        'Type 1': {
-            'Neighbors': {'x': [], 'y': []},
-            'RNeighbors': {'x': [], 'y': []},
-            'Vertex': {'x': [], 'y': []},
-            'Angles': [],
-            "Quality": []
-        },
-        'Type 2': {
-            'Neighbors': {'x': [], 'y': []},
-            'RNeighbors': {'x': [], 'y': []},
-            'Angles': [],
-            "Quality": []
-        }
-    }
-
-    actions = np.asarray(list(map(list.__add__, samples['output_types'], samples['outputs'])))
-    observations = np.asarray(samples['samples'])
-    for i in range(len(observations)):
-        if 'quality' in samples.keys():
-            if samples['quality'][i] < quality_threshold:
-                continue
-
-        neighbor_points, radius_points, rule_type, new_point = decode_geometry(observations[i], actions[i])
-        if include_quality:
-            element_quality, boundary_quality = compute_quality(observations[i], actions[i])
-            quality = math.sqrt(element_quality * boundary_quality)
-
-        else:
-            quality = 0
-
-        if rule_type == ACTION_TYPES[0]:
-            data['Type 0']['Neighbors']['x'].extend([p.x for p in neighbor_points])
-            data['Type 0']['Neighbors']['y'].extend([p.y for p in neighbor_points])
-            data['Type 0']['RNeighbors']['x'].extend([p.x for p in radius_points])
-            data['Type 0']['RNeighbors']['y'].extend([p.y for p in radius_points])
-            data['Type 0']['Angles'].append(observations[i][-1])
-            data['Type 0']['Quality'].append(quality)
-
-        elif rule_type == ACTION_TYPES[2]:
-            data['Type 2']['Neighbors']['x'].extend([p.x for p in neighbor_points])
-            data['Type 2']['Neighbors']['y'].extend([p.y for p in neighbor_points])
-            data['Type 2']['RNeighbors']['x'].extend([p.x for p in radius_points])
-            data['Type 2']['RNeighbors']['y'].extend([p.y for p in radius_points])
-            data['Type 2']['Angles'].append(observations[i][-1])
-            data['Type 2']['Quality'].append(quality)
-        else:
-            data['Type 1']['Neighbors']['x'].extend([p.x for p in neighbor_points])
-            data['Type 1']['Neighbors']['y'].extend([p.y for p in neighbor_points])
-            data['Type 1']['RNeighbors']['x'].extend([p.x for p in radius_points])
-            data['Type 1']['RNeighbors']['y'].extend([p.y for p in radius_points])
-            data['Type 1']['Vertex']['x'].append(new_point.x)
-            data['Type 1']['Vertex']['y'].append(new_point.y)
-            data['Type 1']['Angles'].append(observations[i][-1])
-            data['Type 1']['Quality'].append(quality)
-
-    return data
-
-
-def scatter_plot(samples):
-    data = samples_2_plot_data(samples)
-
-    fig, axs = plt.subplots(3, 3, figsize=(10, 10))
-    i = 0
-    for k, v in data.items():
-
-        axs[0, i].plot(v['Neighbors']['x'], v['Neighbors']['y'], 'b.',
-                    v['RNeighbors']['x'], v['RNeighbors']['y'], 'y.')
-        axs[0, i].set_title(k + ": vertex distribution")
-        if k == 'Type 1':
-            axs[0, i].plot(v['Vertex']['x'], v['Vertex']['y'], 'r.')
-
-        # angle distribution
-        axs[1, i].hist(v['Angles'], 15)
-        axs[1, i].set_title(k + ': angle distribution')
-        # quality distribution
-        axs[2, i].hist(v['Quality'], 10)
-        axs[2, i].set_title(k + ': quality distribution')
-
-        i += 1
-    fig.tight_layout()
-    plt.show()
-
-
 def sampling_worker(i, n, threshold, data):
     random.seed(999 + i)      # per-worker seed for reproducible sampling
     np.random.seed(999 + i)
     data[i] = sample_all_types(n, threshold)
 
 
-def sampling_main(pool, N, threshold, file_name=None, is_plot=False):
+def sampling_main(pool, N, threshold, file_name=None):
     manager = Manager()
     return_dict = manager.dict()
 
@@ -546,9 +451,6 @@ def sampling_main(pool, N, threshold, file_name=None, is_plot=False):
         with open(file_name, 'w+') as f:
             json.dump(sample_data, f)
 
-    if is_plot:
-        scatter_plot(sample_data)
-
     return sample_data
 
 
@@ -559,7 +461,6 @@ if __name__ == '__main__':
     #   threshold = minimum normalized element quality to keep a sample
     out_file = augmentation_path / "1" / "training_samples.json"
     out_file.parent.mkdir(parents=True, exist_ok=True)
-    sampling_main(10, 40000, 0.7, file_name=str(out_file), is_plot=False)
+    sampling_main(10, 40000, 0.7, file_name=str(out_file))
 
-    # Inspect the generated dataset (uncomment):
-    # scatter_plot(load_samples(str(out_file)))
+    # Inspect the generated dataset with ebrd.data_augmentation_plotting.scatter_plot.

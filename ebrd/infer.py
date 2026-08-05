@@ -2,6 +2,7 @@ import os
 
 from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
+from general.mesh_plotting import save_meshes
 from ebrd.model import get_action, load_model, domains_path, augmentation_path
 
 
@@ -36,13 +37,13 @@ def evaluation(model_path, version, is_render=False, indexing=False, save_fig=Fa
         if save_fig:
             if info['is_complete']:
                 env.smooth(env.boundary.vertices)
-                env.save_meshes(out_dir / f"ebrd_env_{i}__smoothed.png",
-                                meshes=env.generated_meshes,
-                                indexing=indexing, style='k-')
+                save_meshes(env, out_dir / f"ebrd_env_{i}__smoothed.png",
+                            meshes=env.generated_meshes,
+                            indexing=indexing, style='k-')
             else:
-                env.save_meshes(out_dir / f"ebrd_env_{i}.png",
-                                meshes=env.generated_meshes,
-                                indexing=indexing, style='k-')
+                save_meshes(env, out_dir / f"ebrd_env_{i}.png",
+                            meshes=env.generated_meshes,
+                            indexing=indexing, style='k-')
         if save_samples:
             if len(env.generated_meshes):
                 samples, output_types, outputs = env.extract_samples_2(env.generated_meshes, 2, 3, radius=4)

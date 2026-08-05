@@ -3,6 +3,8 @@ import os
 import numpy as np
 from stable_baselines3.common.callbacks import BaseCallback
 
+from general.mesh_plotting import save_meshes
+
 
 class CustomCallback(BaseCallback):
 
@@ -43,9 +45,9 @@ class CustomCallback(BaseCallback):
             if self.render:
                 self.eval_env.render()
 
-        self.eval_env.save_meshes(f"{self.log_path}/{num_freq}_{episode_idx}.png",
-                                  meshes=self.eval_env.generated_meshes,
-                                  indexing=True, style='k-', dpi=30)
+        save_meshes(self.eval_env, f"{self.log_path}/{num_freq}_{episode_idx}.png",
+                    meshes=self.eval_env.generated_meshes,
+                    indexing=True, style='k-', dpi=30)
         return episode_reward
 
 

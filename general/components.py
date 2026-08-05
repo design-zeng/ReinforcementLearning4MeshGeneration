@@ -1,8 +1,6 @@
 import math
 
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 class Point2D:
     def __init__(self, x, y):
@@ -14,10 +12,6 @@ class Point2D:
 
     def distance_to(self, point):
         return math.sqrt((self.x - point.x) ** 2 + (self.y - point.y) ** 2)
-
-    def show(self, style='b.'):
-        plt.plot(self.x, self.y, style)
-        plt.gca().set_aspect('equal', adjustable='box')
 
     def __sub__(self, other):
         return Point2D(self.x - other.x, self.y - other.y)
@@ -158,138 +152,6 @@ class Boundary2D:
         sorted_segts = sorted([(seg, seg.length()) for seg in segts], key=lambda x: x[1], reverse=reverse)
         return sorted_segts
 
-
-    def show(self, style='b.-', linewidth=1, markersize=6, show=True):
-        segts = self.all_segments()
-        for segt in segts:
-            if segt.point1 not in self.vertices or segt.point2 not in self.vertices:
-                continue
-            segt.show(style=style, linewidth=linewidth, markersize=markersize)
-        plt.gca().set_aspect('equal', adjustable='box')
-        if show:
-            plt.show()
-
-    def plot(self, style='b.-', linewidth=2, markersize=10):
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        segts = self.all_segments()
-        x, y = [], []
-        for segt in segts:
-            if segt.point1 not in self.vertices or segt.point2 not in self.vertices:
-                continue
-            segt.show(style=style, linewidth=linewidth, markersize=markersize)
-            x.extend([segt.point1.x, segt.point2.x])
-            y.extend([segt.point1.y, segt.point2.y])
-
-        ax.set_frame_on(False)
-        # ax.margins(0.05)
-        plt.gca().set_xlim((min(x) - 0.1, max(x) + 0.1))
-        plt.gca().set_ylim((min(y) - 0.1, max(y) + 0.1))
-        plt.xticks([])
-        plt.yticks([])
-
-    def savefig(self, name, title="", style="k.-", dpi=600):
-        sns.set_context('paper')
-        fig = plt.figure()
-        # fig = plt.figure(figsize=(550 / dpi, 480 / dpi), dpi=dpi)
-
-        ax = fig.add_subplot(111)
-        ax.set_title(title)
-        segts = self.all_segments()
-        x, y = [], []
-        for segt in segts:
-            if segt.point1 not in self.vertices or segt.point2 not in self.vertices:
-                continue
-            segt.show(style=style, linewidth=2, markersize=10)
-            x.extend([segt.point1.x, segt.point2.x])
-            y.extend([segt.point1.y, segt.point2.y])
-
-        ax.set_frame_on(False)
-        # ax.margins(0.05)
-        plt.gca().set_xlim((min(x) - 0.1, max(x) + 0.1))
-        plt.gca().set_ylim((min(y) - 0.1, max(y) + 0.1))
-        plt.xticks([])
-        plt.yticks([])
-        plt.gca().set_aspect('equal', adjustable='box')
-        # plt.gca().set_axis_off()
-        # plt.gca().set_aspect('equal')
-        plt.subplots_adjust(top=1, bottom=0, right=1, left=-0, hspace=0, wspace=0)
-        # plt.gca().xaxis.set_major_locator(plt.NullLocator())
-        # plt.gca().yaxis.set_major_locator(plt.NullLocator())
-
-        # plt.show()
-        plt.savefig(name, dpi=dpi)
-        plt.close('all')
-
-    def save_intermediate_boundary_fig(self, name, boundary_vs, title="", style="k.-", dpi=300, r_vertices=None):
-        # sns.set_context('paper')
-        plt.clf()
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.set_title(title)
-        segts = self.all_segments()
-        x, y = [], []
-        for segt in segts:
-            if segt.point1 not in self.vertices or segt.point2 not in self.vertices:
-                continue
-            x.extend([segt.point1.x, segt.point2.x])
-            y.extend([segt.point1.y, segt.point2.y])
-
-            if r_vertices is not None:
-                if segt.point1 in r_vertices and segt.point2 in r_vertices:
-                    segt.show(style="b.-", linewidth=2, markersize=10)
-                else:
-                    segt.show(style=style, linewidth=2, markersize=10)
-
-                if segt.point1 in boundary_vs and segt.point2 in boundary_vs:
-                    segt.show(style="r.-", linewidth=2, markersize=10)
-            else:
-                if segt.point1 in boundary_vs and segt.point2 in boundary_vs:
-                    segt.show(style="r.-", linewidth=2, markersize=10)
-                else:
-                    segt.show(style=style, linewidth=2, markersize=10)
-
-        ax.set_frame_on(False)
-        # ax.margins(0.05)
-        plt.gca().set_xlim((min(x) - 0.1, max(x) + 0.1))
-        plt.gca().set_ylim((min(y) - 0.1, max(y) + 0.1))
-        plt.xticks([])
-        plt.yticks([])
-        plt.gca().set_aspect('equal', adjustable='box')
-        plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-        plt.savefig(name, dpi=dpi)
-        plt.close('all')
-
-    def save_vertices_into_fig(self, name, boundary_vs, title="", style="k.-", dpi=300):
-        sns.set_context('paper')
-        fig = plt.figure(figsize=(1, 1))
-        ax = fig.add_subplot(111)
-        ax.set_title(title)
-        segts = self.all_segments()
-        x, y = [], []
-        for segt in segts:
-            if segt.point1 not in self.vertices or segt.point2 not in self.vertices:
-                continue
-
-            if segt.point1 in boundary_vs and segt.point2 in boundary_vs:
-                segt.show(style=style, linewidth=1, markersize=6)
-                x.extend([segt.point1.x, segt.point2.x])
-                y.extend([segt.point1.y, segt.point2.y])
-
-        ax.set_frame_on(False)
-        # ax.margins(0.05)
-        plt.gca().set_xlim((min(x) - 0.1, max(x) + 0.1))
-        plt.gca().set_ylim((min(y) - 0.1, max(y) + 0.1))
-        plt.xticks([])
-        plt.yticks([])
-        plt.gca().set_aspect('equal', adjustable='box')
-        # plt.gca().set_axis_off()
-        # plt.gca().set_aspect('equal')
-        plt.subplots_adjust(top=1, bottom=0, right=1, left=-0, hspace=0, wspace=0)
-        # plt.show()
-        plt.savefig(name, dpi=dpi)
-        plt.close('all')
-
     @staticmethod
     def compute_dist(vertices, point):
         dists = []
@@ -421,16 +283,6 @@ class Segment:
 
     def is_cross(self, another_segment):
         return self.straddle(another_segment) and another_segment.straddle(self)
-
-    def show(self, style='b.-', linewidth=2, markersize=0.1):
-        # sns.set()
-        # plt.plot([self.point1.x, self.point2.x], [self.point1.y, self.point2.y], style,
-        #                   linewidth=linewidth, markersize=markersize)
-        # ax = sns.lineplot([self.point1.x, self.point2.x], [self.point1.y, self.point2.y],
-        #                   linewidth=linewidth, markersize=markersize, marker='.')
-        plt.plot([self.point1.x, self.point2.x], [self.point1.y, self.point2.y], style,
-                 linewidth=linewidth, markersize=markersize)
-        plt.gca().set_aspect('equal', adjustable='box')
 
     def seg_angle(self):
         theta = math.atan2(self.point2.y - self.point1.y,
@@ -791,20 +643,3 @@ class Mesh:
                                     Segment(origin_p, right_p),
                                     distance)
         return s.point2
-
-    def show(self, quality = 3):
-        for i in range(len(self.vertices)):
-            segt = Segment(self.vertices[i], self.vertices[i - 1])
-            segt.show(style='k.-', linewidth=1, markersize=8)
-        plt.gca().set_aspect('equal', adjustable='box')
-        if quality != 0:
-            center = self.get_centriod()
-            q1, q2 = self.get_quality_3()
-            _quality = round(math.sqrt(q1 * q2), 2)
-            plt.text(center.x*0.8, center.y * 0.8, str(_quality), fontsize=15)
-        # plt.xlim(-0.3,1.5)
-        # plt.ylim(-0.3, 1.5)
-        # plt.show()
-        plt.gca().set_frame_on(False)
-        plt.xticks([])
-        plt.yticks([])

@@ -12,6 +12,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
+from general.component_plotting import savefig_boundary
 from ebrd.data_augmentation import sampling_main
 from ebrd.model import FNNPolicy, get_action, device, SEED, domains_path, output_path, augmentation_path
 
@@ -159,7 +160,7 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
         else:
             env.smooth_pave(env.boundary.vertices, env.updated_boundary.vertices, iteration=400, interior=True)
 
-        env.boundary.savefig(plots_dir / f"{i_episode}.png", style='k-', dpi=300)
+        savefig_boundary(env.boundary, plots_dir / f"{i_episode}.png", style='k-', dpi=300)
         print("Figure saved!")
 
         running_reward = 0.05 * ep_reward + 0.95 * running_reward

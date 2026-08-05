@@ -7,6 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 
 from general.components import Mesh, Vertex
+from general.component_plotting import plot_point
 
 sns.set_theme(style="whitegrid")
 
@@ -19,7 +20,7 @@ def compute():
     vs = [Vertex(x, y) for x in xs for y in ys]
 
     for v in [v1, v2, v3]:
-        v.show()
+        plot_point(v)
 
     angle = []
     ratio = []

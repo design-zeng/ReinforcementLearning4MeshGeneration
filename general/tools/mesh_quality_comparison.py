@@ -8,6 +8,7 @@ import pandas as pd
 from scipy.spatial import ConvexHull
 
 from general.components import Mesh, Vertex, Boundary2D
+from general.component_plotting import show_mesh
 from general.mesh import MeshGeneration
 from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
@@ -257,7 +258,7 @@ def draw_elements():
     ]
     for i, ele in enumerate(elements):
         plt.subplot(2, 5, i + 1)
-        Mesh([Vertex(p[0], p[1]) for p in ele]).show()
+        show_mesh(Mesh([Vertex(p[0], p[1]) for p in ele]))
     plt.show()
 
 # draw_elements()

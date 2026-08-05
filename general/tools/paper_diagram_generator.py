@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 
 from general.components import Vertex, Segment
+from general.component_plotting import plot_segment
 
 output_path = Path(__file__).parent.parent.parent / "general" / "output"
 # mesh snapshots are produced by sac/infer.py evaluation() (save_fig=True)
@@ -31,7 +32,7 @@ def bad_cases():
     segmts.append(Segment(p8, p9))
     segmts.append(Segment(p9, p10))
     for s in segmts:
-        s.show()
+        plot_segment(s)
     ax2.set_title("(b)")
 
     ax3 = plt.subplot(133)
@@ -47,7 +48,7 @@ def bad_cases():
     segmts.append(Segment(p6, p7))
     segmts.append(Segment(p7, p8))
     for s in segmts:
-        s.show()
+        plot_segment(s)
     ax3.set_title("(c)")
 
     plt.show()

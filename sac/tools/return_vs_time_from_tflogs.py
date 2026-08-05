@@ -13,26 +13,34 @@ logs_path = base_path / "sac" / "output" / "logs"
 def load_log(path, tags, name=None, MAX=None):
     if isinstance(path, str):
         runlog_data = pd.DataFrame({"metric": [], "Averaged return": [], "Time step": [], "method": []})
+
         try:
             event_acc = EventAccumulator(path, {"scalars": 0})
             event_acc.Reload()
+
             for tag in tags:
                 event_list = event_acc.Scalars(tag)
+
                 if MAX:
                     event_list = [e for e in event_list if e.step <= MAX]
+
                 values = [e.value for e in event_list]
                 step = [e.step for e in event_list]
                 r = {"metric": [tag] * len(step), "Averaged return": values, "Time step": step,
                      "method": [name] * len(step)}
                 runlog_data = pd.concat([runlog_data, pd.DataFrame(r)])
+
         except Exception:
             print("Event file possibly corrupt: {}".format(path))
+
         return runlog_data
+    
     elif isinstance(path, dict):
         runlog_data = pd.DataFrame({"metric": [], "Averaged return": [], "Time step": [], "method": []})
         for k, v in path.items():
             runlog_data = pd.concat([runlog_data, load_log(v, tags, k, MAX=MAX)])
         return runlog_data
+    
     return pd.DataFrame({"metric": [], "Averaged return": [], "Time step": [], "method": []})
 
 

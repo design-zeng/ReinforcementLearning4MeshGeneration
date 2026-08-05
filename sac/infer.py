@@ -12,6 +12,7 @@ from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
 from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
+from general.mesh_plotting import save_meshes
 
 
 base_path = Path(__file__).parent.parent
@@ -77,7 +78,7 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
             env.smooth(env.boundary.vertices)
 
         if save_fig and env.generated_meshes:
-            env.save_meshes(eval_path / version / f"{tag}.png", meshes=env.generated_meshes,
+            save_meshes(env, eval_path / version / f"{tag}.png", meshes=env.generated_meshes,
                             quality=False, type=4, indexing=indexing, style='k-')
 
             env.write_generated_elements_2_file(eval_path / version / f"{tag}.inp")
@@ -171,12 +172,12 @@ def full_mesh(domain="boundary6",
         if info['is_complete']:
             env.smooth(env.boundary.vertices)
 
-            env.save_meshes(out, meshes=env.generated_meshes, quality=False, type=4, style='k-')
+            save_meshes(env, out, meshes=env.generated_meshes, quality=False, type=4, style='k-')
             print(f"Completed {domain} on attempt {k + 1} "
                   f"({len(env.generated_meshes)} elements, {coverage * 100:.0f}% area). Saved {out}")
             return
         
-    env.save_meshes(out, meshes=env.generated_meshes, quality=False, type=4, style='k-')
+    save_meshes(env, out, meshes=env.generated_meshes, quality=False, type=4, style='k-')
     print(f"No full completion in {attempts} attempts; saved best-effort partial to {out}")
 
 

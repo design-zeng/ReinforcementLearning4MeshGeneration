@@ -4,7 +4,6 @@ import itertools
 from typing import Any
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from general.components import *
 
@@ -945,27 +944,6 @@ class MeshGeneration:
             # return math.sqrt(e_reward * b_reward)
             return e_reward + 1 * (b_reward - 1)
         raise ValueError(f"Unknown quality index: {index}")
-
-    def generate_meshes_canvas(self, meshes, quality, indexing, type, style):
-        self.boundary.plot(style=style, linewidth=1)
-        for id, m in enumerate(meshes):
-            center = m.get_centriod(diff=True)
-            if quality and indexing:
-                _quality = round(self.get_quality(element=m, index=type), 4)
-                plt.text(center.x, center.y, f"{id}; {_quality}", fontsize=6)
-            elif quality:
-                _quality = round(self.get_quality(element=m, index=type), 4)
-                plt.text(center.x, center.y, str(_quality), fontsize=6)
-            elif indexing:
-                plt.text(center.x, center.y, str(id), fontsize=4)
-
-    def save_meshes(self, name, meshes, quality=False, indexing=False, type=0, dpi=300, style='k.-'):
-        plt.clf()
-        self.generate_meshes_canvas(meshes, quality, indexing, type, style=style)
-        plt.gca().set_aspect('equal', adjustable='box')
-        plt.subplots_adjust(top=1, bottom=0, right=1, left=-0, hspace=0, wspace=0)
-        plt.savefig(name, dpi=dpi)
-        plt.close('all')
 
     def write_generated_elements_2_file(self, filename, format='inp'):
         if len(self.generated_meshes) == 0:
