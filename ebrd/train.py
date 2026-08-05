@@ -37,37 +37,28 @@ def build_training_data(data):
 """
 Train the FNN with a single joint MSE loss (FreeMesh-S paper, Eq. 21).
 
-The element type and the vertex coordinates are regressed together as one
-target. This is the paper-faithful trainer; train_fnn() is the improved
-variant that splits the type (classification) and coordinate (regression)
-objectives, and is what start_training() uses in practice.
+train_fnn() is the improved variant that splits the type (classification)
+and coordinate (regression) objectives, and is what start_training() uses in practice.
 """
 # def train_fnn_mse(model, x, y, model_path, tensorboard_log, epoches=500000):
-
 #     loss_fn = torch.nn.MSELoss(reduction='sum')
-
 #     learning_rate = 3e-4
-
 #     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 #     writer = SummaryWriter(tensorboard_log)
 #     running_loss = []
-
 #     for t in range(epoches):
 #         y_actions, y_types = model(x)
 #         y_pred = torch.cat([y_types, y_actions], 1).to(device)
-
 #         loss = loss_fn(y_pred, y)
 #         if loss < 0.01:
 #             break
 #         print(t, loss.item())
-
 #         optimizer.zero_grad()
 #         loss.backward()
 #         optimizer.step()
 #         running_loss.append(loss.item())
 #         if t % 1000:
 #             writer.add_scalar('training loss', sum(running_loss[-1000:]) / 1000, t)
-
 #     torch.save(model.state_dict(), model_path)
 
 
