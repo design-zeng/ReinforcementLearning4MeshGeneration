@@ -18,4 +18,3 @@ vtk==9.6.2
 matplotlib==3.10.0
 pandas==2.3.1
 seaborn==0.13.2
-pygame==2.6.1

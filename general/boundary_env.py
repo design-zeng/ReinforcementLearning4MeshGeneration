@@ -1,6 +1,5 @@
 import math
 import json
-import time
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +11,7 @@ from general.mesh import MeshGeneration
 from general.components import Vertex, Mesh
 from general.point_environment import PointEnvironment
 from general.lin_alg import transformation, detransformation
-from general.boundary_renderer import MeshFrame
+from general.boundary_env_plotting import render_boundary, close_render
 
 base_path = Path(__file__).parent.parent
 output_path = base_path / "general" / "output"
@@ -40,7 +39,6 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         self.target_angle = 0
         self.rewarding = []
         self.estimated_area_range: Any = None
-        self.window_size = (500, 500)
         self.current_state = None
 
         # loggging
@@ -53,7 +51,6 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         }
 
     def reset(self, static=False):  # pyright: ignore[reportIncompatibleMethodOverride]
-        self.viewer = None
         self.boundary = self.original_boundary.deep_copy()
         self.updated_boundary = self.boundary.copy()
         self.original_vertices = [v for v in self.boundary.vertices]
@@ -344,28 +341,11 @@ class BoudaryEnv(MeshGeneration, gym.Env):
         return [seed]
 
     def close(self):
-        if self.viewer is not None:
-            self.viewer.close()
-        self.viewer = None
+        close_render()
 
     def render(self, mode='human'):
         print(f'Generated elements: {len(self.generated_meshes)}')
-        if self.viewer is None:
-            # self.viewer.set_bounds(-1, 12, -6.5, 6.5)
-            # self.times = 1
-            self.viewer = MeshFrame(self.window_size)
-            min_x, max_x = min([v.x for v in self.original_vertices]), max([v.x for v in self.original_vertices])
-            min_y, max_y = min([v.y for v in self.original_vertices]), max([v.y for v in self.original_vertices])
-            self.times = int(min(self.window_size[0] / (max_x-min_x), self.window_size[1] / (max_y - min_y)))
-            self.min_x, self.min_y = min_x, min_y
-
-        all_segts = self.boundary.all_segments()
-        for line in all_segts:
-            self.viewer.draw_line(((line.point1.x - self.min_x) * self.times, (line.point1.y - self.min_y) * self.times),
-                                  ((line.point2.x - self.min_x) * self.times, (line.point2.y - self.min_y) * self.times),
-                                  color=(0, 0, 1)) #color=(0, 0, 1)
-        time.sleep(.0001)
-        self.viewer.render()
+        render_boundary(self.boundary)
 
     def find_same_point(self, point):
         for p in self.updated_boundary.vertices:
