@@ -4,41 +4,41 @@ import torch
 from general.lin_alg import detransformation
 from general.components import Vertex
 from original_ann.pattern_loader import get_patterns, data_transformation
-from original_ann.model import load_model, pattern_path, device
+from original_ann.model import load_model, pattern_path
 
 
-def predict(model, points):
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def predict(model, vertices):
     model.eval()
 
-    flattened_points = []
-    for point in points:
-        flattened_points.append(point.x)
-        flattened_points.append(point.y)
+    flattened_vertices = []
+    for vertex in vertices:
+        flattened_vertices.append(vertex.x)
+        flattened_vertices.append(vertex.y)
 
-    transformed_data = data_transformation([flattened_points], 2, 3, 4, 5, 6, 7)
+    transformed_data = data_transformation([flattened_vertices])
 
-    x = torch.from_numpy(np.concatenate((transformed_data[:, : 4], transformed_data[:, -4: -2]), axis=1)).float().to(device)
+    x = np.concatenate((transformed_data[:, : 4], transformed_data[:, -4: -2]), axis=1)
+    x = torch.from_numpy(x).float().to(device)
 
     with torch.no_grad():
-        predict = model.forward(x)
+        y = model.forward(x)
 
-    p0 = np.array([flattened_points[4], flattened_points[5]])
-    p1 = np.array([flattened_points[6], flattened_points[7]])
-    distance = np.linalg.norm(p0 - p1)  # base length used to scale during transformation
-    detransformed_predict = detransformation(
-        np.array([predict[0][1], predict[0][2]]),
-        distance,
-        p0,
-        p1)
-    return round(float(predict[0][0])), detransformed_predict
+    vertex_to_detransform = np.array([y[0][1], y[0][2]])
+    p0 = np.array([flattened_vertices[4], flattened_vertices[5]])
+    p1 = np.array([flattened_vertices[6], flattened_vertices[7]])
+    detransformed_predict = detransformation(vertex_to_detransform, np.linalg.norm(p0 - p1), p0, p1)
+
+    action_type = round(float(y[0][0]))
+
+    return action_type, detransformed_predict
 
 
 if __name__ == "__main__":
-    # Load the trained model (run `python -m original_ann.train` first) and predict the
-    # next element on a boundary configuration taken from the shipped pattern set.
     model = load_model()
-    inputs, _, _ = get_patterns(pattern_path)
-    coords = inputs[0]  # a local configuration: 5 (x, y) boundary points
-    pts = [Vertex(coords[i], coords[i + 1]) for i in range(0, 10, 2)]
-    element_type, new_vertex = predict(model, pts)
-    print(f"element type={element_type}, new vertex={new_vertex}")
+    input_points, _, _ = get_patterns(pattern_path)
+    input_vertices = [Vertex(input_points[0][i], input_points[0][i + 1]) for i in range(0, 10, 2)]
+    action_type, new_vertex = predict(model, input_vertices)
+    print(f"action type={action_type}, new vertex={new_vertex}")
