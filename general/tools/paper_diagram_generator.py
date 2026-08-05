@@ -165,7 +165,7 @@ def read_img():
     plt.savefig(f"{output_path}/e.png", dpi=1000)
 
 if __name__ == "__main__":
-    pass
+    bad_cases()
     # env.boundary.show()
     # primitive_rules()
     # generation_partial_boundary()

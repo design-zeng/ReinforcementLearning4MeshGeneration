@@ -1,7 +1,7 @@
 .DS_Store
 .vscode/
 __pycache__/
-# run artifacts (checkpoints, figures, tensorboard, samples written by your own runs)
+
 output/
 */output/
 runs/

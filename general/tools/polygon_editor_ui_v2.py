@@ -105,7 +105,6 @@ class MeshFrame(Frame):
     def density(self, event):
         # d = Tk()
         self.newWindow = Toplevel(self.master)
-        den = Density(self.newWindow, self.points, self)
 
     def mouse_move(self, event):
         if self.done:  # Nothing more to do
@@ -117,7 +116,7 @@ class MeshFrame(Frame):
         self.current = (event.x, event.y)
         try:
             self.canvas.delete(self.last_draw)
-        except Exception as e:
+        except:
             pass
         self.last_draw = self.canvas.create_line(self.points[-1][0], self.points[-1][1], event.x, event.y,
                            fill=self.fore_color)

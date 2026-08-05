@@ -53,9 +53,6 @@ class Vertex(Point2D):
         else:
             self.segments = [segment]
 
-    def find_angle(self, another_vertex):
-        return math.atan2(another_vertex.y - self.y, another_vertex.x - self.x)
-
     def to_find_clockwise_angle(self, point1, point2):
         v1 = point1 - self
         v2 = point2 - self
@@ -112,17 +109,6 @@ class Vertex(Point2D):
         connected_v = self.get_connected_vertices()
         another_vertex_v = another_vertex.get_connected_vertices()
         return [v for v in connected_v if v in another_vertex_v]
-
-    def get_mid_vertex(self, another_vertex):
-        return Vertex(self.x + another_vertex.x, self.y + another_vertex.y) / 2
-
-    def perpendicular_vector(self, another_vertex):
-        u = (self.x - another_vertex.x, self.y - another_vertex.y)
-        if self.y - another_vertex.y == 0:
-            return (0, 1)
-        else:
-            v = (1, (self.x - another_vertex.x) / (another_vertex.y - self.y))
-            return v
 
 
 class Boundary2D:
@@ -215,10 +201,6 @@ class Boundary2D:
         [vertices.append(self.vertices[index - i]) for i in range(1, half + 1)]
         return vertices
 
-    def cal_segts_len(self):
-        lens = [s.__len__() for s in self.all_segments()]
-        return sorted(lens)
-
     def average_edge_length(self):
         _length = len(self.vertices)
         dist = 0
@@ -260,7 +242,6 @@ class Segment:
         v1 = another_segment.point1 - self.point1
         v2 = another_segment.point2 - self.point1
         vm = self.point2 - self.point1
-        vm_2 = another_segment.point2 - another_segment.point1
 
         # check if two segments are colinear
         if round(math.sin(self.point1.to_find_clockwise_angle(another_segment.point1, self.point2)), 4) == \
@@ -526,11 +507,6 @@ class Mesh:
             return x12.length() / min(x1.length(), x2.length())
         elif type == 's_jacobian':
             p0, p1, p2, p3 = self.vertices[0], self.vertices[-1], self.vertices[-2], self.vertices[-3]
-            p01 = (p0 + p1) / 2
-            p12 = (p2 + p1) / 2
-            p23 = (p2 + p3) / 2
-            p30 = (p0 + p3) / 2
-            p00 = (p0 + p1 + p2 + p3) / 4
             l0, l1, l2, l3 = p1-p0, p2-p1, p3-p2, p0-p3
             a3 = cross_product(l2, l3)
             a2 = cross_product(l1, l2)
