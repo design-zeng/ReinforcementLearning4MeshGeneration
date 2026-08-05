@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
-sns.set_theme(style="darkgrid")
 
 base_path = Path(__file__).parent.parent.parent
 logs_path = base_path / "sac" / "output" / "logs"
@@ -38,6 +37,7 @@ def load_log(path, tags, name=None, MAX=None):
 
 
 def plot_tensorflow_log(data_frame, title="Run"):
+    sns.set_theme(style="darkgrid")
     scatter = sns.lineplot(x='Time step', y='Averaged return', data=data_frame, errorbar=None, hue='method')
     scatter.legend(title=title)
     plt.show()

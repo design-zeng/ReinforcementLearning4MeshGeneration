@@ -8,12 +8,13 @@ from general.polygon_reader import read_polygon
 from general.boundary_env import BoudaryEnv
 from sac.custom_callback import CustomCallback
 
+
 base_path = Path(__file__).parent.parent
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-version = 77
-method_name = 'sac'
+
+version = 77 # change if wish to preserve old training data
 
 method_settings = {
     "a2c": (A2C,  {
@@ -68,6 +69,7 @@ method_settings = {
     })
 }
 
+
 environments = [
     [
         1500000,
@@ -76,10 +78,12 @@ environments = [
     ]
 ]
 
-def train_all():
+
+def train(method_name):
     Algo, kwargs = method_settings[method_name]
 
     for i, (total_timesteps, train_env, eval_env) in enumerate(environments):
+
         current_output_path = base_path / "sac" / "output" / "logs" / method_name / f"{version}" / f"{i}"
         os.makedirs(current_output_path, exist_ok=True)
 
@@ -89,22 +93,22 @@ def train_all():
             previous_model_path = base_path / "sac" / "output" / "logs" / method_name / f"{version}" / f"{i - 1}" / "model.zip"
             model = Algo.load(previous_model_path, env=train_env)
 
-        eval_callback = CustomCallback(eval_env, best_model_save_path=str(current_output_path),
-                                           log_path=str(current_output_path), eval_freq=1000,
-                                           n_eval_episodes=1,
-                                           deterministic=False, render=False)
+        eval_callback = CustomCallback(eval_env, current_output_path, current_output_path)
 
         model.learn(total_timesteps=total_timesteps, callback=eval_callback)
-        model.save(current_output_path / "model.zip")
+
+        current_model_path = current_output_path / "model.zip"
+        model.save(current_model_path)
+
 
 if __name__ == "__main__":
     # method_name = "a2c"
-    # train_all()
+    # train(method_name)
     # method_name = "ddpg"
-    # train_all()
+    # train(method_name)
     # method_name = "ppo"
-    # train_all()
-    # method_name = "sac"
-    train_all()
+    # train(method_name)
+    method_name = "sac"
+    train(method_name)
     # method_name = "td3"
-    # train_all()
+    # train(method_name)
