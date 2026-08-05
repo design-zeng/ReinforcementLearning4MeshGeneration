@@ -284,7 +284,7 @@ def compute_quality(obs, action):
     if quad.is_valid(0) and \
             not quad_crosses_boundary(quad, neighbor_points, radius_points) and \
             not quad_encloses_point(quad, radius_points + [neighbor_points[0], neighbor_points[-1]]):
-        element_quality = quad.get_quality(type='strong')
+        element_quality = quad.get_quality(quality_type='strong')
         boundary_quality = compute_boundary_quality(quad, neighbor_points, radius_points)
         return element_quality, boundary_quality
     else:
@@ -311,7 +311,7 @@ def quad_crosses_boundary(quad, neighbor_points, radius_points):
 
 
 def quad_encloses_point(quad, radius_points):
-    centroid = quad.get_centriod()
+    centroid = quad.get_centroid()
 
     for v in radius_points:
         s1 = Segment(v, centroid)
@@ -362,12 +362,12 @@ def compute_boundary_quality(quad, neighbor_points, radius_points):
             q2 = 1
 
         # compute smoothness
-        targt_len = dist / 2
+        target_len = dist / 2
         k = int(len(neighbor_points) / 2)
         _dists = [neighbor_points[k - 2], neighbor_points[k - 1], new_v, neighbor_points[k + 1], neighbor_points[k + 2]]
         mean_dist = sum([_dists[i].distance_to(_dists[i - 1]) for i in range(1, len(_dists))]) / (len(_dists) - 1)
 
-        smoothness = min(mean_dist, targt_len) / max(mean_dist, targt_len)
+        smoothness = min(mean_dist, target_len) / max(mean_dist, target_len)
         return math.pow(q1 * q2 * smoothness, 1 / 3)
     else:
         indices = sorted([neighbor_points.index(v) for v in quad.vertices])
@@ -404,11 +404,11 @@ def compute_boundary_quality(quad, neighbor_points, radius_points):
         angle_quality = 2 * min(angles) / math.pi if len(angles) else 1
 
         # compute smoothness
-        targt_len = neighbor_points[left_ind].distance_to(neighbor_points[right_ind])
+        target_len = neighbor_points[left_ind].distance_to(neighbor_points[right_ind])
         mean_dist = sum([_dists[i].distance_to(_dists[i - 1]) for i in range(1, len(_dists))]) / (
                 len(_dists) - 1)
 
-        smoothness = min(mean_dist, targt_len) / max(mean_dist, targt_len)
+        smoothness = min(mean_dist, target_len) / max(mean_dist, target_len)
         boundary_quality = math.sqrt(angle_quality * smoothness)
         return boundary_quality
 

@@ -180,15 +180,15 @@ class Boundary2D:
             if start_angle < base_point.to_find_clockwise_angle(start_point, v) < end_angle]
         return target_points
 
-    def get_centriod(self):
+    def get_centroid(self):
         if not len(self.vertices):
             return
-        centriod = Vertex(0, 0)
+        centroid = Vertex(0, 0)
         for v in self.vertices:
-            centriod += v
-        centriod.x /= len(self.vertices)
-        centriod.y /= len(self.vertices)
-        return centriod
+            centroid += v
+        centroid.x /= len(self.vertices)
+        centroid.y /= len(self.vertices)
+        return centroid
 
     def get_neighbors(self, point, num_points=4):
         half = int(num_points / 2)
@@ -198,7 +198,8 @@ class Boundary2D:
         index = self.vertices.index(point)
 
         vertices = [self.vertices[(index + i) % p_num] for i in reversed(range(half + 1))]
-        [vertices.append(self.vertices[index - i]) for i in range(1, half + 1)]
+        for i in range(1, half + 1):
+            vertices.append(self.vertices[index - i])
         return vertices
 
     def average_edge_length(self):
@@ -308,7 +309,7 @@ class Segment:
         B = self.point2.y - self.point1.y
         s = (A * point.x + B * point.y - B * b - A * a) / (A ** 2 + B ** 2)
         target = Vertex(a+s*A, b+s*B)
-        return target, point.distance_to(target), True if 0 <= s <= 1 else False
+        return target, point.distance_to(target), 0 <= s <= 1
 
     def length(self):
         return self.point1.distance_to(self.point2)
@@ -330,7 +331,7 @@ class Segment:
             else:
                 s = ((self.point1.x - another_seg.point1.x) / w.x - (self.point1.y - another_seg.point1.y) / w.y) / (u.y/w.y - u.x/w.x)
                 h = (self.point1.x - another_seg.point1.x + s * u.x) / w.x
-        is_inside = True if 0 < s < 1 and 0 < h < 1 else False
+        is_inside = 0 < s < 1 and 0 < h < 1
         return is_inside, Vertex(self.point1.x + s * u.x, self.point1.y + s * u.y)
 
     def distance(self, another):
@@ -444,7 +445,7 @@ class Mesh:
         seg2 = Segment(self.vertices[1], self.vertices[2])
         return seg1.is_cross(seg2)
 
-    def get_centriod(self, diff=False):
+    def get_centroid(self, diff=False):
         ave_point = Vertex(0, 0)
         for v in self.vertices:
             ave_point += v
@@ -483,14 +484,14 @@ class Mesh:
             angles.append(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1]) - math.pi / 2))
         return max(angles)
 
-    def get_quality(self, type='default'):
-        if type == 'default':
+    def get_quality(self, quality_type='default'):
+        if quality_type == 'default':
             aspect_ratio = self.get_aspect_ratio()
             ave_error_angle = self.get_ave_error_angle()
             return 1 / (aspect_ratio + ave_error_angle)
-        elif type =='stretch':
+        elif quality_type == 'stretch':
             return math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]), self.vertices[1].distance_to(self.vertices[3]))
-        elif type == 'robust':
+        elif quality_type == 'robust':
             q1 = math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]), self.vertices[1].distance_to(self.vertices[3]))
             # segts = self.length_4_segments()
             # q1 = min(segts) / max(segts)
@@ -499,13 +500,13 @@ class Mesh:
                 angles.append(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1]))
             q2 = min(angles) / max(angles)
             return math.sqrt(q1 * q2) #(q1 + q2) /2
-        elif type == 'taper':
+        elif quality_type == 'taper':
             p0, p1, p2, p3 = self.vertices[0], self.vertices[-1], self.vertices[-2], self.vertices[-3]
             x1 = (p1 - p0) + (p2 - p3)
             x2 = (p2 - p1) + (p3 - p0)
             x12 = (p0 - p1) + (p2 - p3)
             return x12.length() / min(x1.length(), x2.length())
-        elif type == 's_jacobian':
+        elif quality_type == 's_jacobian':
             p0, p1, p2, p3 = self.vertices[0], self.vertices[-1], self.vertices[-2], self.vertices[-3]
             l0, l1, l2, l3 = p1-p0, p2-p1, p3-p2, p0-p3
             a3 = cross_product(l2, l3)
@@ -516,7 +517,7 @@ class Mesh:
                      a1 / (l0.length() * l1.length()),
                      a2 / (l1.length() * l2.length()),
                      a3 / (l2.length() * l3.length())])
-        elif type == 'strong':
+        elif quality_type == 'strong':
             q1, _ = self.get_quality_3()
             # q1 = math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]), self.vertices[1].distance_to(self.vertices[3]))
             angles = []
@@ -533,10 +534,10 @@ class Mesh:
             # q2 = angle_product
 
             return math.sqrt(q1 * q2)
-        elif type == 'area':
+        elif quality_type == 'area':
             q1, q2 = self.get_quality_3()
             return q1 * q2
-        raise ValueError(f"Unknown quality type: {type}")
+        raise ValueError(f"Unknown quality type: {quality_type}")
 
     def compute_area(self):
         length_of_edges = [self.vertices[i].distance_to(self.vertices[i - 1]) for i in range(4)]

@@ -80,7 +80,7 @@ def show_mesh(mesh, quality=3):
         plot_segment(segt, style='k.-', linewidth=1, markersize=8)
     plt.gca().set_aspect('equal', adjustable='box')
     if quality != 0:
-        center = mesh.get_centriod()
+        center = mesh.get_centroid()
         q1, q2 = mesh.get_quality_3()
         _quality = round(math.sqrt(q1 * q2), 2)
         plt.text(center.x * 0.8, center.y * 0.8, str(_quality), fontsize=15)

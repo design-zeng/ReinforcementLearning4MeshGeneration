@@ -73,8 +73,9 @@ def primitive_rules():
     ax3.plot([1.4, 2.7], [2.6, 2.4], 'b--')
     ax3.set_title("(c)")
 
-    [a.get_xaxis().set_visible(False) for a in fig.axes]
-    [a.get_yaxis().set_visible(False) for a in fig.axes]
+    for a in fig.axes:
+        a.get_xaxis().set_visible(False)
+        a.get_yaxis().set_visible(False)
     plt.show()
 
 
@@ -143,8 +144,9 @@ def output_types():
     ax3.plot([2.7], [2.6], 'o')
     ax3.set_title("(c) type 2")
 
-    [a.get_xaxis().set_visible(False) for a in fig.axes]
-    [a.get_yaxis().set_visible(False) for a in fig.axes]
+    for a in fig.axes:
+        a.get_xaxis().set_visible(False)
+        a.get_yaxis().set_visible(False)
     plt.show()
 
 
@@ -159,8 +161,9 @@ def read_img():
         ax = fig.add_subplot(2, 3, k + 1)
         ax.imshow(plt.imread(im))
         ax.set_title(f"({chr(97 + k)})")
-    [a.get_xaxis().set_visible(False) for a in fig.axes]
-    [a.get_yaxis().set_visible(False) for a in fig.axes]
+    for a in fig.axes:
+        a.get_xaxis().set_visible(False)
+        a.get_yaxis().set_visible(False)
     os.makedirs(output_path, exist_ok=True)
     plt.savefig(f"{output_path}/e.png", dpi=1000)
 

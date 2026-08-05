@@ -11,7 +11,7 @@ from matplotlib.gridspec import GridSpec
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
 from general.polygon_reader import read_polygon
-from general.boundary_env import BoudaryEnv
+from general.boundary_env import BoundaryEnv
 from general.mesh_plotting import save_meshes
 
 
@@ -29,7 +29,7 @@ method = "sac"
 
 
 environments = [
-    BoudaryEnv(read_polygon(domains_path / f"{name}.json"), experiment_version=version, env_name=i)
+    BoundaryEnv(read_polygon(domains_path / f"{name}.json"), experiment_version=version, env_name=i)
     for i, name in enumerate(["boundary15", "random1_1", "random2_2"])
 ]
 
@@ -79,7 +79,7 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
 
         if save_fig and env.generated_meshes:
             save_meshes(env, eval_path / version / f"{tag}.png", meshes=env.generated_meshes,
-                            quality=False, type=4, indexing=indexing, style='k-')
+                            quality=False, quality_index=4, indexing=indexing, style='k-')
 
             env.write_generated_elements_2_file(eval_path / version / f"{tag}.inp")
 
@@ -106,7 +106,7 @@ def replication_evaluation(is_render=False, deterministic=False, indexing=False,
     if not ckpt.exists():
         raise FileNotFoundError(f"{ckpt} not found. Run `python -m sac.train` first.")
 
-    env = BoudaryEnv(read_polygon(domains_path / "boundary_fly_r2.json"))
+    env = BoundaryEnv(read_polygon(domains_path / "boundary_fly_r2.json"))
 
     model = prepare_model(method, ckpt, env)
 
@@ -158,7 +158,7 @@ def full_mesh(domain="boundary6",
                attempts=60):
     os.makedirs(eval_path, exist_ok=True)
 
-    env = BoudaryEnv(read_polygon(domains_path / f"{domain}.json"))
+    env = BoundaryEnv(read_polygon(domains_path / f"{domain}.json"))
 
     model = prepare_model(method, ckpt, env)
 
@@ -172,12 +172,12 @@ def full_mesh(domain="boundary6",
         if info['is_complete']:
             env.smooth(env.boundary.vertices)
 
-            save_meshes(env, out, meshes=env.generated_meshes, quality=False, type=4, style='k-')
+            save_meshes(env, out, meshes=env.generated_meshes, quality=False, quality_index=4, style='k-')
             print(f"Completed {domain} on attempt {k + 1} "
                   f"({len(env.generated_meshes)} elements, {coverage * 100:.0f}% area). Saved {out}")
             return
 
-    save_meshes(env, out, meshes=env.generated_meshes, quality=False, type=4, style='k-')
+    save_meshes(env, out, meshes=env.generated_meshes, quality=False, quality_index=4, style='k-')
     print(f"No full completion in {attempts} attempts; saved best-effort partial to {out}")
 
 

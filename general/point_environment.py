@@ -25,7 +25,7 @@ class PointEnvironment(object):
         # self.get_available_radius()
         self.area_ratio = area_ratio
         self.static = static
-        self.get_state(type=2)
+        self.get_state(state_type=2)
 
     def get_neighbors(self, boundary):
         vertices = boundary.get_neighbors(self.reference_point, num_points=self.neighbor_num)
@@ -97,14 +97,14 @@ class PointEnvironment(object):
     #     else:
     #         self.available_radius = self.radius
 
-    def get_state(self, type=0):
-        if type == 0:
+    def get_state(self, state_type=0):
+        if state_type == 0:
             self.get_neighbors(self.boundary)
             # self.get_radius_neighbors(boundary)
             self.get_closet_neighbor(self.boundary, index=0)
 
             self.state = self.points_as_array(self.neighbors + self.radius_neighbors)
-        elif type == 1:
+        elif state_type == 1:
             self.get_neighbors(self.boundary)
             angle = self.neighbors[1].to_find_clockwise_angle(self.neighbors[-1],
                                                               self.neighbors[0])
@@ -117,7 +117,7 @@ class PointEnvironment(object):
             r_d = self.neighbors[1].distance_to(self.radius_neighbors[1]) / self.base_length
             self.state = [angle, d_l, d_r, r_angle, r_d]
 
-        elif type == 2:
+        elif state_type == 2:
             self.get_neighbors(self.boundary)
             self.state = self.get_radius_points().flatten()
         else:
@@ -227,8 +227,8 @@ class PointEnvironment(object):
         return np.asarray([[round(v[0], 4), round(v[1], 4)] for v in r_points])
 
     def points_as_array(self, points):
-        flated_points = []
+        flattened_points = []
         for point in points:
-            flated_points.append(point.x)
-            flated_points.append(point.y)
-        return np.asarray(flated_points)
+            flattened_points.append(point.x)
+            flattened_points.append(point.y)
+        return np.asarray(flattened_points)

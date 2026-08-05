@@ -18,11 +18,11 @@ base_path = Path(__file__).parent.parent
 output_path = base_path / "general" / "output"
 
 
-class BoudaryEnv(MeshGeneration, gym.Env):
+class BoundaryEnv(MeshGeneration, gym.Env):
     TYPE_THRESHOLD = 0.3
 
     def __init__(self, boundary, experiment_version=None, env_name=None):
-        super(BoudaryEnv, self).__init__(boundary)
+        super(BoundaryEnv, self).__init__(boundary)
         self.original_boundary = self.boundary.deep_copy()
         self.original_area = self.boundary.poly_area()
         self.current_area = self.original_area
@@ -176,7 +176,7 @@ class BoudaryEnv(MeshGeneration, gym.Env):
                 is_complete = False
         return next_state, np.float64(reward), done, {'is_complete': is_complete}
 
-    def move(self, new_point, type, lr_1=None, lr_2=None):
+    def move(self, new_point, rule_type, lr_1=None, lr_2=None):
         x = self.current_point_environment.base_length * self.radius * new_point[0] * math.cos(new_point[1])
         y = self.current_point_environment.base_length * self.radius * new_point[0] * math.sin(new_point[1])
         # x, y = np.clip(self.radius * new_point[0] * math.cos(new_point[1]), -1.5, 1.5), \
@@ -199,10 +199,10 @@ class BoudaryEnv(MeshGeneration, gym.Env):
             index = self.updated_boundary.vertices.index(reference_point)
             mesh = None
 
-            if type <= self.TYPE_THRESHOLD:
+            if rule_type <= self.TYPE_THRESHOLD:
                 mesh = self.rule_element(-1, index)
                 # reward -= 0.1 * math.fabs(rule_type + 1)
-            elif type >= 1 - self.TYPE_THRESHOLD:
+            elif rule_type >= 1 - self.TYPE_THRESHOLD:
                 mesh = self.rule_element(1, index)
             else:
                 if self.is_point_inside_area(new_point):

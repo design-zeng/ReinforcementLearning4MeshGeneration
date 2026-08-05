@@ -11,7 +11,7 @@ from general.components import Mesh, Vertex, Boundary2D
 from general.component_plotting import show_mesh
 from general.mesh import MeshGeneration
 from general.polygon_reader import read_polygon
-from general.boundary_env import BoudaryEnv
+from general.boundary_env import BoundaryEnv
 
 
 base_path = Path(__file__).parent.parent.parent
@@ -60,18 +60,18 @@ def discover_meshes():
 def calculate_metrics(vertices, elements, metrics, metrics_ind):
     if "Element quality" in metrics_ind:
         element_qualities = []
-        stretch, s_jabobian, taper = [], [], []
+        stretch, s_jacobian, taper = [], [], []
         min_angles, max_angles = [], []
 
         for ele in elements:
             # q1, q2 = ele.get_quality_3()
-            element_qualities.append(ele.get_quality(type='robust')) #ele.get_quality()
+            element_qualities.append(ele.get_quality(quality_type='robust')) #ele.get_quality()
             if 'Stretch' in metrics_ind:
-                stretch.append(ele.get_quality(type='stretch'))
+                stretch.append(ele.get_quality(quality_type='stretch'))
             if 'Taper' in metrics_ind:
-                taper.append(ele.get_quality(type='taper'))
+                taper.append(ele.get_quality(quality_type='taper'))
             if 'Scaled Jacobian' in metrics_ind:
-                s_jabobian.append(ele.get_quality(type='s_jacobian'))
+                s_jacobian.append(ele.get_quality(quality_type='s_jacobian'))
             angles = ele.inner_angles()
             if 'MinAngle' in metrics_ind:
                 min_angles.append(min(angles))
@@ -92,11 +92,11 @@ def calculate_metrics(vertices, elements, metrics, metrics_ind):
             # metrics['taper'].append([m, math.sqrt(sum([(_v - m) ** 2 for _v in taper]) / len(
             #     taper))])
             metrics['Taper'].extend(taper)
-        if len(s_jabobian):
-            # m = sum(s_jabobian) / len(s_jabobian)
-            # metrics['s_jabobian'].append([m, math.sqrt(sum([(_v - m) ** 2 for _v in s_jabobian]) / len(
-            #     s_jabobian))])
-            metrics['Scaled Jacobian'].extend(s_jabobian)
+        if len(s_jacobian):
+            # m = sum(s_jacobian) / len(s_jacobian)
+            # metrics['s_jacobian'].append([m, math.sqrt(sum([(_v - m) ** 2 for _v in s_jacobian]) / len(
+            #     s_jacobian))])
+            metrics['Scaled Jacobian'].extend(s_jacobian)
 
         if len(min_angles):
             # m = sum(min_angles) / len(min_angles)
@@ -244,7 +244,7 @@ def computational_cost_a2c():
 def calculate_initial_boundaries_features():
     domains = sorted(domains_path.glob("*.json"))
 
-    envs = [BoudaryEnv(read_polygon(name)) for name in domains]
+    envs = [BoundaryEnv(read_polygon(name)) for name in domains]
     for e in envs:
         print(len(e.all_vertices), e.boundary.get_perimeter())
         print(len(e.all_vertices) / e.boundary.get_perimeter())

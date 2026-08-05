@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from general.polygon_reader import read_polygon
-from general.boundary_env import BoudaryEnv
+from general.boundary_env import BoundaryEnv
 from general.component_plotting import savefig_boundary
 from ebrd.data_augmentation import sampling_main
 from ebrd.model import FNNPolicy, get_action, device, SEED, domains_path, output_path, augmentation_path
@@ -233,4 +233,4 @@ if __name__ == '__main__':
 
     # Alternative experiments:
     # hyperparameter_search()   # sweep the extraction quality threshold (paper Table 7)
-    # self_evolving_training(BoudaryEnv(read_polygon(domains_path / "random1_1.json")), version)  # paper Table 6
+    # self_evolving_training(BoundaryEnv(read_polygon(domains_path / "random1_1.json")), version)  # paper Table 6
