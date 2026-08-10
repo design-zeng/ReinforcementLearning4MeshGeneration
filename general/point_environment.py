@@ -3,7 +3,7 @@ from typing import Any
 
 import numpy as np
 
-from general.components import Vertex, Boundary2D, Segment
+from general.components import Vertex, Segment
 
 
 class PointEnvironment(object):
@@ -74,8 +74,8 @@ class PointEnvironment(object):
 
 
         rotation_angle = self.reference_point.to_find_clockwise_angle(right_p, self.reference_point + Vertex(1, 0))
-        angles = [i * theta / (2 * self.radius_num) for i in range(1, 2 * self.radius_num, 2)]
-        for i, a in enumerate(angles):
+        for i in range(self.radius_num):
+            a = (2 * i + 1) * theta / (2 * self.radius_num)
             r_points[self.neighbor_num // 2 + i][1] = self.clip_angle(a, theta)
         p_s = self.reference_point + Vertex.rotate_counterclockwise(Vertex(target_length * math.cos(theta / 2),
                                                          target_length * math.sin(theta / 2)), rotation_angle)
@@ -85,9 +85,7 @@ class PointEnvironment(object):
             d = self.reference_point.distance_to(self.boundary.vertices[i])
             if self.boundary.vertices[i] in [right_p, left_p]:
                 continue
-            else:
-                angle = self.reference_point.to_find_clockwise_angle(self.boundary.vertices[i], right_p)
-                l_angle = self.reference_point.to_find_clockwise_angle(self.boundary.vertices[i + 1], right_p)
+            angle = self.reference_point.to_find_clockwise_angle(self.boundary.vertices[i], right_p)
 
             if angle == 0:
                 continue
@@ -101,12 +99,11 @@ class PointEnvironment(object):
             seg = Segment(self.boundary.vertices[i], self.boundary.vertices[i + 1])
             ll = Segment(self.reference_point, p_s)
             flag, vv = ll.intersection_vertex(seg)
-            if flag is not None:
-                if flag:
-                    _d = self.reference_point.distance_to(vv)
-                    if shortest_edge[0] > (_d / self.radius) / self.base_length:
-                        shortest_edge[0] = (_d / self.radius) / self.base_length
-                        shortest_edge[1] = i
+            if flag:
+                _d = self.reference_point.distance_to(vv)
+                if shortest_edge[0] > (_d / self.radius) / self.base_length:
+                    shortest_edge[0] = (_d / self.radius) / self.base_length
+                    shortest_edge[1] = i
 
         if shortest_edge[0] != 1 and shortest_edge[0] < r_points[(self.radius_num + self.neighbor_num) // 2][0]:
             _i = shortest_edge[1]
@@ -123,8 +120,4 @@ class PointEnvironment(object):
         return np.asarray([[round(v[0], 4), round(v[1], 4)] for v in r_points])
 
     def points_as_array(self, points):
-        flattened_points = []
-        for point in points:
-            flattened_points.append(point.x)
-            flattened_points.append(point.y)
-        return np.asarray(flattened_points)
+        return np.asarray([coord for point in points for coord in (point.x, point.y)])
