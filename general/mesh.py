@@ -141,13 +141,15 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
                 return self.candidate_vertices[0][0]
 
     def compute_boundary_quality(self, add_v):
-        index = self.updated_boundary.vertices.index(add_v)
+        v = self.updated_boundary.vertices
+        n = len(v)
+        index = v.index(add_v)
         angles = []
         # product = 1
         for i in [1, -1]:
-            angle = self.updated_boundary.vertices[(index + i) % len(self.updated_boundary.vertices)].to_find_clockwise_angle(
-                self.updated_boundary.vertices[(index + i + 1) % len(self.updated_boundary.vertices)],
-                self.updated_boundary.vertices[index + i - 1])
+            angle = v[(index + i) % n].to_find_clockwise_angle(
+                v[(index + i + 1) % n],
+                v[index + i - 1])
             if angle < math.pi / 3:
                 angles.append(angle)
                 # product *= 3 * angle / math.pi
@@ -156,29 +158,28 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         # q1 = product
 
         close_vs = []
-        dist = add_v.distance_to(self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)]) + add_v.distance_to(self.updated_boundary.vertices[index - 1])
-        for i, v in enumerate(self.updated_boundary.vertices):
-            if v in [self.updated_boundary.vertices[index],
-                     self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)],
-                     self.updated_boundary.vertices[(index + 2) % len(self.updated_boundary.vertices)],
-                     self.updated_boundary.vertices[index - 1],
-                     self.updated_boundary.vertices[index - 2]]:
+        dist = add_v.distance_to(v[(index + 1) % n]) + add_v.distance_to(v[index - 1])
+        for i, vv in enumerate(v):
+            if vv in [v[index],
+                      v[(index + 1) % n],
+                      v[(index + 2) % n],
+                      v[index - 1],
+                      v[index - 2]]:
                 continue
-            if add_v.distance_to(v) < dist:
+            if add_v.distance_to(vv) < dist:
                 if i - 1 in close_vs:
                     continue
                 close_vs.append(i)
         dists = []
         for i in close_vs:
-            seg = Segment(self.updated_boundary.vertices[(i + 1) % len(self.updated_boundary.vertices)],
-                          self.updated_boundary.vertices[i])
+            seg = Segment(v[(i + 1) % n], v[i])
             dists.append(seg.distance(add_v))
 
         target_len = dist / 2
 
-        _dists = [(index + i) % len(self.updated_boundary.vertices) for i in range(-2, 3)]
-        mean_dist = sum([self.updated_boundary.vertices[_dists[i]].distance_to(
-            self.updated_boundary.vertices[_dists[i + 1]]) for i in range(len(_dists) - 1)]) / (len(_dists) - 1)
+        _dists = [(index + i) % n for i in range(-2, 3)]
+        mean_dist = sum([v[_dists[i]].distance_to(
+            v[_dists[i + 1]]) for i in range(len(_dists) - 1)]) / (len(_dists) - 1)
 
         smoothness = min(mean_dist, target_len) / max(mean_dist, target_len)
 
@@ -192,13 +193,15 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         return math.pow(smoothness * q1 * q2, pow)
 
     def compute_ele_boundary_quality(self, element):
-        new_vs = [v for v in element.vertices
-                  if len(v.get_connected_vertices()) == 2 and v in self.updated_boundary.vertices]
+        v = self.updated_boundary.vertices
+        n = len(v)
+        new_vs = [x for x in element.vertices
+                  if len(x.get_connected_vertices()) == 2 and x in v]
 
         if len(new_vs):
             return self.compute_boundary_quality(new_vs[0]) # * self.compute_boundary_narrowness(new_vs[0])
         else:
-            target_vs = [v for v in element.vertices if v in self.updated_boundary.vertices]
+            target_vs = [x for x in element.vertices if x in v]
 
             if not len(target_vs):
                 print("No enough vertices to compute boundary quality!")
@@ -206,26 +209,23 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
 
             angles, dists = [], []
             # product = 1
-            for i, v in enumerate(target_vs):
-                index = self.updated_boundary.vertices.index(v)
-                angle = v.to_find_clockwise_angle(
-                    self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)],
-                    self.updated_boundary.vertices[index - 1])
+            for i, x in enumerate(target_vs):
+                index = v.index(x)
+                angle = x.to_find_clockwise_angle(
+                    v[(index + 1) % n],
+                    v[index - 1])
                 if angle < math.pi / 3:
                     angles.append(angle)
                     # product *= 2 * angle / math.pi
             # return math.pow(product, 1 / len(target_vs))
-            index_1, index_r = self.updated_boundary.vertices.index(target_vs[0]), \
-                               self.updated_boundary.vertices.index(target_vs[1])
+            index_1, index_r = v.index(target_vs[0]), v.index(target_vs[1])
             index = index_1 if index_1 < index_r else index_r
 
             target_len = target_vs[0].distance_to(target_vs[1])
 
-            dists = [(index + i) % len(self.updated_boundary.vertices) for i in range(-2, 4)]
+            dists = [(index + i) % n for i in range(-2, 4)]
             mean_dist = sum([
-                self.updated_boundary.vertices[dists[i]].distance_to(
-                    self.updated_boundary.vertices[dists[i+1]]
-                )
+                v[dists[i]].distance_to(v[dists[i+1]])
                 for i in range(len(dists) - 1)
             ]) / (len(dists) - 1)
 

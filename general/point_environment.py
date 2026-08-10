@@ -22,7 +22,6 @@ class PointEnvironment(object):
         self.theta = 0
         self.radius = radius
         self.state_vertices = [None for i in range(self.neighbor_num + self.radius_num)]
-        # self.get_available_radius()
         self.area_ratio = area_ratio
         self.static = static
         self.get_state(state_type=2)
@@ -32,13 +31,6 @@ class PointEnvironment(object):
         self.neighbors = vertices
         self.base_length = round(sum([vertices[i].distance_to(vertices[i-1])
                                       for i in range(1, len(vertices))]) / self.neighbor_num, 4)
-
-            # def get_available_radius(self):
-    #     if len(self.radius_neighbors):
-    #         all_distance = [self.reference_point.distance_to(v) / 2 for v in self.radius_neighbors]
-    #         self.available_radius = round(min(all_distance) / self.base_length, 1)
-    #     else:
-    #         self.available_radius = self.radius
 
     def get_state(self, state_type=2):
         self.get_neighbors(self.boundary)
@@ -51,40 +43,31 @@ class PointEnvironment(object):
         r_points = np.full([self.radius_num + self.neighbor_num, 2], 1, dtype=np.float32)
         index = self.boundary.vertices.index(self.reference_point)
         right_p = self.boundary.vertices[index - 1]
-        # rr_p = self.boundary.vertices[index - 2]
         left_p = self.boundary.vertices[(index + 1) % len(self.boundary.vertices)]
-        # ll_p = self.boundary.vertices[(index + 2) % len(self.boundary.vertices)]
         target_length = self.base_length * self.radius
 
         theta = self.reference_point.to_find_clockwise_angle(left_p, right_p)
         self.theta = theta
 
+        def nd(p):
+            return (self.reference_point.distance_to(p) / self.radius) / self.base_length
+
         for i in range(self.neighbor_num // 2):
             if i == 0:
-                # r_points[i] = [(self.reference_point.distance_to(right_p) / self.radius) / self.base_length,
-                #                self.base_length / self.average_edge_length]
-                # the second value is the absolute distance between current base length and the mean length of the boundary
-                if not self.static:
-                    r_points[i] = [(self.reference_point.distance_to(right_p) / self.radius) / self.base_length,
-                                   self.area_ratio] #self.area_ratio
-                else:
-                    r_points[i] = [(self.reference_point.distance_to(right_p) / self.radius) / self.base_length,
-                                   0]  # self.area_ratio
-                r_points[self.radius_num + self.neighbor_num - i - 1] = [
-                    (self.reference_point.distance_to(left_p) / self.radius) / self.base_length,
-                    theta]
+                r_points[i] = [nd(right_p), self.area_ratio if not self.static else 0]
+                r_points[self.radius_num + self.neighbor_num - i - 1] = [nd(left_p), theta]
                 self.state_vertices[i] = right_p
                 self.state_vertices[self.radius_num + self.neighbor_num - i - 1] = left_p
 
             else:
                 _angle = self.reference_point.to_find_clockwise_angle(self.boundary.vertices[index - i - 1], right_p)
-                r_points[i] = [(self.reference_point.distance_to(self.boundary.vertices[index - i - 1]) / self.radius) / self.base_length,
+                r_points[i] = [nd(self.boundary.vertices[index - i - 1]),
                                _angle if _angle < math.pi else max(_angle, 1.5 * math.pi) - 2 * math.pi]
                 _angle = self.reference_point.to_find_clockwise_angle(
                     self.boundary.vertices[(index + 1 + i) % len(self.boundary.vertices)], right_p)
-                r_points[self.radius_num + self.neighbor_num - i - 1] = [(self.reference_point.distance_to(
-                    self.boundary.vertices[(index + i + 1) % len(self.boundary.vertices)]) / self.radius) / self.base_length,
-                             min(_angle, theta + math.pi / 2)]
+                r_points[self.radius_num + self.neighbor_num - i - 1] = [
+                    nd(self.boundary.vertices[(index + i + 1) % len(self.boundary.vertices)]),
+                    min(_angle, theta + math.pi / 2)]
                 self.state_vertices[i] = self.boundary.vertices[index - i - 1]
                 self.state_vertices[self.radius_num + self.neighbor_num - i - 1] = \
                     self.boundary.vertices[(index + i + 1) % len(self.boundary.vertices)]
@@ -92,11 +75,8 @@ class PointEnvironment(object):
 
         rotation_angle = self.reference_point.to_find_clockwise_angle(right_p, self.reference_point + Vertex(1, 0))
         angles = [i * theta / (2 * self.radius_num) for i in range(1, 2 * self.radius_num, 2)]
-        # p_s = []
         for i, a in enumerate(angles):
             r_points[self.neighbor_num // 2 + i][1] = self.clip_angle(a, theta)
-        #     p_s.append(self.reference_point + Vertex.rotate_counterclockwise(Vertex(target_length * math.cos(a),
-        #                                                  target_length * math.sin(a)), rotation_angle))
         p_s = self.reference_point + Vertex.rotate_counterclockwise(Vertex(target_length * math.cos(theta / 2),
                                                          target_length * math.sin(theta / 2)), rotation_angle)
         shortest_edge = [1, 0] # dist, id
@@ -112,7 +92,6 @@ class PointEnvironment(object):
             if angle == 0:
                 continue
             k = int(angle / (theta / self.radius_num))
-            # h = int(l_angle / (theta / self.radius_num))
             if k < self.radius_num and d < target_length:
                 if r_points[k + self.neighbor_num // 2][0] > (d / self.radius) / self.base_length:
                     r_points[k + self.neighbor_num // 2][0] = (d / self.radius) / self.base_length
@@ -120,7 +99,6 @@ class PointEnvironment(object):
                     self.state_vertices[k + self.neighbor_num // 2] = self.boundary.vertices[i]
 
             seg = Segment(self.boundary.vertices[i], self.boundary.vertices[i + 1])
-            # for c_k in p_s:
             ll = Segment(self.reference_point, p_s)
             flag, vv = ll.intersection_vertex(seg)
             if flag is not None:
@@ -134,11 +112,10 @@ class PointEnvironment(object):
             _i = shortest_edge[1]
 
             for i in range(self.radius_num):
-                r_points[self.neighbor_num // 2 + i] = [(self.reference_point.distance_to(
-                    self.boundary.vertices[i - self.radius_num // 2 + _i]) / self.radius) / self.base_length,
-                                 self.reference_point.to_find_clockwise_angle(
-                                     self.boundary.vertices[i - self.radius_num // 2 + _i],
-                                     right_p)]
+                r_points[self.neighbor_num // 2 + i] = [
+                    nd(self.boundary.vertices[i - self.radius_num // 2 + _i]),
+                    self.reference_point.to_find_clockwise_angle(
+                        self.boundary.vertices[i - self.radius_num // 2 + _i], right_p)]
                 self.state_vertices[self.neighbor_num // 2 + i] = \
                     self.boundary.vertices[i - self.radius_num // 2 + _i]
 
