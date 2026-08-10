@@ -76,7 +76,7 @@ class BoundaryEnv(MeshGeneration, gym.Env):
         return v1, v2
 
     def detransformation(self, point, is_move=False):
-        v1, v2 = self.get_middle_points(self.current_point_environment.points_as_array(self.current_point_environment.neighbors))
+        v1, v2 = self.get_middle_points(Vertex.points_as_array(self.current_point_environment.neighbors))
 
         de_point = detransformation(point, self.current_point_environment.base_length if not is_move else 1, v1, v2)
         return Vertex(round(de_point[0], 4), round(de_point[1], 4))

@@ -6,6 +6,10 @@ import numpy as np
 from general.components import Vertex, Segment
 
 
+def clip_angle(angle, max_angle):
+    return min(angle, max_angle + math.pi / 2)
+
+
 class PointEnvironment(object):
     def __init__(self, reference_point, boundary, neighbor_num=4, radius_num=3,
                  average_edge_length=1, area_ratio=1, radius=6, static=False):
@@ -35,9 +39,6 @@ class PointEnvironment(object):
     def get_state(self, state_type=2):
         self.get_neighbors(self.boundary)
         self.state = self.get_radius_points().flatten()
-
-    def clip_angle(self, angle, max_angle):
-        return min(angle, max_angle + math.pi / 2)
 
     def get_radius_points(self):
         r_points = np.full([self.radius_num + self.neighbor_num, 2], 1, dtype=np.float32)
@@ -76,7 +77,7 @@ class PointEnvironment(object):
         rotation_angle = self.reference_point.to_find_clockwise_angle(right_p, self.reference_point + Vertex(1, 0))
         for i in range(self.radius_num):
             a = (2 * i + 1) * theta / (2 * self.radius_num)
-            r_points[self.neighbor_num // 2 + i][1] = self.clip_angle(a, theta)
+            r_points[self.neighbor_num // 2 + i][1] = clip_angle(a, theta)
         p_s = self.reference_point + Vertex.rotate_counterclockwise(Vertex(target_length * math.cos(theta / 2),
                                                          target_length * math.sin(theta / 2)), rotation_angle)
         shortest_edge = [1, 0] # dist, id
@@ -93,7 +94,7 @@ class PointEnvironment(object):
             if k < self.radius_num and d < target_length:
                 if r_points[k + self.neighbor_num // 2][0] > (d / self.radius) / self.base_length:
                     r_points[k + self.neighbor_num // 2][0] = (d / self.radius) / self.base_length
-                    r_points[k + self.neighbor_num // 2][1] = self.clip_angle(angle, theta)
+                    r_points[k + self.neighbor_num // 2][1] = clip_angle(angle, theta)
                     self.state_vertices[k + self.neighbor_num // 2] = self.boundary.vertices[i]
 
             seg = Segment(self.boundary.vertices[i], self.boundary.vertices[i + 1])
@@ -118,6 +119,3 @@ class PointEnvironment(object):
 
         self.state_vertices.insert(0, self.reference_point)
         return np.asarray([[round(v[0], 4), round(v[1], 4)] for v in r_points])
-
-    def points_as_array(self, points):
-        return np.asarray([coord for point in points for coord in (point.x, point.y)])

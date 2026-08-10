@@ -253,11 +253,11 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
                                 if reference_point.distance_to(v) < max_dist and v not in quad.vertices]
 
         _index = quad.vertices.index(reference_point)
-        checking_sesg = [Segment(quad.vertices[_index - 1], quad.vertices[_index - 2]),
+        checking_segs = [Segment(quad.vertices[_index - 1], quad.vertices[_index - 2]),
                          Segment(quad.vertices[_index - 2], quad.vertices[_index - 3])]
         for v in neighboring_vertices:
             index = self.updated_boundary.vertices.index(v)
-            for c_g in checking_sesg:
+            for c_g in checking_segs:
                 if self.updated_boundary.vertices[index - 1] not in quad.vertices:
                     if c_g.is_cross(Segment(v, self.updated_boundary.vertices[index - 1])):
                         return True

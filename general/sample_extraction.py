@@ -92,7 +92,7 @@ class SampleExtractionMixin:
     def get_radius_neighbors(self, base_point, start_point, end_point, exclusion, radius, N=3):
         def radius_neighbors_with_angle(start_angle, end_angle):
             base_length = radius * (0.5 * base_point.distance_to(start_point) + 0.5 * base_point.distance_to(end_point))
-            closet_neighbors = self.boundary.get_closet_points(
+            closest_neighbors = self.boundary.get_closest_points(
                 self.boundary.get_points_within_angle(
                     self.boundary.vertices, base_point, start_point, start_angle, end_angle
                 ),
@@ -103,10 +103,10 @@ class SampleExtractionMixin:
 
             _angle = base_point.to_find_clockwise_angle(start_point, Vertex(base_point.x + 1, base_point.y))
 
-            closet_neighbors.append(base_point +
+            closest_neighbors.append(base_point +
                                     Vertex(base_length * math.cos(_angle - (start_angle + end_angle) / 2),
                                            base_length * math.sin((_angle - (start_angle + end_angle) / 2))))
-            return closet_neighbors
+            return closest_neighbors
 
         angle = base_point.to_find_clockwise_angle(start_point, end_point)
         angles = [i * angle / N for i in range(N+1)]
@@ -119,14 +119,7 @@ class SampleExtractionMixin:
 
     def save_samples(self, file_name, res, _type=1):
         if _type == 1:
-            res['samples'] = [self.points_as_array(s) for s in res['samples']]
-            res['outputs'] = [self.points_as_array(s) for s in res['outputs']]
+            res['samples'] = [Vertex.points_as_array(s) for s in res['samples']]
+            res['outputs'] = [Vertex.points_as_array(s) for s in res['outputs']]
         with open(file_name, 'w') as fw:
             json.dump(res, fw)
-
-    def points_as_array(self, points):
-        flattened_points = []
-        for point in points:
-            flattened_points.append(point.x)
-            flattened_points.append(point.y)
-        return flattened_points

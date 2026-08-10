@@ -9,14 +9,18 @@ class Vertex:
         self.y = y
         self.segments = None
 
-    def distance_to(self, point):
-        return math.sqrt((self.x - point.x) ** 2 + (self.y - point.y) ** 2)
+    def distance_to(self, vertex):
+        return math.sqrt((self.x - vertex.x) ** 2 + (self.y - vertex.y) ** 2)
 
     def length(self):
         return math.sqrt(self.x ** 2 + self.y ** 2)
 
     def cross(self, other):
         return self.x * other.y - other.x * self.y
+
+    @staticmethod
+    def points_as_array(vertices):
+        return [coord for vertex in vertices for coord in (vertex.x, vertex.y)]
 
     def __sub__(self, other):
         return Vertex(self.x - other.x, self.y - other.y)
@@ -75,10 +79,10 @@ class Vertex:
         return Vertex(self.x, self.y)
 
     @staticmethod
-    def rotate_counterclockwise(point, angle, origin=None):
+    def rotate_counterclockwise(vertex, angle, origin=None):
         o = np.array([0.0, 0.0]) if origin is None else np.array([origin.x, origin.y])
         c, s = math.cos(angle), math.sin(angle)
-        q = o + np.array([[c, -s], [s, c]]) @ (np.array([point.x, point.y]) - o)
+        q = o + np.array([[c, -s], [s, c]]) @ (np.array([vertex.x, vertex.y]) - o)
         return Vertex(float(q[0]), float(q[1]))
 
     def get_common_vertex(self, another_vertex):
@@ -95,13 +99,13 @@ class Boundary2D:
         return Boundary2D([vertex for vertex in self.vertices])
 
     def deep_copy(self):
-        points = [vertex.copy() for vertex in self.vertices]
-        for i in range(len(points)):
-            segmt = Segment(points[i - 1], points[i])
-            points[i - 1].assign_segment(segmt)
-            points[i].assign_segment(segmt)
+        vertices = [vertex.copy() for vertex in self.vertices]
+        for i in range(len(vertices)):
+            segmt = Segment(vertices[i - 1], vertices[i])
+            vertices[i - 1].assign_segment(segmt)
+            vertices[i].assign_segment(segmt)
 
-        return Boundary2D(points)
+        return Boundary2D(vertices)
 
     def all_segments(self):
         segts = []
@@ -118,32 +122,31 @@ class Boundary2D:
         return sorted_segts
 
     @staticmethod
-    def compute_dist(vertices, point):
+    def compute_dist(vertices, vertex):
         dists = []
-        for vertex in vertices:
-            if point is not vertex:
-                dist = point.distance_to(vertex)
-                dists.append((vertex, dist))
-        # dists = sorted(dists, key=lambda x: x[1])
+        for v in vertices:
+            if vertex is not v:
+                dist = vertex.distance_to(v)
+                dists.append((v, dist))
         return sorted(dists, key=lambda x: x[1])
 
     @staticmethod
-    def get_closet_points(vertices, point, exclusion=None, S_T=None):
-        dists = Boundary2D.compute_dist(vertices, point)
-        points = []
+    def get_closest_points(vertices, vertex, exclusion=None, S_T=None):
+        dists = Boundary2D.compute_dist(vertices, vertex)
+        selected = []
         if exclusion:
             for v in dists:
                 if v[0] not in exclusion and v[1] <= S_T:
-                    points.append(v[0])
+                    selected.append(v[0])
                 if v[1] > S_T:
                     break
         else:
             for v in dists:
                 if v[1] <= S_T:
-                    points.append(v[0])
+                    selected.append(v[0])
                 else:
                     break
-        return points
+        return selected
 
     @staticmethod
     def get_points_within_angle(vertices, base_point, start_point, start_angle, end_angle):
@@ -151,12 +154,12 @@ class Boundary2D:
             if start_angle < base_point.to_find_clockwise_angle(start_point, v) < end_angle]
         return target_points
 
-    def get_neighbors(self, point, num_points=4):
+    def get_neighbors(self, vertex, num_points=4):
         half = int(num_points / 2)
         if num_points % 2 != 0:
             raise ValueError("The neighbor number is not even!")
         p_num = len(self.vertices)
-        index = self.vertices.index(point)
+        index = self.vertices.index(vertex)
 
         vertices = [self.vertices[(index + i) % p_num] for i in reversed(range(half + 1))]
         for i in range(1, half + 1):
@@ -201,7 +204,7 @@ class Segment:
         v2 = another_segment.point2 - self.point1
         vm = self.point2 - self.point1
 
-        # check if two segments are colinear
+        # check if two segments are collinear
         sa = round(math.sin(self.point1.to_find_clockwise_angle(another_segment.point1, self.point2)), 4)
         sb = round(math.sin(self.point1.to_find_clockwise_angle(another_segment.point2, self.point2)), 4)
         if sa == 0 and sb == 0:
@@ -259,14 +262,14 @@ class Segment:
         else:
             return False
 
-    def perpendicular_point(self, point):
+    def perpendicular_point(self, vertex):
         a = self.point1.x
         b = self.point1.y
         A = self.point2.x - self.point1.x
         B = self.point2.y - self.point1.y
-        s = (A * point.x + B * point.y - B * b - A * a) / (A ** 2 + B ** 2)
+        s = (A * vertex.x + B * vertex.y - B * b - A * a) / (A ** 2 + B ** 2)
         target = Vertex(a+s*A, b+s*B)
-        return target, point.distance_to(target), 0 <= s <= 1
+        return target, vertex.distance_to(target), 0 <= s <= 1
 
     def length(self):
         return self.point1.distance_to(self.point2)

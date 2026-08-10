@@ -232,7 +232,7 @@ class SmoothingMixin:
         right_v = self.updated_boundary.vertices[index - 1]
         dist = (vertex.distance_to(left_v) + vertex.distance_to(right_v)) / 2
 
-        c_neighbors = Boundary2D.get_closet_points(
+        c_neighbors = Boundary2D.get_closest_points(
             self.updated_boundary.vertices,
             self.updated_boundary.vertices[index],
             [
@@ -299,15 +299,15 @@ class SmoothingMixin:
         return final_vertices
 
     def find_closest_segments(self, boundary, vertex, dist):
-        closet_segments = []
+        closest_segments = []
         for i in range(len(boundary.vertices)):
             if vertex in [boundary.vertices[i-1], boundary.vertices[i]]:
                 continue
             s = Segment(boundary.vertices[i-1], boundary.vertices[i])
             _, _dist, inner = s.perpendicular_point(vertex)
             if inner and _dist <= dist:
-                closet_segments.append(s)
-        return closet_segments
+                closest_segments.append(s)
+        return closest_segments
 
     def smooth_fixed_vertices(self, vertices, iteration):
         sum_coordinates = 0
