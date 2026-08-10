@@ -13,37 +13,6 @@ root = Path(__file__).parent.parent.parent / "sac" / "output" / "evaluation"
 domains = sorted(str(p.relative_to(root))[:-4] for p in root.rglob("*.inp"))
 
 
-def render(domain):
-    reader = vtk.vtkSTLReader()
-    reader.SetFileName(f"{root}/{domain}.vtk")
-    reader.Update()
-
-    colors = vtk.vtkNamedColors()
-    mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInputConnection(reader.GetOutputPort())
-
-    actor = vtk.vtkActor()
-    actor.SetMapper(mapper)
-
-    # Create a rendering window and renderer
-    ren = vtk.vtkRenderer()
-    renWin = vtk.vtkRenderWindow()
-    renWin.AddRenderer(ren)
-    ren.SetBackground(colors.GetColor3d("cobalt_green"))
-
-    # Create a renderwindowinteractor
-    iren = vtk.vtkRenderWindowInteractor()
-    iren.SetRenderWindow(renWin)
-
-    # Assign actor to the renderer
-    ren.AddActor(actor)
-
-    # Enable user interface interactor
-    iren.Initialize()
-    renWin.Render()
-    iren.Start()
-
-
 def DumpQualityStats(iq, arrayname):
     an = iq.GetOutput().GetFieldData().GetArray(arrayname)
     cardinality = an.GetComponent(0, 4)
@@ -88,7 +57,6 @@ def verdict_domain(domain, metrics):
     ug = mr.GetOutput()
     iq.SetInputConnection(mr.GetOutputPort())
 
-    # Here we define the various mesh types and labels for output.
     meshTypes = [
         ['Quad', 'Quadrilateral',
             [

@@ -6,11 +6,6 @@ import seaborn as sns
 from general.components import Segment
 
 
-def plot_point(point, style='b.'):
-    plt.plot(point.x, point.y, style)
-    plt.gca().set_aspect('equal', adjustable='box')
-
-
 def plot_segment(segment, style='b.-', linewidth=2, markersize=0.1):
     plt.plot([segment.point1.x, segment.point2.x], [segment.point1.y, segment.point2.y], style,
              linewidth=linewidth, markersize=markersize)

@@ -332,7 +332,6 @@ def compute_boundary_quality(quad, neighbor_points, radius_points):
     if len(new_v):
         # Has newly generated vertex
         id, new_v = new_v[0]
-        # Angle quality
         left_v = quad.vertices[id-1]
         right_v = quad.vertices[(id + 1) % 4]
         left_angle = left_v.to_find_clockwise_angle(neighbor_points[neighbor_points.index(left_v) - 1], new_v)
@@ -344,7 +343,6 @@ def compute_boundary_quality(quad, neighbor_points, radius_points):
             angles.append(right_angle)
         q1 = 2 * min(angles) / math.pi if len(angles) else 1
 
-        # Distance quality
         dist = new_v.distance_to(left_v) + new_v.distance_to(right_v)
         if len(neighbor_points) > 5:
             segments = [Segment(neighbor_points[0], neighbor_points[1]), Segment(neighbor_points[-1], neighbor_points[-2]),
@@ -361,7 +359,6 @@ def compute_boundary_quality(quad, neighbor_points, radius_points):
         else:
             q2 = 1
 
-        # compute smoothness
         target_len = dist / 2
         k = int(len(neighbor_points) / 2)
         _dists = [neighbor_points[k - 2], neighbor_points[k - 1], new_v, neighbor_points[k + 1], neighbor_points[k + 2]]
@@ -400,10 +397,8 @@ def compute_boundary_quality(quad, neighbor_points, radius_points):
                 angles.append(right_angle)
             _dists = [neighbor_points[left_ind - 1], neighbor_points[left_ind], neighbor_points[right_ind], neighbor_points[right_ind + 1]]
 
-        # angle quality
         angle_quality = 2 * min(angles) / math.pi if len(angles) else 1
 
-        # compute smoothness
         target_len = neighbor_points[left_ind].distance_to(neighbor_points[right_ind])
         mean_dist = sum([_dists[i].distance_to(_dists[i - 1]) for i in range(1, len(_dists))]) / (
                 len(_dists) - 1)
@@ -463,5 +458,3 @@ if __name__ == '__main__':
     out_file = augmentation_path / "1" / "training_samples.json"
     out_file.parent.mkdir(parents=True, exist_ok=True)
     sampling_main(10, 40000, 0.7, file_name=str(out_file))
-
-    # Inspect the generated dataset with ebrd.data_augmentation_plotting.scatter_plot.

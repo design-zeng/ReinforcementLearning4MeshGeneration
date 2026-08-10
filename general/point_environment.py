@@ -170,14 +170,13 @@ class PointEnvironment(object):
 
 
         rotation_angle = self.reference_point.to_find_clockwise_angle(right_p, self.reference_point + Vertex(1, 0))
-        # initial angle for all the middle vertices
         angles = [i * theta / (2 * self.radius_num) for i in range(1, 2 * self.radius_num, 2)]
         # p_s = []
         for i, a in enumerate(angles):
             r_points[self.neighbor_num // 2 + i][1] = self.clip_angle(a, theta)
-        #     p_s.append(self.reference_point + Vertex.rotate(Vertex(target_length * math.cos(a),
+        #     p_s.append(self.reference_point + Vertex.rotate_counterclockwise(Vertex(target_length * math.cos(a),
         #                                                  target_length * math.sin(a)), rotation_angle))
-        p_s = self.reference_point + Vertex.rotate(Vertex(target_length * math.cos(theta / 2),
+        p_s = self.reference_point + Vertex.rotate_counterclockwise(Vertex(target_length * math.cos(theta / 2),
                                                          target_length * math.sin(theta / 2)), rotation_angle)
         shortest_edge = [1, 0] # dist, id
 
@@ -199,7 +198,6 @@ class PointEnvironment(object):
                     r_points[k + self.neighbor_num // 2][1] = self.clip_angle(angle, theta)
                     self.state_vertices[k + self.neighbor_num // 2] = self.boundary.vertices[i]
 
-            # Check intersected segments
             seg = Segment(self.boundary.vertices[i], self.boundary.vertices[i + 1])
             # for c_k in p_s:
             ll = Segment(self.reference_point, p_s)

@@ -33,19 +33,16 @@ def read_inp_file(inp_file):
         reading_elements = False
 
         for line in lines:
-            # Detect where the node data starts
             if '*Node' in line:
                 reading_nodes = True
                 reading_elements = False
                 continue
 
-            # Detect where the element data starts
             if '*Element' in line:
                 reading_elements = True
                 reading_nodes = False
                 continue
 
-            # Read node data
             if reading_nodes:
                 if line.startswith('*'):
                     reading_nodes = False
@@ -55,7 +52,6 @@ def read_inp_file(inp_file):
                 coordinates = [float(c) for c in parts[1:]]
                 nodes.append((node_id, coordinates))
 
-            # Read element data
             if reading_elements:
                 if line.startswith('*'):
                     reading_elements = False

@@ -10,7 +10,7 @@ from gym import spaces
 from general.mesh import MeshGeneration
 from general.components import Vertex, Mesh
 from general.point_environment import PointEnvironment
-from general.lin_alg import transformation, detransformation
+from general.lin_alg import detransformation
 from general.boundary_env_plotting import render_boundary, close_render
 
 
@@ -26,10 +26,10 @@ class BoundaryEnv(MeshGeneration, gym.Env):
         self.original_boundary = self.boundary.deep_copy()
         self.original_area = self.boundary.poly_area()
         self.current_area = self.original_area
-        self.max_radius = 2 # change from 3 to 2
+        self.max_radius = 2
         self.action_space = spaces.Box(np.array([-1, -1.5, 0]), np.array([1, 1.5, 1.5]), dtype=np.float32)
 
-        self.neighbor_num = 6 # from 4 to 6
+        self.neighbor_num = 6
         self.radius_num = 3
         self.radius = 4
         self.observation_space = spaces.Box(
@@ -45,7 +45,6 @@ class BoundaryEnv(MeshGeneration, gym.Env):
         self.estimated_area_range: Any = None
         self.current_state = None
 
-        # loggging
         self.experiment_version = experiment_version if experiment_version else 'test'
         self.env_name = env_name if env_name is not None else 1
         self.history_info = {
@@ -75,12 +74,6 @@ class BoundaryEnv(MeshGeneration, gym.Env):
         v1 = np.asarray([state[self.neighbor_num], state[self.neighbor_num + 1]], dtype=float)
         v2 = np.asarray([state[self.neighbor_num + 2], state[self.neighbor_num + 3]], dtype=float)
         return v1, v2
-
-    def transformation(self):
-        arra = self.current_point_environment.state
-        p0, p1 = self.get_middle_points(arra)
-
-        return transformation(arra, self.current_point_environment.base_length, p0, p1)
 
     def detransformation(self, point, is_move=False):
         v1, v2 = self.get_middle_points(self.current_point_environment.points_as_array(self.current_point_environment.neighbors))
@@ -134,7 +127,6 @@ class BoundaryEnv(MeshGeneration, gym.Env):
                     mesh.connect_vertices()
                     self.generated_meshes.append(mesh)
 
-                    # update boundary and reference points
                     # remove_references, add_references = self.update_boundary(reference_point, mesh)
 
                     self.update_boundary(reference_point, mesh)
@@ -179,8 +171,6 @@ class BoundaryEnv(MeshGeneration, gym.Env):
     def move(self, new_point, rule_type, lr_1=None, lr_2=None):
         x = self.current_point_environment.base_length * self.radius * new_point[0] * math.cos(new_point[1])
         y = self.current_point_environment.base_length * self.radius * new_point[0] * math.sin(new_point[1])
-        # x, y = np.clip(self.radius * new_point[0] * math.cos(new_point[1]), -1.5, 1.5), \
-        #        np.clip(self.radius * new_point[0] * math.sin(new_point[1]), -1.5, 1.5)
 
         new_point = self.detransformation([round(x, 6), round(y, 6)], is_move=True)
 
@@ -295,15 +285,8 @@ class BoundaryEnv(MeshGeneration, gym.Env):
                                    radius=self.radius, static=static)
             self.current_point_environment = p_e
 
-            # state = ([round(elem, 4) for elem in self.transformation()])
             state = p_e.state
-
-            # if len(p_e.radius_neighbors):
-            #     [state.append(round(elem, 4)) for elem in self.transformation(p_e.state, self.points_as_array(p_e.radius_neighbors))]
-            # state.append(p_e.available_radius)
-            # add area ratio
-            # state.append(self.current_area / self.original_area)
-            return np.array(state).astype(np.float32)       # return self.points_as_array(neighbors)
+            return np.array(state).astype(np.float32)
 
         else:
             # self.last_point_environment = None
@@ -330,8 +313,6 @@ class BoundaryEnv(MeshGeneration, gym.Env):
     def action_2_point(self, action):
         if isinstance(action, np.ndarray):
             x, y = action[0], action[1]
-            # x, y = 1.5 * 1.4142 * action[0] * math.cos(math.pi * action[1]), \
-            #        1.5 * 1.4142 * action[0] * math.sin(math.pi * action[1])
         else:
             n_action = [action / (self.max_radius * 10), (action % (self.max_radius * 10)) / 10]
             x = round(math.cos(math.radians(n_action[0])), 1) * n_action[1]

@@ -91,7 +91,6 @@ class SampleExtractionMixin:
 
     def get_radius_neighbors(self, base_point, start_point, end_point, exclusion, radius, N=3):
         def radius_neighbors_with_angle(start_angle, end_angle):
-            # find closest point in circle
             base_length = radius * (0.5 * base_point.distance_to(start_point) + 0.5 * base_point.distance_to(end_point))
             closet_neighbors = self.boundary.get_closet_points(
                 self.boundary.get_points_within_angle(

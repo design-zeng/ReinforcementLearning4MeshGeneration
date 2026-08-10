@@ -437,5 +437,4 @@ class SmoothingMixin:
             sum_coordinates = new_sum_coordinates
         print(f"Iteration numbers: {i_iteration}, the diff of smoothing is {diffs}!")
 
-        # update reference points
         self.find_reference_candidates(target_angle=0)

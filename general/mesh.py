@@ -190,8 +190,6 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
                           self.updated_boundary.vertices[i])
             dists.append(seg.distance(add_v))
 
-        # compute smoothness
-
         target_len = dist / 2
 
         _dists = [(index + i) % len(self.updated_boundary.vertices) for i in range(-2, 3)]
@@ -233,7 +231,6 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
                     angles.append(angle)
                     # product *= 2 * angle / math.pi
             # return math.pow(product, 1 / len(target_vs))
-            # compute the smoothness of surrounding segments
             index_1, index_r = self.updated_boundary.vertices.index(target_vs[0]), \
                                self.updated_boundary.vertices.index(target_vs[1])
             index = index_1 if index_1 < index_r else index_r
@@ -310,7 +307,6 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
             self.remove_point(mesh.vertices[mesh.vertices.index(new_vertices[0]) - 2])
             if not new_vertices[0] in self.boundary.vertices:
                 self.boundary.vertices.append(new_vertices[0])
-            # update candidate reference points
             ref_neighbors = []
             for i in range(self.num_ref_neighbor // 2):
                 ref_neighbors.extend([
@@ -330,7 +326,6 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
             for v in removable_vertices:
                 self.updated_boundary.vertices.remove(v)
 
-            # update candidate reference points
             id = max([self.updated_boundary.vertices.index(v) for v in mesh.vertices
                       if v not in removable_vertices])
             ref_neighbors = []
@@ -375,24 +370,12 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
             return self.compute_element_quality(element)
         elif index == 2:
             b_reward = self.compute_ele_boundary_quality(element)
-            # e_reward = self.compute_element_quality(element)
             e_reward = element.get_quality(quality_type='robust')
-            # return math.sqrt(e_reward * b_reward)
             return e_reward + 1 * (b_reward - 1)
-            # return e_reward * b_reward
-        elif index == 3:
-            return element.get_quality(quality_type='stretch')
         elif index == 4:
             return element.get_quality(quality_type='robust')
         elif index == 5:
             return element.get_quality(quality_type='strong')
-        elif index == 6:
-            b_reward = self.compute_ele_boundary_quality(element)
-            # e_reward = self.compute_element_quality(element)
-            e_reward = element.get_quality(quality_type='area')
-            print(f'boundary quality: {b_reward}; element quality: {e_reward}')
-            # return math.sqrt(e_reward * b_reward)
-            return e_reward + 1 * (b_reward - 1)
         raise ValueError(f"Unknown quality index: {index}")
 
     def write_generated_elements_2_file(self, filename, format='inp'):

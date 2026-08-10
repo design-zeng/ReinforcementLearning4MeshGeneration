@@ -35,10 +35,8 @@ def box():
 def plot_shape(shape):
     print([[x[0]*100, x[1]*100] for x in shape[::-1]])
 
-    # Prepare data for plotting
     x_connected, y_connected = zip(*shape)
 
-    # Plot the combined shape
     plt.figure(figsize=(10, 6))
     plt.plot(x_connected, y_connected, marker='o', linestyle='-', color='b')
     plt.title('Connected Shape')
@@ -47,8 +45,8 @@ def plot_shape(shape):
     # plt.xlim(-2, 12)
     plt.ylim(-3, 4)
     plt.grid()
-    plt.axhline(0, color='gray', lw=0.5, ls='--')  # Add x-axis line
-    plt.axvline(0, color='gray', lw=0.5, ls='--')  # Add y-axis line
+    plt.axhline(0, color='gray', lw=0.5, ls='--')
+    plt.axvline(0, color='gray', lw=0.5, ls='--')
     plt.show()
 
 if __name__ == '__main__':
