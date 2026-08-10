@@ -33,63 +33,6 @@ class PointEnvironment(object):
         self.base_length = round(sum([vertices[i].distance_to(vertices[i-1])
                                       for i in range(1, len(vertices))]) / self.neighbor_num, 4)
 
-    def get_closest_radius_neighbors(self, boundary, base_point, start_point, end_point, radius):
-        def radius_neighbors_with_angle(start_angle, end_angle):
-            closet_neighbor = boundary.get_closet_point(
-                boundary.get_points_within_angle(boundary.vertices,
-                                                      base_point,
-                                                      start_point,
-                                                      start_angle,
-                                                      end_angle
-                                                      ),
-                base_point, exclusion=self.neighbors,
-                S_T=self.base_length)
-
-            if not closet_neighbor:
-                _angle = base_point. \
-                    to_find_clockwise_angle(start_point,
-                                            Vertex(base_point.x + 1, base_point.y))
-
-                return base_point + Vertex(self.base_length * math.cos(_angle - (start_angle + end_angle) / 2),
-                                           self.base_length * math.sin((_angle - (start_angle + end_angle) / 2)))
-            return closet_neighbor
-
-        angle = base_point.to_find_clockwise_angle(start_point, end_point)
-        left_neighbor = radius_neighbors_with_angle(0.01, angle / 3)
-        middle_neighbor = radius_neighbors_with_angle(angle / 3, 2 * angle / 3)
-        right_neighbor = radius_neighbors_with_angle(2 * angle / 3, angle * 0.99)
-        return [left_neighbor, middle_neighbor, right_neighbor]
-
-    def get_closest_radius_neighbors_2(self, boundary, base_point, start_point, end_point):
-        angle = base_point.to_find_clockwise_angle(start_point, end_point)
-        vertices = boundary.get_points_within_angle(boundary.vertices,
-                                                      base_point,
-                                                      start_point,
-                                                      0.02,
-                                                        angle-0.02
-                                                      )
-        _vs = [v for v in vertices if v not in self.neighbors]
-        if len(_vs) == 0:
-            _index = boundary.vertices.index(self.reference_point)
-            closest_point = boundary.vertices[_index-2]
-        else:
-            closest_point = Boundary2D.compute_dist(_vs, base_point)[0][0]
-        index = boundary.vertices.index(closest_point)
-        return [boundary.vertices[(index + 1) % len(boundary.vertices)], closest_point, boundary.vertices[index-1]]
-
-    def get_closet_neighbor(self, boundary, index=0):
-        half = int(len(self.neighbors) / 2)
-        if index == 0:
-            self.radius_neighbors = self.get_closest_radius_neighbors(boundary, self.reference_point, self.neighbors[half + 1],
-                                                     self.neighbors[half - 1], self.radius)
-        elif index == 1:
-            self.radius_neighbors = self.get_closest_radius_neighbors_2(boundary, self.reference_point, self.neighbors[half + 1],
-                                                     self.neighbors[half - 1])
-        elif index == 2:
-            pass
-        else:
-            pass
-
             # def get_available_radius(self):
     #     if len(self.radius_neighbors):
     #         all_distance = [self.reference_point.distance_to(v) / 2 for v in self.radius_neighbors]
@@ -97,31 +40,9 @@ class PointEnvironment(object):
     #     else:
     #         self.available_radius = self.radius
 
-    def get_state(self, state_type=0):
-        if state_type == 0:
-            self.get_neighbors(self.boundary)
-            # self.get_radius_neighbors(boundary)
-            self.get_closet_neighbor(self.boundary, index=0)
-
-            self.state = self.points_as_array(self.neighbors + self.radius_neighbors)
-        elif state_type == 1:
-            self.get_neighbors(self.boundary)
-            angle = self.neighbors[1].to_find_clockwise_angle(self.neighbors[-1],
-                                                              self.neighbors[0])
-            d_r = self.neighbors[1].distance_to(self.neighbors[-1]) / self.base_length
-            d_l = self.neighbors[1].distance_to(self.neighbors[0]) / self.base_length
-
-            self.get_closet_neighbor(self.boundary, index=1)
-            r_angle = self.reference_point.to_find_clockwise_angle(self.radius_neighbors[1],
-                                                              self.neighbors[0])
-            r_d = self.neighbors[1].distance_to(self.radius_neighbors[1]) / self.base_length
-            self.state = [angle, d_l, d_r, r_angle, r_d]
-
-        elif state_type == 2:
-            self.get_neighbors(self.boundary)
-            self.state = self.get_radius_points().flatten()
-        else:
-            pass
+    def get_state(self, state_type=2):
+        self.get_neighbors(self.boundary)
+        self.state = self.get_radius_points().flatten()
 
     def clip_angle(self, angle, max_angle):
         return min(angle, max_angle + math.pi / 2)

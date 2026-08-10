@@ -125,11 +125,6 @@ class Boundary2D:
         return sorted(dists, key=lambda x: x[1])
 
     @staticmethod
-    def get_closet_point(vertices, point, exclusion=None, S_T=None):
-        points = Boundary2D.get_closet_points(vertices, point, exclusion, S_T)
-        return points[0] if len(points) else None
-
-    @staticmethod
     def get_closet_points(vertices, point, exclusion=None, S_T=None):
         dists = Boundary2D.compute_dist(vertices, point)
         points = []
@@ -152,16 +147,6 @@ class Boundary2D:
         target_points = [v for v in vertices
             if start_angle < base_point.to_find_clockwise_angle(start_point, v) < end_angle]
         return target_points
-
-    def get_centroid(self):
-        if not len(self.vertices):
-            return
-        centroid = Vertex(0, 0)
-        for v in self.vertices:
-            centroid += v
-        centroid.x /= len(self.vertices)
-        centroid.y /= len(self.vertices)
-        return centroid
 
     def get_neighbors(self, point, num_points=4):
         half = int(num_points / 2)
@@ -380,11 +365,6 @@ class Mesh:
                 self.vertices[i].assign_segment(new_seg)
                 self.vertices[i - 1].assign_segment(new_seg)
 
-    def get_aspect_ratio(self):
-        V = np.array([[v.x, v.y] for v in self.vertices])
-        L = np.sqrt(((V - np.roll(V, 1, axis=0)) ** 2).sum(axis=1))
-        return L.max() / L.min() if L.min() != 0 else 0.001
-
     def inner_angles(self):
         angles = []
         for i in range(4):
@@ -392,18 +372,8 @@ class Mesh:
             # angles.append(math.degrees(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1])))
         return angles
 
-    def get_ave_error_angle(self):
-        angles = []
-        for i in range(4):
-            angles.append(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1]) - math.pi / 2))
-        return max(angles)
-
-    def get_quality(self, quality_type='default'):
-        if quality_type == 'default':
-            aspect_ratio = self.get_aspect_ratio()
-            ave_error_angle = self.get_ave_error_angle()
-            return 1 / (aspect_ratio + ave_error_angle)
-        elif quality_type == 'stretch':
+    def get_quality(self, quality_type='robust'):
+        if quality_type == 'stretch':
             return math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]), self.vertices[1].distance_to(self.vertices[3]))
         elif quality_type == 'robust':
             q1 = math.sqrt(2) * min(self.length_4_segments()) / max(self.vertices[0].distance_to(self.vertices[2]), self.vertices[1].distance_to(self.vertices[3]))
@@ -436,9 +406,6 @@ class Mesh:
                 angles.append(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1])))
             q2 = min(angles) / max(angles)
             return math.sqrt(q1 * q2)
-        elif quality_type == 'area':
-            q1, q2 = self.get_quality_3()
-            return q1 * q2
         raise ValueError(f"Unknown quality type: {quality_type}")
 
     def compute_area(self):
@@ -454,12 +421,13 @@ class Mesh:
 
     def get_quality_3(self):
         area, length_of_edges = self.compute_area()
-        product = 1
         if area <= 0:
             q1 = 0
         else:
+            s = math.sqrt(area)
+            product = 1
             for edge in length_of_edges:
-                product *= math.pow(edge / math.sqrt(area), 1 if math.sqrt(area) - edge > 0 else -1)
+                product *= math.pow(edge / s, 1 if s - edge > 0 else -1)
             q1 = math.pow(product, 1 / 4)
 
         angle_product = 1

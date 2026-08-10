@@ -364,9 +364,7 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         return math.pow(q1 * q2, 1/2)
 
     def get_quality(self, element, index=0):
-        if index == 0:
-            return element.get_quality()
-        elif index == 1:
+        if index == 1:
             return self.compute_element_quality(element)
         elif index == 2:
             b_reward = self.compute_ele_boundary_quality(element)
