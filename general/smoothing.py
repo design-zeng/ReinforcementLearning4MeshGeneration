@@ -24,6 +24,14 @@ class SmoothingMixin:
         self.smooth_fixed_vertices([v for v in vertices if v not in current_boundary_vertices], iteration)
         self.find_reference_candidates(target_angle=0)
 
+    @staticmethod
+    def estimate_4th_vertex(origin, left, right, factor=0.5, suggest_dist=None):
+        distance = (origin.distance_to(left) + origin.distance_to(right)) * factor
+        if suggest_dist is not None:
+            distance = min(distance, 0.6 * suggest_dist)
+        s = Segment.get_ray_segment(Segment(origin, left), Segment(origin, right), distance)
+        return s.point2
+
     def middle_vertex(self, vertex, left_v, right_v, target_angle):
         m_v = (left_v + right_v) / 2
         A = right_v.x - left_v.x
@@ -376,7 +384,7 @@ class SmoothingMixin:
                             continue
                         cloest_p, dist = p_dist[0]
 
-                        estimate_vertex = Quad.estimate_4th_vertex(origin, connected_vertices[0], connected_vertices[1], suggest_dist=dist)
+                        estimate_vertex = self.estimate_4th_vertex(origin, connected_vertices[0], connected_vertices[1], suggest_dist=dist)
 
                         vertex.x = estimate_vertex.x
                         vertex.y = estimate_vertex.y
@@ -410,9 +418,9 @@ class SmoothingMixin:
                         common_v1 = common_v1s[0]
                         common_v2 = common_v2s[0]
 
-                        estimate_vertex_1 = Quad.estimate_4th_vertex(common_v1, update_boundary_vertices[0], inside_vertex, factor=0.7)
+                        estimate_vertex_1 = self.estimate_4th_vertex(common_v1, update_boundary_vertices[0], inside_vertex, factor=0.7)
 
-                        estimate_vertex_2 = Quad.estimate_4th_vertex(common_v2, update_boundary_vertices[1], inside_vertex, factor=0.7)
+                        estimate_vertex_2 = self.estimate_4th_vertex(common_v2, update_boundary_vertices[1], inside_vertex, factor=0.7)
 
                         vertex.x = (estimate_vertex_1.x + estimate_vertex_2.x) / 2
                         vertex.y = (estimate_vertex_1.y + estimate_vertex_2.y) / 2

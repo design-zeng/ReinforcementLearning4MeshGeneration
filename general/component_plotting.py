@@ -76,7 +76,7 @@ def show_quad(quad, quality=3):
     plt.gca().set_aspect('equal', adjustable='box')
     if quality != 0:
         center = quad.get_centroid()
-        q1, q2 = quad.get_quality_3()
+        q1, q2 = quad.edge_angle_quality()
         _quality = round(math.sqrt(q1 * q2), 2)
         plt.text(center.x * 0.8, center.y * 0.8, str(_quality), fontsize=15)
     plt.gca().set_frame_on(False)

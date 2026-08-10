@@ -64,7 +64,7 @@ def calculate_metrics(vertices, elements, metrics, metrics_ind):
         min_angles, max_angles = [], []
 
         for ele in elements:
-            # q1, q2 = ele.get_quality_3()
+            # q1, q2 = ele.edge_angle_quality()
             element_qualities.append(ele.get_quality(quality_type='robust')) #ele.get_quality()
             if 'Stretch' in metrics_ind:
                 stretch.append(ele.get_quality(quality_type='stretch'))

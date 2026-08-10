@@ -402,7 +402,7 @@ class Quad:
                      a2 / (l1.length() * l2.length()),
                      a3 / (l2.length() * l3.length())])
         elif quality_type == 'strong':
-            q1, _ = self.get_quality_3()
+            q1, _ = self.edge_angle_quality()
             angles = []
             for i in range(4):
                 angles.append(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1])))
@@ -421,7 +421,7 @@ class Quad:
 
         return area, length_of_edges
 
-    def get_quality_3(self):
+    def edge_angle_quality(self):
         area, length_of_edges = self.compute_area()
         if area <= 0:
             q1 = 0
@@ -441,13 +441,3 @@ class Quad:
             q2 = math.pow(angle_product, 1/4)
 
         return q1, q2
-
-    @staticmethod
-    def estimate_4th_vertex(origin_p, left_p, right_p, factor=0.5, suggest_dist=None):
-        distance = (origin_p.distance_to(left_p) + origin_p.distance_to(right_p)) * factor
-
-        if suggest_dist is not None:
-            distance = min(distance, 0.6 * suggest_dist)
-
-        s = Segment.get_ray_segment(Segment(origin_p, left_p), Segment(origin_p, right_p), distance)
-        return s.point2

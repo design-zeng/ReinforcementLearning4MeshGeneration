@@ -344,7 +344,7 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         self.updated_boundary.vertices.remove(point)
 
     def compute_element_quality(self, element):
-        q1, q2 = element.get_quality_3()
+        q1, q2 = element.edge_angle_quality()
         return math.pow(q1 * q2, 1/2)
 
     def get_quality(self, element, index=0):
