@@ -1,5 +1,3 @@
-import math
-
 import matplotlib.pyplot as plt
 
 from general.component_plotting import show_boundary

@@ -127,7 +127,7 @@ On Intel (x86_64) macOS, install PyTorch with conda instead
   ```bash
   python -m ebrd.infer
   ```
-- Train already samples data automatically. If you wish only for the data, run
+- The `train.py` script samples data automatically. If you wish ONLY for the data, run
   ```bash
   python -m ebrd.data_augmentation
   ```

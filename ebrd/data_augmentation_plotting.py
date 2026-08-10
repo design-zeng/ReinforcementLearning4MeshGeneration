@@ -35,6 +35,7 @@ def samples_2_plot_data(samples, quality_threshold=0, include_quality=True):
 
     actions = np.asarray(list(map(list.__add__, samples['output_types'], samples['outputs'])))
     observations = np.asarray(samples['samples'])
+    type_by_action = {ACTION_TYPES[0]: 'Type 0', ACTION_TYPES[2]: 'Type 2'}
     for i in range(len(observations)):
         if 'quality' in samples.keys():
             if samples['quality'][i] < quality_threshold:
@@ -48,30 +49,16 @@ def samples_2_plot_data(samples, quality_threshold=0, include_quality=True):
         else:
             quality = 0
 
-        if rule_type == ACTION_TYPES[0]:
-            data['Type 0']['Neighbors']['x'].extend([p.x for p in neighbor_points])
-            data['Type 0']['Neighbors']['y'].extend([p.y for p in neighbor_points])
-            data['Type 0']['RNeighbors']['x'].extend([p.x for p in radius_points])
-            data['Type 0']['RNeighbors']['y'].extend([p.y for p in radius_points])
-            data['Type 0']['Angles'].append(observations[i][-1])
-            data['Type 0']['Quality'].append(quality)
-
-        elif rule_type == ACTION_TYPES[2]:
-            data['Type 2']['Neighbors']['x'].extend([p.x for p in neighbor_points])
-            data['Type 2']['Neighbors']['y'].extend([p.y for p in neighbor_points])
-            data['Type 2']['RNeighbors']['x'].extend([p.x for p in radius_points])
-            data['Type 2']['RNeighbors']['y'].extend([p.y for p in radius_points])
-            data['Type 2']['Angles'].append(observations[i][-1])
-            data['Type 2']['Quality'].append(quality)
-        else:
-            data['Type 1']['Neighbors']['x'].extend([p.x for p in neighbor_points])
-            data['Type 1']['Neighbors']['y'].extend([p.y for p in neighbor_points])
-            data['Type 1']['RNeighbors']['x'].extend([p.x for p in radius_points])
-            data['Type 1']['RNeighbors']['y'].extend([p.y for p in radius_points])
-            data['Type 1']['Vertex']['x'].append(new_point.x)
-            data['Type 1']['Vertex']['y'].append(new_point.y)
-            data['Type 1']['Angles'].append(observations[i][-1])
-            data['Type 1']['Quality'].append(quality)
+        bucket = data[type_by_action.get(rule_type, 'Type 1')]
+        bucket['Neighbors']['x'].extend([p.x for p in neighbor_points])
+        bucket['Neighbors']['y'].extend([p.y for p in neighbor_points])
+        bucket['RNeighbors']['x'].extend([p.x for p in radius_points])
+        bucket['RNeighbors']['y'].extend([p.y for p in radius_points])
+        bucket['Angles'].append(observations[i][-1])
+        bucket['Quality'].append(quality)
+        if 'Vertex' in bucket:
+            bucket['Vertex']['x'].append(new_point.x)
+            bucket['Vertex']['y'].append(new_point.y)
 
     return data
 
