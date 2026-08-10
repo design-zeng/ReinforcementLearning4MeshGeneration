@@ -203,9 +203,9 @@ class Segment:
         vm = self.point2 - self.point1
 
         # check if two segments are colinear
-        if round(math.sin(self.point1.to_find_clockwise_angle(another_segment.point1, self.point2)), 4) == \
-            round(math.sin(self.point1.to_find_clockwise_angle(another_segment.point2, self.point2)), 4) and \
-                round(math.sin(self.point1.to_find_clockwise_angle(another_segment.point2, self.point2)), 4) == 0:
+        sa = round(math.sin(self.point1.to_find_clockwise_angle(another_segment.point1, self.point2)), 4)
+        sb = round(math.sin(self.point1.to_find_clockwise_angle(another_segment.point2, self.point2)), 4)
+        if sa == 0 and sb == 0:
             l1 = self.length()
             l2 = another_segment.length()
             if l1 > l2:

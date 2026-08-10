@@ -29,39 +29,23 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         :return:
         '''
         count = 0
-        for i in range(len(closed_curve_vertices)):
-            seg = Segment(closed_curve_vertices[i], closed_curve_vertices[i - 1])
-            # excludes horizontal segments
-            orientation = round(closed_curve_vertices[i].y - closed_curve_vertices[i - 1].y, 4)
+        n = len(closed_curve_vertices)
+        ray_y = ray_segment.point2.y
+        for i in range(n):
+            v_i, v_p = closed_curve_vertices[i], closed_curve_vertices[i - 1]
+            orientation = round(v_i.y - v_p.y, 4)
             if orientation == 0:
                 continue
-            if seg.is_cross(ray_segment):
-                if round(closed_curve_vertices[i].y - ray_segment.point2.y, 4) == 0:
-                    next_orientation = round(closed_curve_vertices[(i + 1) % len(closed_curve_vertices)].y - closed_curve_vertices[i].y, 4)
-                    if next_orientation == 0:
-                        continue
-                    elif next_orientation * orientation < 0:
-                        continue
-                    else:
-                        if orientation < 0:
-                            count += 1
-                        else:
-                            continue
-                else:
-                    if round(closed_curve_vertices[i - 1].y - ray_segment.point2.y, 4) == 0:
-                        pre_orientation = round(closed_curve_vertices[i - 1].y - closed_curve_vertices[i - 2].y, 4)
-
-                        if pre_orientation == 0:
-                            continue
-                        elif pre_orientation * orientation < 0:
-                            continue
-                        else:
-                            if orientation < 0:
-                                continue
-                            else:
-                                count += 1
-                    else:
-                        count += 1
+            if not Segment(v_i, v_p).is_cross(ray_segment):
+                continue
+            if round(v_i.y - ray_y, 4) == 0:
+                no = round(closed_curve_vertices[(i + 1) % n].y - v_i.y, 4)
+                count += (no * orientation > 0 and orientation < 0)
+            elif round(v_p.y - ray_y, 4) == 0:
+                po = round(v_p.y - closed_curve_vertices[i - 2].y, 4)
+                count += (po * orientation > 0 and orientation > 0)
+            else:
+                count += 1
         return count
 
     def count_crossing_segments(self, ray_segment):
