@@ -8,7 +8,7 @@ from ebrd.model import get_action, load_model, domains_path, augmentation_path
 
 def prepare_eval_envs():
     """Test domains of varying difficulty (FreeMesh-S generalizability set)."""
-    names = ["engeer", "star1", "random1_1", "tool2", "test2", "test3"]
+    names = ["airfoil", "star1", "random1_1", "tool2", "test2", "test3"]
     return [BoundaryEnv(read_polygon(domains_path / f"{name}.json")) for name in names]
 
 

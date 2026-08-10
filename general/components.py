@@ -91,109 +91,6 @@ class Vertex:
         return [v for v in connected_v if v in another_vertex_v]
 
 
-class Boundary2D:
-    def __init__(self, vertices):
-        self.vertices = vertices
-
-    def copy(self):
-        return Boundary2D([vertex for vertex in self.vertices])
-
-    def deep_copy(self):
-        vertices = [vertex.copy() for vertex in self.vertices]
-        for i in range(len(vertices)):
-            segmt = Segment(vertices[i - 1], vertices[i])
-            vertices[i - 1].assign_segment(segmt)
-            vertices[i].assign_segment(segmt)
-
-        return Boundary2D(vertices)
-
-    def all_segments(self):
-        segts = []
-        for vertex in self.vertices:
-            if vertex.segments:
-                for segt in vertex.segments:
-                    if segt not in segts and (segt.point1 in self.vertices and segt.point2 in self.vertices):
-                        segts.append(segt)
-        return segts
-
-    def sort_segments_by_length(self, reverse=False):
-        segts = self.all_segments()
-        sorted_segts = sorted([(seg, seg.length()) for seg in segts], key=lambda x: x[1], reverse=reverse)
-        return sorted_segts
-
-    @staticmethod
-    def compute_dist(vertices, vertex):
-        dists = []
-        for v in vertices:
-            if vertex is not v:
-                dist = vertex.distance_to(v)
-                dists.append((v, dist))
-        return sorted(dists, key=lambda x: x[1])
-
-    @staticmethod
-    def get_closest_points(vertices, vertex, exclusion=None, S_T=None):
-        dists = Boundary2D.compute_dist(vertices, vertex)
-        selected = []
-        if exclusion:
-            for v in dists:
-                if v[0] not in exclusion and v[1] <= S_T:
-                    selected.append(v[0])
-                if v[1] > S_T:
-                    break
-        else:
-            for v in dists:
-                if v[1] <= S_T:
-                    selected.append(v[0])
-                else:
-                    break
-        return selected
-
-    @staticmethod
-    def get_points_within_angle(vertices, base_point, start_point, start_angle, end_angle):
-        target_points = [v for v in vertices
-            if start_angle < base_point.to_find_clockwise_angle(start_point, v) < end_angle]
-        return target_points
-
-    def get_neighbors(self, vertex, num_points=4):
-        half = int(num_points / 2)
-        if num_points % 2 != 0:
-            raise ValueError("The neighbor number is not even!")
-        p_num = len(self.vertices)
-        index = self.vertices.index(vertex)
-
-        vertices = [self.vertices[(index + i) % p_num] for i in reversed(range(half + 1))]
-        for i in range(1, half + 1):
-            vertices.append(self.vertices[index - i])
-        return vertices
-
-    def average_edge_length(self):
-        _length = len(self.vertices)
-        dist = 0
-        for i in range(_length):
-            dist += self.vertices[i].distance_to(self.vertices[i-1])
-        return round(dist / _length, 4) if _length != 0 else 0
-
-    def get_perimeter(self):
-        perimeter = 0
-        for i in range(1, len(self.vertices)):
-            perimeter += self.vertices[i - 1].distance_to(self.vertices[i])
-        return perimeter
-
-    def compute_boundary_angle(self, vertex):
-        if vertex in self.vertices:
-            index = self.vertices.index(vertex)
-            right_v = self.vertices[index - 1]
-            left_v = self.vertices[(index + 1) % len(self.vertices)]
-            angle = math.degrees(vertex.to_find_clockwise_angle(left_v, right_v))
-            return angle
-
-        return None
-
-    def poly_area(self):
-        xy = np.array([[v.x, v.y] for v in self.vertices])
-        return 0.5 * np.abs(np.dot(xy[:, 0],np.roll(xy[:, 1],1))-np.dot(xy[:, 1],np.roll(xy[:, 0],1)))
-
-
 class Segment:
     def __init__(self, point1, point2):
         self.point1 = point1
@@ -310,6 +207,109 @@ class Segment:
         else:
             raise ValueError('Not recognized object type!')
 
+
+class Boundary2D:
+    def __init__(self, vertices):
+        self.vertices = vertices
+
+    def copy(self):
+        return Boundary2D([vertex for vertex in self.vertices])
+
+    def deep_copy(self):
+        vertices = [vertex.copy() for vertex in self.vertices]
+        for i in range(len(vertices)):
+            segmt = Segment(vertices[i - 1], vertices[i])
+            vertices[i - 1].assign_segment(segmt)
+            vertices[i].assign_segment(segmt)
+
+        return Boundary2D(vertices)
+
+    def all_segments(self):
+        segts = []
+        for vertex in self.vertices:
+            if vertex.segments:
+                for segt in vertex.segments:
+                    if segt not in segts and (segt.point1 in self.vertices and segt.point2 in self.vertices):
+                        segts.append(segt)
+        return segts
+
+    def sort_segments_by_length(self, reverse=False):
+        segts = self.all_segments()
+        sorted_segts = sorted([(seg, seg.length()) for seg in segts], key=lambda x: x[1], reverse=reverse)
+        return sorted_segts
+
+    @staticmethod
+    def compute_dist(vertices, vertex):
+        dists = []
+        for v in vertices:
+            if vertex is not v:
+                dist = vertex.distance_to(v)
+                dists.append((v, dist))
+        return sorted(dists, key=lambda x: x[1])
+
+    @staticmethod
+    def get_closest_points(vertices, vertex, exclusion=None, S_T=None):
+        dists = Boundary2D.compute_dist(vertices, vertex)
+        selected = []
+        if exclusion:
+            for v in dists:
+                if v[0] not in exclusion and v[1] <= S_T:
+                    selected.append(v[0])
+                if v[1] > S_T:
+                    break
+        else:
+            for v in dists:
+                if v[1] <= S_T:
+                    selected.append(v[0])
+                else:
+                    break
+        return selected
+
+    @staticmethod
+    def get_points_within_angle(vertices, base_point, start_point, start_angle, end_angle):
+        target_points = [v for v in vertices
+            if start_angle < base_point.to_find_clockwise_angle(start_point, v) < end_angle]
+        return target_points
+
+    def get_neighbors(self, vertex, num_points=4):
+        half = int(num_points / 2)
+        if num_points % 2 != 0:
+            raise ValueError("The neighbor number is not even!")
+        p_num = len(self.vertices)
+        index = self.vertices.index(vertex)
+
+        vertices = [self.vertices[(index + i) % p_num] for i in reversed(range(half + 1))]
+        for i in range(1, half + 1):
+            vertices.append(self.vertices[index - i])
+        return vertices
+
+    def average_edge_length(self):
+        _length = len(self.vertices)
+        dist = 0
+        for i in range(_length):
+            dist += self.vertices[i].distance_to(self.vertices[i-1])
+        return round(dist / _length, 4) if _length != 0 else 0
+
+    def get_perimeter(self):
+        perimeter = 0
+        for i in range(1, len(self.vertices)):
+            perimeter += self.vertices[i - 1].distance_to(self.vertices[i])
+        return perimeter
+
+    def compute_boundary_angle(self, vertex):
+        if vertex in self.vertices:
+            index = self.vertices.index(vertex)
+            right_v = self.vertices[index - 1]
+            left_v = self.vertices[(index + 1) % len(self.vertices)]
+            angle = math.degrees(vertex.to_find_clockwise_angle(left_v, right_v))
+            return angle
+
+        return None
+
+    def poly_area(self):
+        xy = np.array([[v.x, v.y] for v in self.vertices])
+        return 0.5 * np.abs(np.dot(xy[:, 0],np.roll(xy[:, 1],1))-np.dot(xy[:, 1],np.roll(xy[:, 0],1)))
+    
 
 class Quad:
     def __init__(self, vertices):

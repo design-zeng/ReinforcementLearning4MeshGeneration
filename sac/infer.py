@@ -183,7 +183,7 @@ def full_mesh(domain="boundary6",
 
 if __name__ == '__main__':
     full_mesh()
-    full_mesh(domain="dolphine1")
+    full_mesh(domain="dolphin1")
     full_mesh(domain="basic")
     full_mesh(domain="basic1")
     # evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
