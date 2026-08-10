@@ -69,14 +69,14 @@ def savefig_boundary(boundary, name, title="", style="k.-", dpi=600):
     plt.close('all')
 
 
-def show_mesh(mesh, quality=3):
-    for i in range(len(mesh.vertices)):
-        segt = Segment(mesh.vertices[i], mesh.vertices[i - 1])
+def show_quad(quad, quality=3):
+    for i in range(len(quad.vertices)):
+        segt = Segment(quad.vertices[i], quad.vertices[i - 1])
         plot_segment(segt, style='k.-', linewidth=1, markersize=8)
     plt.gca().set_aspect('equal', adjustable='box')
     if quality != 0:
-        center = mesh.get_centroid()
-        q1, q2 = mesh.get_quality_3()
+        center = quad.get_centroid()
+        q1, q2 = quad.get_quality_3()
         _quality = round(math.sqrt(q1 * q2), 2)
         plt.text(center.x * 0.8, center.y * 0.8, str(_quality), fontsize=15)
     plt.gca().set_frame_on(False)

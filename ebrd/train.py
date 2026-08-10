@@ -165,7 +165,7 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
         running_reward = 0.05 * ep_reward + 0.95 * running_reward
 
         samples, output_types, outputs = env.extract_samples_2(
-            env.generated_meshes, 2, 3, radius=4, quality_threshold=0.7)
+            env.generated_quads, 2, 3, radius=4, quality_threshold=0.7)
         env.save_samples(samples_dir / f"ebrd_{i_episode}.json",
                          {'samples': samples, 'output_types': output_types, 'outputs': outputs},
                          _type=2)

@@ -8,7 +8,7 @@ import numpy as np
 from numpy.random import uniform
 from multiprocessing import Process, Manager
 
-from general.components import Segment, Vertex, Mesh
+from general.components import Segment, Vertex, Quad
 
 
 base_path = Path(__file__).parent.parent
@@ -259,14 +259,14 @@ def compute_quality(obs, action):
 
     index = int(len(neighbor_points) / 2)
     if rule_type == ACTION_TYPES[0]:
-        quad = Mesh([  # vertices in clockwise direction
+        quad = Quad([  # vertices in clockwise direction
             neighbor_points[index - 2],
             neighbor_points[(index + 1) % len(neighbor_points)],
             neighbor_points[index],
             neighbor_points[index - 1]
         ])
     elif rule_type == ACTION_TYPES[2]:
-        quad = Mesh([
+        quad = Quad([
             neighbor_points[index - 1],
             neighbor_points[(index + 2) % len(neighbor_points)],
             neighbor_points[
@@ -274,7 +274,7 @@ def compute_quality(obs, action):
             neighbor_points[index]
         ])
     else:
-        quad = Mesh([new_point,
+        quad = Quad([new_point,
                      neighbor_points[
                          (index + 1) % len(neighbor_points)],
                      neighbor_points[index],

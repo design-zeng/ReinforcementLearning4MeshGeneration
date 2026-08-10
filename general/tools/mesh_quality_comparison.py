@@ -7,8 +7,8 @@ import meshio
 import pandas as pd
 from scipy.spatial import ConvexHull
 
-from general.components import Mesh, Vertex, Boundary2D
-from general.component_plotting import show_mesh
+from general.components import Quad, Vertex, Boundary2D
+from general.component_plotting import show_quad
 from general.mesh import MeshGeneration
 from general.polygon_reader import read_polygon
 from general.boundary_env import BoundaryEnv
@@ -42,7 +42,7 @@ def generate_mesh_from_inp(filename):
     for ele in m.cells_dict['quad']:
         vs = sorted(ele)
         if vs not in existing_eles:
-            element = Mesh(clockwise_element([vertices[i] for i in ele]))
+            element = Quad(clockwise_element([vertices[i] for i in ele]))
             element.connect_vertices()
             elements.append(element)
             existing_eles.append(vs)
@@ -266,7 +266,7 @@ def draw_elements():
     ]
     for i, ele in enumerate(elements):
         plt.subplot(2, 5, i + 1)
-        show_mesh(Mesh([Vertex(p[0], p[1]) for p in ele]))
+        show_quad(Quad([Vertex(p[0], p[1]) for p in ele]))
     plt.show()
 
 # draw_elements()
@@ -276,14 +276,14 @@ def read_inp_file(filename):
     vertices, elements, _ = generate_mesh_from_inp(filename)
     boundary = Boundary2D([])
     mesh = MeshGeneration(boundary)
-    mesh.generated_meshes = elements
+    mesh.generated_quads = elements
     return mesh
 
 
 def extract_samples_from_file():
     for m in discover_meshes():
         env = read_inp_file(str(m))
-        samples, output_types, outputs = env.extract_samples_2(env.generated_meshes, 3, 3, index=5, radius=6, quality_threshold=0.7)
+        samples, output_types, outputs = env.extract_samples_2(env.generated_quads, 3, 3, index=5, radius=6, quality_threshold=0.7)
         env.save_samples(f"{output_path}/data_augmentation/{m.stem}.json",
                          {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
     print("Saved!")

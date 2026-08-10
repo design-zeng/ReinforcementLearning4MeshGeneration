@@ -15,6 +15,9 @@ class Vertex:
     def length(self):
         return math.sqrt(self.x ** 2 + self.y ** 2)
 
+    def cross(self, other):
+        return self.x * other.y - other.x * self.y
+
     def __sub__(self, other):
         return Vertex(self.x - other.x, self.y - other.y)
 
@@ -188,10 +191,6 @@ class Boundary2D:
         return 0.5 * np.abs(np.dot(xy[:, 0],np.roll(xy[:, 1],1))-np.dot(xy[:, 1],np.roll(xy[:, 0],1)))
 
 
-def cross_product(v1, v2):
-    return v1.x*v2.y - v2.x*v1.y
-
-
 class Segment:
     def __init__(self, point1, point2):
         self.point1 = point1
@@ -218,7 +217,7 @@ class Segment:
                     return True
             return False
 
-        if cross_product(v1, vm) * cross_product(v2, vm) <= 0:
+        if v1.cross(vm) * v2.cross(vm) <= 0:
             return True
         else:
             return False
@@ -309,7 +308,7 @@ class Segment:
             raise ValueError('Not recognized object type!')
 
 
-class Mesh:
+class Quad:
     def __init__(self, vertices):
         self.vertices = vertices
         self.segments = None
@@ -391,10 +390,10 @@ class Mesh:
         elif quality_type == 's_jacobian':
             p0, p1, p2, p3 = self.vertices[0], self.vertices[-1], self.vertices[-2], self.vertices[-3]
             l0, l1, l2, l3 = p1-p0, p2-p1, p3-p2, p0-p3
-            a3 = cross_product(l2, l3)
-            a2 = cross_product(l1, l2)
-            a1 = cross_product(l0, l1)
-            a0 = cross_product(l3, l0)
+            a3 = l2.cross(l3)
+            a2 = l1.cross(l2)
+            a1 = l0.cross(l1)
+            a0 = l3.cross(l0)
             return min([a0 / (l0.length() * l3.length()),
                      a1 / (l0.length() * l1.length()),
                      a2 / (l1.length() * l2.length()),

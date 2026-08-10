@@ -376,7 +376,7 @@ class SmoothingMixin:
                             continue
                         cloest_p, dist = p_dist[0]
 
-                        estimate_vertex = Mesh.estimate_4th_vertex(origin, connected_vertices[0], connected_vertices[1], suggest_dist=dist)
+                        estimate_vertex = Quad.estimate_4th_vertex(origin, connected_vertices[0], connected_vertices[1], suggest_dist=dist)
 
                         vertex.x = estimate_vertex.x
                         vertex.y = estimate_vertex.y
@@ -410,9 +410,9 @@ class SmoothingMixin:
                         common_v1 = common_v1s[0]
                         common_v2 = common_v2s[0]
 
-                        estimate_vertex_1 = Mesh.estimate_4th_vertex(common_v1, update_boundary_vertices[0], inside_vertex, factor=0.7)
+                        estimate_vertex_1 = Quad.estimate_4th_vertex(common_v1, update_boundary_vertices[0], inside_vertex, factor=0.7)
 
-                        estimate_vertex_2 = Mesh.estimate_4th_vertex(common_v2, update_boundary_vertices[1], inside_vertex, factor=0.7)
+                        estimate_vertex_2 = Quad.estimate_4th_vertex(common_v2, update_boundary_vertices[1], inside_vertex, factor=0.7)
 
                         vertex.x = (estimate_vertex_1.x + estimate_vertex_2.x) / 2
                         vertex.y = (estimate_vertex_1.y + estimate_vertex_2.y) / 2

@@ -38,15 +38,15 @@ def evaluation(model_path, version, is_render=False, indexing=False, save_fig=Fa
             if info['is_complete']:
                 env.smooth(env.boundary.vertices)
                 save_meshes(env, out_dir / f"ebrd_env_{i}__smoothed.png",
-                            meshes=env.generated_meshes,
+                            quads=env.generated_quads,
                             indexing=indexing, style='k-')
             else:
                 save_meshes(env, out_dir / f"ebrd_env_{i}.png",
-                            meshes=env.generated_meshes,
+                            quads=env.generated_quads,
                             indexing=indexing, style='k-')
         if save_samples:
-            if len(env.generated_meshes):
-                samples, output_types, outputs = env.extract_samples_2(env.generated_meshes, 2, 3, radius=4)
+            if len(env.generated_quads):
+                samples, output_types, outputs = env.extract_samples_2(env.generated_quads, 2, 3, radius=4)
                 env.save_samples(out_dir / f"ebrd_env_{i}.json",
                                  {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
                 print("Saved!")

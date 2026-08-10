@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from general.component_plotting import plot_boundary
 
 
-def generate_meshes_canvas(mesh_gen, meshes, quality, indexing, quality_index, style):
+def generate_meshes_canvas(mesh_gen, quads, quality, indexing, quality_index, style):
     plot_boundary(mesh_gen.boundary, style=style, linewidth=1)
-    for id, m in enumerate(meshes):
+    for id, m in enumerate(quads):
         center = m.get_centroid(diff=True)
         if quality and indexing:
             _quality = round(mesh_gen.get_quality(element=m, index=quality_index), 4)
@@ -17,9 +17,9 @@ def generate_meshes_canvas(mesh_gen, meshes, quality, indexing, quality_index, s
             plt.text(center.x, center.y, str(id), fontsize=4)
 
 
-def save_meshes(mesh_gen, name, meshes, quality=False, indexing=False, quality_index=0, dpi=300, style='k.-'):
+def save_meshes(mesh_gen, name, quads, quality=False, indexing=False, quality_index=0, dpi=300, style='k.-'):
     plt.clf()
-    generate_meshes_canvas(mesh_gen, meshes, quality, indexing, quality_index, style=style)
+    generate_meshes_canvas(mesh_gen, quads, quality, indexing, quality_index, style=style)
     plt.gca().set_aspect('equal', adjustable='box')
     plt.subplots_adjust(top=1, bottom=0, right=1, left=-0, hspace=0, wspace=0)
     plt.savefig(name, dpi=dpi)

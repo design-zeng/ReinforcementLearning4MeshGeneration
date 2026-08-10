@@ -9,7 +9,7 @@ from general.sample_extraction import SampleExtractionMixin
 class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
     def __init__(self, boundary):
         self.boundary = boundary
-        self.generated_meshes = []
+        self.generated_quads = []
         self.updated_boundary = boundary.copy()
         self.all_vertices = boundary.vertices
         self.original_vertices = list(boundary.vertices)
@@ -247,29 +247,29 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
     def get_neighbors(self, reference_point, num_points=4):
         return self.updated_boundary.get_neighbors(reference_point, num_points=num_points)
 
-    def check_intersection_with_boundary(self, mesh, reference_point):
-        max_dist = max([reference_point.distance_to(v) for v in mesh.vertices if v is not reference_point])
+    def check_intersection_with_boundary(self, quad, reference_point):
+        max_dist = max([reference_point.distance_to(v) for v in quad.vertices if v is not reference_point])
         neighboring_vertices = [v for v in self.updated_boundary.vertices
-                                if reference_point.distance_to(v) < max_dist and v not in mesh.vertices]
+                                if reference_point.distance_to(v) < max_dist and v not in quad.vertices]
 
-        _index = mesh.vertices.index(reference_point)
-        checking_sesg = [Segment(mesh.vertices[_index - 1], mesh.vertices[_index - 2]),
-                         Segment(mesh.vertices[_index - 2], mesh.vertices[_index - 3])]
+        _index = quad.vertices.index(reference_point)
+        checking_sesg = [Segment(quad.vertices[_index - 1], quad.vertices[_index - 2]),
+                         Segment(quad.vertices[_index - 2], quad.vertices[_index - 3])]
         for v in neighboring_vertices:
             index = self.updated_boundary.vertices.index(v)
             for c_g in checking_sesg:
-                if self.updated_boundary.vertices[index - 1] not in mesh.vertices:
+                if self.updated_boundary.vertices[index - 1] not in quad.vertices:
                     if c_g.is_cross(Segment(v, self.updated_boundary.vertices[index - 1])):
                         return True
 
-                if self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)] not in mesh.vertices:
+                if self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)] not in quad.vertices:
                     if c_g.is_cross(Segment(v, self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)])):
                         return True
 
         return False
 
-    def validate_mesh(self, mesh, quality_method=0):
-        return mesh.is_valid(quality_method)
+    def validate_quad(self, quad, quality_method=0):
+        return quad.is_valid(quality_method)
 
     def is_point_inside_area(self, vertex):
         remote_dist = 10000
@@ -277,18 +277,18 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         return self.is_inside(ray_segment)
 
     def find_related_meshes(self, vertex):
-        return list({m for m in self.generated_meshes if vertex in m.vertices})
+        return list({m for m in self.generated_quads if vertex in m.vertices})
 
-    def update_boundary(self, reference_point, mesh):
+    def update_boundary(self, reference_point, quad):
         new_vertices = []
-        for v in mesh.vertices:
+        for v in quad.vertices:
             if v not in self.updated_boundary.vertices:
                 new_vertices.append(v)
 
         if len(new_vertices) == 1:
-            id = self.updated_boundary.vertices.index(mesh.vertices[mesh.vertices.index(new_vertices[0]) - 2])
+            id = self.updated_boundary.vertices.index(quad.vertices[quad.vertices.index(new_vertices[0]) - 2])
             self.updated_boundary.vertices.insert(id, new_vertices[0])
-            self.remove_point(mesh.vertices[mesh.vertices.index(new_vertices[0]) - 2])
+            self.remove_point(quad.vertices[quad.vertices.index(new_vertices[0]) - 2])
             if not new_vertices[0] in self.boundary.vertices:
                 self.boundary.vertices.append(new_vertices[0])
             ref_neighbors = []
@@ -297,20 +297,20 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
                     self.updated_boundary.vertices[(id + i + 1) % len(self.updated_boundary.vertices)],
                     self.updated_boundary.vertices[id - i - 1]
                 ])
-            self.remove_reference_candidates(ref_neighbors + [mesh.vertices[mesh.vertices.index(new_vertices[0]) - 2]])
+            self.remove_reference_candidates(ref_neighbors + [quad.vertices[quad.vertices.index(new_vertices[0]) - 2]])
             self.add_reference_candidates(ref_neighbors)
 
             self.rp_index += 1
 
         elif len(new_vertices) == 0:
             removable_vertices = []
-            for v in mesh.vertices:
+            for v in quad.vertices:
                 if self.count_segts_in_boundary(v) < 3:
                     removable_vertices.append(v)
             for v in removable_vertices:
                 self.updated_boundary.vertices.remove(v)
 
-            id = max([self.updated_boundary.vertices.index(v) for v in mesh.vertices
+            id = max([self.updated_boundary.vertices.index(v) for v in quad.vertices
                       if v not in removable_vertices])
             ref_neighbors = []
             for i in range(self.num_ref_neighbor // 2):
@@ -322,7 +322,7 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
             self.remove_reference_candidates(removable_vertices + ref_neighbors)
             self.add_reference_candidates(ref_neighbors)
 
-            self.rp_index = max([self.updated_boundary.vertices.index(v) for v in mesh.vertices
+            self.rp_index = max([self.updated_boundary.vertices.index(v) for v in quad.vertices
                                  if v not in removable_vertices])
 
     def estimate_area_range(self):
@@ -361,12 +361,12 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         raise ValueError(f"Unknown quality index: {index}")
 
     def write_generated_elements_2_file(self, filename, format='inp'):
-        if len(self.generated_meshes) == 0:
+        if len(self.generated_quads) == 0:
             print("There are no elements generated!")
             return
 
         nodes = list(self.original_vertices)  # boundary nodes (referenced by the B21 edge elements)
-        for ele in self.generated_meshes:
+        for ele in self.generated_quads:
             nodes.extend([n for n in ele.vertices if n not in nodes])
 
         with open(filename, 'w') as fw:
@@ -378,7 +378,7 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
             for i in range(1, len(self.original_vertices)):
                 fw.write(f'*ELEMENT, TYPE=B21, ELSET=EB{i}\n {i+1}, {nodes.index(self.original_vertices[i-1]) + 1}, {nodes.index(self.original_vertices[i]) + 1}\n')
             fw.write(f'*ELEMENT, TYPE=S4R, ELSET=EB{i+1} \n')
-            for id, ele in enumerate(self.generated_meshes):
+            for id, ele in enumerate(self.generated_quads):
                 fw.write(f"{id+1}, {nodes.index(ele.vertices[0]) + 1}, "
                          f"{nodes.index(ele.vertices[1]) + 1}, "
                          f"{nodes.index(ele.vertices[2]) + 1}, "

@@ -27,10 +27,10 @@ class SampleExtractionMixin:
             for i in range(len(nodes)):
                 self.get_nodes(nodes[i], exclusion, layer-1, path, paths, N)
 
-    def extract_samples_2(self, meshes, n_neighbor, n_radius, radius, index=1, quality_threshold=0.7):
+    def extract_samples_2(self, quads, n_neighbor, n_radius, radius, index=1, quality_threshold=0.7):
         all_samples, outputs, types = [], [], []
-        for id, element in enumerate(meshes):
-            print(f"Extracting element {id} out of {len(meshes)}")
+        for id, element in enumerate(quads):
+            print(f"Extracting element {id} out of {len(quads)}")
             if self.get_quality(element, index=index) >= quality_threshold:
                 for i in range(4):
                     rp = element.vertices[i]

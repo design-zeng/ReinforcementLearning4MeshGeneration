@@ -8,7 +8,7 @@ import gym
 from gym import spaces
 
 from general.mesh import MeshGeneration
-from general.components import Vertex, Mesh
+from general.components import Vertex, Quad
 from general.point_environment import PointEnvironment
 from general.lin_alg import detransformation
 from general.boundary_env_plotting import render_boundary, close_render
@@ -57,7 +57,7 @@ class BoundaryEnv(MeshGeneration, gym.Env):
         self.boundary = self.original_boundary.deep_copy()
         self.updated_boundary = self.boundary.copy()
         self.original_vertices = [v for v in self.boundary.vertices]
-        self.generated_meshes = []
+        self.generated_quads = []
         self.not_valid_points = []
         self.rewarding = []
         self.current_area = self.original_area
@@ -85,10 +85,10 @@ class BoundaryEnv(MeshGeneration, gym.Env):
         v = self.updated_boundary.vertices
         n = len(v)
         if rule == -1:
-            return Mesh([v[index - 1], v[index], v[(index + 1) % n], v[(index + 2) % n]])
+            return Quad([v[index - 1], v[index], v[(index + 1) % n], v[(index + 2) % n]])
         if rule == 1:
-            return Mesh([v[index - 2], v[index - 1], v[index], v[(index + 1) % n]])
-        return Mesh([new_point, v[index - 1], v[index], v[(index + 1) % n]])
+            return Quad([v[index - 2], v[index - 1], v[index], v[(index + 1) % n]])
+        return Quad([new_point, v[index - 1], v[index], v[(index + 1) % n]])
 
     def step(self, action):  # pyright: ignore[reportIncompatibleMethodOverride]
         done = False
@@ -106,36 +106,36 @@ class BoundaryEnv(MeshGeneration, gym.Env):
             done = True
         else:
             if rule_type <= -0.5: #self.TYPE_THRESHOLD:
-                mesh = self.rule_element(-1, index)
+                quad = self.rule_element(-1, index)
                 rule = -1
             elif rule_type >= 0.5: #1 - self.TYPE_THRESHOLD:
-                mesh = self.rule_element(1, index)
+                quad = self.rule_element(1, index)
                 rule = 1
             else:
                 # reward -= 0.1 * math.fabs(rule_type)
                 if self.is_point_inside_area(new_point):
-                    mesh = self.rule_element(-1, index) if self.find_same_point(new_point) \
+                    quad = self.rule_element(-1, index) if self.find_same_point(new_point) \
                         else self.rule_element(0, index, new_point)
                 else:
-                    reward += -1 / len(self.generated_meshes) if len(self.generated_meshes) else -1
-                    mesh = None
+                    reward += -1 / len(self.generated_quads) if len(self.generated_quads) else -1
+                    quad = None
                 rule = 0
 
-            if mesh is not None:
-                if self.validate_mesh(mesh, quality_method=0) and \
-                        not self.check_intersection_with_boundary(mesh, reference_point): # intersection check remove for type 1 2
-                    mesh.connect_vertices()
-                    self.generated_meshes.append(mesh)
+            if quad is not None:
+                if self.validate_quad(quad, quality_method=0) and \
+                        not self.check_intersection_with_boundary(quad, reference_point): # intersection check remove for type 1 2
+                    quad.connect_vertices()
+                    self.generated_quads.append(quad)
 
-                    # remove_references, add_references = self.update_boundary(reference_point, mesh)
+                    # remove_references, add_references = self.update_boundary(reference_point, quad)
 
-                    self.update_boundary(reference_point, mesh)
-                    mesh_area = mesh.compute_area()[0]
-                    self.current_area -= mesh_area
+                    self.update_boundary(reference_point, quad)
+                    quad_area = quad.compute_area()[0]
+                    self.current_area -= quad_area
 
-                    quality = self.get_quality(mesh, 2)
+                    quality = self.get_quality(quad, 2)
 
-                    speed_penalty = self.get_speed_penalty(mesh_area)
+                    speed_penalty = self.get_speed_penalty(quad_area)
                     reward += quality + speed_penalty
 
                     self.history_info[rule].append(reward)
@@ -145,13 +145,13 @@ class BoundaryEnv(MeshGeneration, gym.Env):
                         reward += 10
                         done = True
                         if len(self.updated_boundary.vertices) == 4:
-                            mesh = Mesh(self.updated_boundary.vertices)
-                            mesh.connect_vertices()
-                            self.generated_meshes.append(mesh)
+                            quad = Quad(self.updated_boundary.vertices)
+                            quad.connect_vertices()
+                            self.generated_quads.append(quad)
                     else:
                         done = False
                 else:
-                    reward += -1 / len(self.generated_meshes) if len(self.generated_meshes) else -1
+                    reward += -1 / len(self.generated_quads) if len(self.generated_quads) else -1
         is_complete = True
         next_state = self.find_next_state(self.not_valid_points)
         # if next_state is None:
@@ -187,35 +187,35 @@ class BoundaryEnv(MeshGeneration, gym.Env):
 
         else:
             index = self.updated_boundary.vertices.index(reference_point)
-            mesh = None
+            quad = None
 
             if rule_type <= self.TYPE_THRESHOLD:
-                mesh = self.rule_element(-1, index)
+                quad = self.rule_element(-1, index)
                 # reward -= 0.1 * math.fabs(rule_type + 1)
             elif rule_type >= 1 - self.TYPE_THRESHOLD:
-                mesh = self.rule_element(1, index)
+                quad = self.rule_element(1, index)
             else:
                 if self.is_point_inside_area(new_point):
-                    mesh = self.rule_element(0, index, new_point)
+                    quad = self.rule_element(0, index, new_point)
 
-            if mesh is None:
+            if quad is None:
                 pass
-            elif self.validate_mesh(mesh, quality_method=0) and \
-                not self.check_intersection_with_boundary(mesh, reference_point):
+            elif self.validate_quad(quad, quality_method=0) and \
+                not self.check_intersection_with_boundary(quad, reference_point):
 
-                mesh.connect_vertices()
+                quad.connect_vertices()
                 not_valid_element = False
-                self.generated_meshes.append(mesh)
+                self.generated_quads.append(quad)
 
-                self.update_boundary(reference_point, mesh)
+                self.update_boundary(reference_point, quad)
 
                 next_state = self.find_next_state(self.not_valid_points, static=True)
 
                 if len(self.updated_boundary.vertices) <= 5:
                     done = True
                     if len(self.updated_boundary.vertices) == 4:
-                        mesh = Mesh(self.updated_boundary.vertices)
-                        self.generated_meshes.append(mesh)
+                        quad = Quad(self.updated_boundary.vertices)
+                        self.generated_quads.append(quad)
 
             ## old handling
             if not_valid_element:
@@ -262,13 +262,13 @@ class BoundaryEnv(MeshGeneration, gym.Env):
 
         return next_state, 0, done, {'is_complete': is_complete}
 
-    def get_speed_penalty(self, mesh_area):
+    def get_speed_penalty(self, quad_area):
         min_area = self.estimated_area_range[0] ** 2 #* 0.5 #*1.5
         critical_area = self.estimated_area_range[1] ** 2 #* 0.5# *1.5
 
-        if min_area <= mesh_area < critical_area:
-            speed_penalty = ((mesh_area - critical_area) / (critical_area - min_area))
-        elif mesh_area < min_area:
+        if min_area <= quad_area < critical_area:
+            speed_penalty = ((quad_area - critical_area) / (critical_area - min_area))
+        elif quad_area < min_area:
             speed_penalty = -1
         else:
             speed_penalty = 0
@@ -302,7 +302,7 @@ class BoundaryEnv(MeshGeneration, gym.Env):
         close_render()
 
     def render(self, mode='human'):
-        print(f'Generated elements: {len(self.generated_meshes)}')
+        print(f'Generated elements: {len(self.generated_quads)}')
         render_boundary(self.boundary)
 
     def find_same_point(self, point):
