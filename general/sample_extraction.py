@@ -117,7 +117,8 @@ class SampleExtractionMixin:
         all_combinations = list(itertools.product(*reversed(neighbors)))
         return all_combinations
 
-    def save_samples(self, file_name, res, _type=1):
+    @staticmethod
+    def save_samples(file_name, res, _type=1):
         if _type == 1:
             res['samples'] = [Vertex.points_as_array(s) for s in res['samples']]
             res['outputs'] = [Vertex.points_as_array(s) for s in res['outputs']]

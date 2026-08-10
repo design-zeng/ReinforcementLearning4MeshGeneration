@@ -22,12 +22,6 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
 
     @staticmethod
     def calculate_crossing_segments(closed_curve_vertices, ray_segment):
-        '''
-        http://geomalgorithms.com/a03-_inclusion.html#:~:text=Inclusion%20of%20a%20Point%20in%20a%20Polygon&text=%2D%20which%20counts%20the%20number%20of,%22even%2Dodd%22%20test.
-        :param closed_curve_vertices:
-        :param ray_segment:
-        :return:
-        '''
         count = 0
         n = len(closed_curve_vertices)
         ray_y = ray_segment.point2.y
@@ -234,7 +228,8 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
             pow = 1/2
             return math.pow(angle_quality * smoothness, pow)
 
-    def is_vertex_inside_list(self, vertex, points):
+    @staticmethod
+    def is_vertex_inside_list(vertex, points):
         return any(p.distance_to(vertex) < 0.001 for p in points)
 
     def count_segts_in_boundary(self, vertex):
@@ -267,9 +262,6 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
                         return True
 
         return False
-
-    def validate_quad(self, quad, quality_method=0):
-        return quad.is_valid(quality_method)
 
     def is_point_inside_area(self, vertex):
         remote_dist = 10000
@@ -326,30 +318,19 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
                                  if v not in removable_vertices])
 
     def estimate_area_range(self):
+        # e_min/e_max robustified to 2nd shortest/longest edge, capped at 2*mean, not raw extremes
         lengths = [l[1] for l in self.boundary.sort_segments_by_length()]
-
-        # min_L = lengths[0]
-        # return min_L ** 2, 1.2 * min_L ** 2
         L = sum(lengths) / len(lengths)
         max_L = min(lengths[-2], 2 * L)
         min_L = min(L / math.sqrt(2), lengths[1])
-        # if len(self.candidate_vertices):
-        #     angle = self.candidate_vertices[0][1]
-        # else:
-        #     raise ValueError('Empty angle in the candidate vertices!')
-        # return min_L ** 2, ((max_L + 3 * min_L) / 4) ** 2, L
         return min_L, (max_L + 3 * min_L) / 4
 
     def remove_point(self, point):
         self.updated_boundary.vertices.remove(point)
 
-    def compute_element_quality(self, element):
-        q1, q2 = element.edge_angle_quality()
-        return math.pow(q1 * q2, 1/2)
-
     def get_quality(self, element, index=0):
         if index == 1:
-            return self.compute_element_quality(element)
+            return element.get_quality(quality_type='edge_angle')
         elif index == 2:
             b_reward = self.compute_ele_boundary_quality(element)
             e_reward = element.get_quality(quality_type='robust')
@@ -384,10 +365,3 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
                          f"{nodes.index(ele.vertices[2]) + 1}, "
                          f"{nodes.index(ele.vertices[3]) + 1}" + "\n")
         print("Document writing is finished!")
-
-
-def connect_vertices(points):
-    for i in range(len(points)):
-        segmt = Segment(points[i - 1], points[i])
-        points[i - 1].assign_segment(segmt)
-        points[i].assign_segment(segmt)

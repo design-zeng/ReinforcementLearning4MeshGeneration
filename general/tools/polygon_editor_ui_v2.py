@@ -227,7 +227,8 @@ class Density(Frame):
                 max_length = dist
         return round(max_length, 2)
 
-    def distance(self, point1, point2):
+    @staticmethod
+    def distance(point1, point2):
         dist = math.sqrt((point1[0] - point2[0]) ** 2 +
                          (point1[1] - point2[1]) ** 2)
         return dist

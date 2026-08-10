@@ -122,7 +122,7 @@ class BoundaryEnv(MeshGeneration, gym.Env):
                 rule = 0
 
             if quad is not None:
-                if self.validate_quad(quad, quality_method=0) and \
+                if quad.is_valid(0) and \
                         not self.check_intersection_with_boundary(quad, reference_point): # intersection check remove for type 1 2
                     quad.connect_vertices()
                     self.generated_quads.append(quad)
@@ -200,7 +200,7 @@ class BoundaryEnv(MeshGeneration, gym.Env):
 
             if quad is None:
                 pass
-            elif self.validate_quad(quad, quality_method=0) and \
+            elif quad.is_valid(0) and \
                 not self.check_intersection_with_boundary(quad, reference_point):
 
                 quad.connect_vertices()
@@ -263,8 +263,8 @@ class BoundaryEnv(MeshGeneration, gym.Env):
         return next_state, 0, done, {'is_complete': is_complete}
 
     def get_speed_penalty(self, quad_area):
-        min_area = self.estimated_area_range[0] ** 2 #* 0.5 #*1.5
-        critical_area = self.estimated_area_range[1] ** 2 #* 0.5# *1.5
+        min_area = self.estimated_area_range[0] ** 2
+        critical_area = self.estimated_area_range[1] ** 2
 
         if min_area <= quad_area < critical_area:
             speed_penalty = ((quad_area - critical_area) / (critical_area - min_area))

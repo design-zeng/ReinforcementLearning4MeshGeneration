@@ -216,13 +216,15 @@ class Boundary2D:
         return Boundary2D([vertex for vertex in self.vertices])
 
     def deep_copy(self):
-        vertices = [vertex.copy() for vertex in self.vertices]
-        for i in range(len(vertices)):
-            segmt = Segment(vertices[i - 1], vertices[i])
-            vertices[i - 1].assign_segment(segmt)
-            vertices[i].assign_segment(segmt)
+        copied = Boundary2D([vertex.copy() for vertex in self.vertices])
+        copied.connect_vertices()
+        return copied
 
-        return Boundary2D(vertices)
+    def connect_vertices(self):
+        for i in range(len(self.vertices)):
+            segmt = Segment(self.vertices[i - 1], self.vertices[i])
+            self.vertices[i - 1].assign_segment(segmt)
+            self.vertices[i].assign_segment(segmt)
 
     def all_segments(self):
         segts = []
@@ -282,6 +284,17 @@ class Boundary2D:
         for i in range(1, half + 1):
             vertices.append(self.vertices[index - i])
         return vertices
+
+    def find_closest_segments(self, vertex, dist):
+        closest_segments = []
+        for i in range(len(self.vertices)):
+            if vertex in [self.vertices[i-1], self.vertices[i]]:
+                continue
+            s = Segment(self.vertices[i-1], self.vertices[i])
+            _, _dist, inner = s.perpendicular_point(vertex)
+            if inner and _dist <= dist:
+                closest_segments.append(s)
+        return closest_segments
 
     def average_edge_length(self):
         _length = len(self.vertices)
@@ -383,6 +396,9 @@ class Quad:
             for i in range(4):
                 angles.append(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1]))
             q2 = min(angles) / max(angles)
+            return math.sqrt(q1 * q2)
+        elif quality_type == 'edge_angle':
+            q1, q2 = self.edge_angle_quality()
             return math.sqrt(q1 * q2)
         elif quality_type == 'taper':
             p0, p1, p2, p3 = self.vertices[0], self.vertices[-1], self.vertices[-2], self.vertices[-3]
