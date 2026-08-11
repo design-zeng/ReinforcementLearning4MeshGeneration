@@ -10,13 +10,16 @@ class Vertex:
         self.segments = None
 
     def distance_to(self, vertex):
-        return math.sqrt((self.x - vertex.x) ** 2 + (self.y - vertex.y) ** 2)
+        return (self - vertex).length()
 
     def length(self):
         return math.sqrt(self.x ** 2 + self.y ** 2)
 
     def cross(self, other):
         return self.x * other.y - other.x * self.y
+
+    def dot(self, other):
+        return self.x * other.x + self.y * other.y
 
     @staticmethod
     def points_as_array(vertices):
@@ -43,21 +46,16 @@ class Vertex:
         else:
             self.segments = [segment]
 
-    def to_find_clockwise_angle(self, point1, point2):
-        v1 = point1 - self
-        v2 = point2 - self
+    def to_find_clockwise_angle(self, vertex1, vertex2):
+        v1 = vertex1 - self
+        v2 = vertex2 - self
 
-        theta = - math.atan2(v1.x * v2.y - v1.y * v2.x, v1.x * v2.x + v1.y * v2.y)
+        theta = - math.atan2(v1.cross(v2), v1.dot(v2))
 
         return round(theta, 4) if math.copysign(1, theta) >= 0 else round(2 * math.pi + theta, 4)
 
     def has_segment_with_vertex(self, vertex):
-        if not self.segments:
-            return False
-        for seg in self.segments:
-            if seg.has_vertex(vertex):
-                return True
-        return False
+        return bool(self.segments) and any(seg.has_vertex(vertex) for seg in self.segments)
 
     def get_connected_vertices(self):
         if not self.segments:
@@ -65,14 +63,9 @@ class Vertex:
 
         vertices = []
         for seg in self.segments:
-            if seg.point1 not in vertices:
-                vertices.append(seg.point1)
-
-            if seg.point2 not in vertices:
-                vertices.append(seg.point2)
-
-        vertices.remove(self)
-
+            other = seg.point2 if seg.point1 is self else seg.point1
+            if other not in vertices:
+                vertices.append(other)
         return vertices
 
     def copy(self):
@@ -96,76 +89,47 @@ class Segment:
         self.point1 = point1
         self.point2 = point2
 
-    def straddle(self, another_segment):
-        v1 = another_segment.point1 - self.point1
-        v2 = another_segment.point2 - self.point1
-        vm = self.point2 - self.point1
-
-        # check if two segments are collinear
-        sa = round(math.sin(self.point1.to_find_clockwise_angle(another_segment.point1, self.point2)), 4)
-        sb = round(math.sin(self.point1.to_find_clockwise_angle(another_segment.point2, self.point2)), 4)
-        if sa == 0 and sb == 0:
-            l1 = self.length()
-            l2 = another_segment.length()
-            if l1 > l2:
-                m = (self.point2 + self.point1) / 2
-                if min(m.distance_to(another_segment.point2), m.distance_to(another_segment.point1)) <= l1/2:
-                    return True
-            else:
-                m = (another_segment.point2 + another_segment.point1) / 2
-                if min(m.distance_to(self.point2), m.distance_to(self.point1)) <= l2 / 2:
-                    return True
-            return False
-
-        if v1.cross(vm) * v2.cross(vm) <= 0:
-            return True
-        else:
-            return False
-
     def is_cross(self, another_segment):
-        return self.straddle(another_segment) and another_segment.straddle(self)
+        def straddle(seg, other):
+            sa = round(math.sin(seg.point1.to_find_clockwise_angle(other.point1, seg.point2)), 4)
+            sb = round(math.sin(seg.point1.to_find_clockwise_angle(other.point2, seg.point2)), 4)
+            if sa == 0 and sb == 0:
+                long_seg, short_seg = (seg, other) if seg.length() > other.length() else (other, seg)
+                m = (long_seg.point1 + long_seg.point2) / 2
+                return min(m.distance_to(short_seg.point1), m.distance_to(short_seg.point2)) <= long_seg.length() / 2
+
+            vm = seg.point2 - seg.point1
+            return (other.point1 - seg.point1).cross(vm) * (other.point2 - seg.point1).cross(vm) <= 0
+
+        return straddle(self, another_segment) and straddle(another_segment, self)
 
     def seg_angle(self):
-        theta = math.atan2(self.point2.y - self.point1.y, self.point2.x - self.point1.x)
-        return theta
+        d = self.point2 - self.point1
+        return math.atan2(d.y, d.x)
 
     @staticmethod
     def get_ray_segment(segment, another_segment, remote_dist):
-        ray_point1 = Vertex((segment.point1 + another_segment.point1).x / 2,
-                            (segment.point1 + another_segment.point1).y / 2)
-
-        ray_point2 = Vertex((segment.point2 + another_segment.point2).x / 2,
-                            (segment.point2 + another_segment.point2).y / 2)
+        ray_point1 = (segment.point1 + another_segment.point1) / 2
+        ray_point2 = (segment.point2 + another_segment.point2) / 2
 
         average_segment = Segment(ray_point1, ray_point2)
         return Segment.build_ray(average_segment, remote_dist)
 
     @staticmethod
     def build_ray(segment, remote_dist):
-        average_segment = Segment(segment.point1.copy(), segment.point2.copy())
-        theta = average_segment.seg_angle()
-
-        average_segment.point2.x = average_segment.point1.x + remote_dist * math.cos(theta)
-        average_segment.point2.y = average_segment.point1.y + remote_dist * math.sin(theta)
-
-        return average_segment
-
-    def __str__(self):
-        return f"Segment({self.point1}, {self.point2})"
+        theta = segment.seg_angle()
+        p1 = segment.point1.copy()
+        p2 = Vertex(p1.x + remote_dist * math.cos(theta), p1.y + remote_dist * math.sin(theta))
+        return Segment(p1, p2)
 
     def has_vertex(self, vertex):
-        if vertex == self.point1 or vertex == self.point2:
-            return True
-        else:
-            return False
+        return vertex == self.point1 or vertex == self.point2
 
     def perpendicular_point(self, vertex):
-        a = self.point1.x
-        b = self.point1.y
-        A = self.point2.x - self.point1.x
-        B = self.point2.y - self.point1.y
-        s = (A * vertex.x + B * vertex.y - B * b - A * a) / (A ** 2 + B ** 2)
-        target = Vertex(a+s*A, b+s*B)
+        d = self.point2 - self.point1
+        w = vertex - self.point1
+        s = d.dot(w) / d.length() ** 2
+        target = self.point1 + d * s
         return target, vertex.distance_to(target), 0 <= s <= 1
 
     def length(self):
@@ -174,36 +138,24 @@ class Segment:
     def intersection_vertex(self, another_seg):
         u = self.point2 - self.point1
         w = another_seg.point2 - another_seg.point1
-        d = u.x * w.y - u.y * w.x
+        d = u.cross(w)
         if d == 0:
             return None, None
         qp = another_seg.point1 - self.point1
-        s = (qp.x * w.y - qp.y * w.x) / d
-        h = (qp.x * u.y - qp.y * u.x) / d
+        s = qp.cross(w) / d
+        h = qp.cross(u) / d
         is_inside = 0 < s < 1 and 0 < h < 1
-        return is_inside, Vertex(self.point1.x + s * u.x, self.point1.y + s * u.y)
+        return is_inside, self.point1 + u * s
 
     def distance(self, another):
-        dists = []
         if isinstance(another, Vertex):
-            a = self.point1.x
-            b = self.point1.y
-            A = self.point2.x - self.point1.x
-            B = self.point2.y - self.point1.y
-            s = (A * another.x + B * another.y - B * b - A * a) / (A ** 2 + B ** 2)
-            if 0 <= s <= 1:
-                target = Vertex(a + s * A, b + s * B)
-                return another.distance_to(target)
-            elif s < 0:
-                return another.distance_to(self.point1)
-            else:
-                return another.distance_to(self.point2)
+            d = self.point2 - self.point1
+            w = another - self.point1
+            s = max(0.0, min(1.0, d.dot(w) / d.length() ** 2))
+            return another.distance_to(self.point1 + d * s)
         elif isinstance(another, Segment):
-            dists.append(self.distance(another.point1))
-            dists.append(self.distance(another.point2))
-            dists.append(another.distance(self.point1))
-            dists.append(another.distance(self.point2))
-            return min(dists)
+            return min(self.distance(another.point1), self.distance(another.point2),
+                       another.distance(self.point1), another.distance(self.point2))
         else:
             raise ValueError('Not recognized object type!')
 
@@ -213,33 +165,31 @@ class Polygon:
         self.vertices = vertices
 
     def copy(self):
-        return type(self)([vertex for vertex in self.vertices])
+        return type(self)(list(self.vertices))
+
+    def connect_vertices(self):
+        for i in range(len(self.vertices)):
+            prev, curr = self.vertices[i - 1], self.vertices[i]
+            if curr.has_segment_with_vertex(prev):
+                continue
+            seg = Segment(prev, curr)
+            prev.assign_segment(seg)
+            curr.assign_segment(seg)
 
     @staticmethod
     def compute_dist(vertices, vertex):
-        dists = []
-        for v in vertices:
-            if vertex is not v:
-                dist = vertex.distance_to(v)
-                dists.append((v, dist))
+        dists = [(v, vertex.distance_to(v)) for v in vertices if vertex is not v]
         return sorted(dists, key=lambda x: x[1])
 
     @staticmethod
     def get_closest_points(vertices, vertex, exclusion=None, S_T=None):
-        dists = Polygon.compute_dist(vertices, vertex)
+        exclusion = exclusion or []
         selected = []
-        if exclusion:
-            for v in dists:
-                if v[0] not in exclusion and v[1] <= S_T:
-                    selected.append(v[0])
-                if v[1] > S_T:
-                    break
-        else:
-            for v in dists:
-                if v[1] <= S_T:
-                    selected.append(v[0])
-                else:
-                    break
+        for v, d in Polygon.compute_dist(vertices, vertex):
+            if d > S_T:
+                break
+            if v not in exclusion:
+                selected.append(v)
         return selected
 
     @staticmethod
@@ -271,27 +221,23 @@ class Polygon:
         return count % 2 != 0
 
     def average_edge_length(self):
-        _length = len(self.vertices)
-        dist = 0
-        for i in range(_length):
-            dist += self.vertices[i].distance_to(self.vertices[i-1])
-        return round(dist / _length, 4) if _length != 0 else 0
+        n = len(self.vertices)
+        if n == 0:
+            return 0
+        dist = sum(self.vertices[i].distance_to(self.vertices[i - 1]) for i in range(n))
+        return round(dist / n, 4)
 
     def get_perimeter(self):
-        perimeter = 0
-        for i in range(1, len(self.vertices)):
-            perimeter += self.vertices[i - 1].distance_to(self.vertices[i])
-        return perimeter
+        return sum(self.vertices[i - 1].distance_to(self.vertices[i])
+                   for i in range(1, len(self.vertices)))
 
     def compute_boundary_angle(self, vertex):
-        if vertex in self.vertices:
-            index = self.vertices.index(vertex)
-            right_v = self.vertices[index - 1]
-            left_v = self.vertices[(index + 1) % len(self.vertices)]
-            angle = math.degrees(vertex.to_find_clockwise_angle(left_v, right_v))
-            return angle
-
-        return None
+        if vertex not in self.vertices:
+            return None
+        index = self.vertices.index(vertex)
+        right_v = self.vertices[index - 1]
+        left_v = self.vertices[(index + 1) % len(self.vertices)]
+        return math.degrees(vertex.to_find_clockwise_angle(left_v, right_v))
 
     def poly_area(self):
         xy = np.array([[v.x, v.y] for v in self.vertices])
@@ -310,12 +256,6 @@ class Boundary(Polygon):
         copied.connect_vertices()
         return copied
 
-    def connect_vertices(self):
-        for i in range(len(self.vertices)):
-            segmt = Segment(self.vertices[i - 1], self.vertices[i])
-            self.vertices[i - 1].assign_segment(segmt)
-            self.vertices[i].assign_segment(segmt)
-
     def all_segments(self):
         segts = []
         for vertex in self.vertices:
@@ -326,20 +266,18 @@ class Boundary(Polygon):
         return segts
 
     def sort_segments_by_length(self, reverse=False):
-        segts = self.all_segments()
-        sorted_segts = sorted([(seg, seg.length()) for seg in segts], key=lambda x: x[1], reverse=reverse)
-        return sorted_segts
+        return sorted(((seg, seg.length()) for seg in self.all_segments()),
+                      key=lambda x: x[1], reverse=reverse)
 
     def get_neighbors(self, vertex, num_points=4):
-        half = int(num_points / 2)
         if num_points % 2 != 0:
             raise ValueError("The neighbor number is not even!")
+        half = num_points // 2
         p_num = len(self.vertices)
         index = self.vertices.index(vertex)
 
         vertices = [self.vertices[(index + i) % p_num] for i in reversed(range(half + 1))]
-        for i in range(1, half + 1):
-            vertices.append(self.vertices[index - i])
+        vertices += [self.vertices[index - i] for i in range(1, half + 1)]
         return vertices
 
     def find_closest_segments(self, vertex, dist):
@@ -354,16 +292,11 @@ class Boundary(Polygon):
         return closest_segments
 
     def find_same_point(self, point):
-        for p in self.vertices:
-            if p.distance_to(point) < 0.001:
-                return p
+        return next((p for p in self.vertices if p.distance_to(point) < 0.001), None)
 
     def count_segts_in_boundary(self, vertex):
-        count = 0
-        for seg in vertex.segments:
-            if seg.point1 in self.vertices and seg.point2 in self.vertices:
-                count += 1
-        return count
+        return sum(1 for seg in vertex.segments
+                   if seg.point1 in self.vertices and seg.point2 in self.vertices)
 
     def check_boundary_point(self, vertex, index=None):
         if index is None:
@@ -376,7 +309,7 @@ class Boundary(Polygon):
             lam = 0.618
             weights = [lam, 1-lam]
         else:
-            weights = [2/self.num_ref_neighbor for i in range(self.num_ref_neighbor // 2)]
+            weights = [2/self.num_ref_neighbor] * (self.num_ref_neighbor // 2)
 
         for i in range(self.num_ref_neighbor // 2):
             clockwise_angle = vertex.to_find_clockwise_angle(
@@ -391,11 +324,8 @@ class Boundary(Polygon):
         return math.degrees(sum_angle)
 
     def find_reference_candidates(self, target_angle):
-        candidate_vertices = []
-        for i, vertex in enumerate(self.vertices):
-            angle_dist = self.check_boundary_point(vertex, i)
-            if angle_dist is not None:
-                candidate_vertices.append((vertex, angle_dist))
+        candidate_vertices = [(vertex, ad) for i, vertex in enumerate(self.vertices)
+                              if (ad := self.check_boundary_point(vertex, i)) is not None]
         self.candidate_vertices = sorted(candidate_vertices, key=lambda x: math.fabs(x[1] - target_angle))
 
     def find_reference_point(self, not_valid_points=None, target_angle=0):
@@ -628,7 +558,7 @@ class Quad(Polygon):
         self.min_degree = 0.01 * math.pi
 
     def length_4_segments(self):
-        return [Segment(self.vertices[i - 1], self.vertices[i]).length() for i in range(len(self.vertices))]
+        return [self.vertices[i - 1].distance_to(self.vertices[i]) for i in range(len(self.vertices))]
 
     def is_valid(self, quality_method=0):
         if self.segments_crossed():
@@ -642,41 +572,21 @@ class Quad(Polygon):
         return True
 
     def segments_crossed(self):
-
-        seg1 = Segment(self.vertices[0], self.vertices[1])
-        seg2 = Segment(self.vertices[2], self.vertices[3])
-        if seg1.is_cross(seg2):
-            return True
-
-        seg1 = Segment(self.vertices[0], self.vertices[3])
-        seg2 = Segment(self.vertices[1], self.vertices[2])
-        return seg1.is_cross(seg2)
+        v = self.vertices
+        return (Segment(v[0], v[1]).is_cross(Segment(v[2], v[3])) or
+                Segment(v[0], v[3]).is_cross(Segment(v[1], v[2])))
 
     def get_centroid(self, diff=False):
-        ave_point = Vertex(0, 0)
-        for v in self.vertices:
-            ave_point += v
-
-        _diff = sum([self.vertices[i].distance_to(self.vertices[i - 1]) for i in range(4)]) / 4
-
-        ave_point.x = ave_point.x / len(self.vertices) - (_diff/3 if diff else 0)
-        ave_point.y = ave_point.y / len(self.vertices) - (_diff*0.1 if diff else 0)
-
-        return ave_point
-
-    def connect_vertices(self):
-        for i in range(len(self.vertices)):
-            if not self.vertices[i].has_segment_with_vertex(self.vertices[i - 1]):
-                new_seg = Segment(self.vertices[i], self.vertices[i - 1])
-                self.vertices[i].assign_segment(new_seg)
-                self.vertices[i - 1].assign_segment(new_seg)
+        centroid = sum(self.vertices, Vertex(0, 0)) / len(self.vertices)
+        if diff:
+            _diff = sum(self.length_4_segments()) / 4
+            centroid.x -= _diff / 3
+            centroid.y -= _diff * 0.1
+        return centroid
 
     def inner_angles(self):
-        angles = []
-        for i in range(4):
-            angles.append(math.degrees(math.fabs(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1]) - math.pi / 2)))
-            # angles.append(math.degrees(self.vertices[i].to_find_clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1])))
-        return angles
+        return [math.degrees(math.fabs(self.vertices[i].to_find_clockwise_angle(
+            self.vertices[(i + 1) % 4], self.vertices[i - 1]) - math.pi / 2)) for i in range(4)]
 
     def get_quality(self, quality_type='robust'):
         if quality_type == 'stretch':
@@ -717,19 +627,17 @@ class Quad(Polygon):
             return math.sqrt(q1 * q2)
         raise ValueError(f"Unknown quality type: {quality_type}")
 
-    def compute_area(self):
-        length_of_edges = [self.vertices[i].distance_to(self.vertices[i - 1]) for i in range(4)]
-
+    def area(self):
+        lengths = self.length_4_segments()
         corner_1 = self.vertices[0].to_find_clockwise_angle(self.vertices[1], self.vertices[-1])
         corner_3 = self.vertices[2].to_find_clockwise_angle(self.vertices[3], self.vertices[1])
 
-        area = 0.5 * length_of_edges[0] * length_of_edges[1] * math.sin(corner_1) + \
-               0.5 * length_of_edges[2] * length_of_edges[3] * math.sin(corner_3)
-
-        return area, length_of_edges
+        return 0.5 * lengths[0] * lengths[1] * math.sin(corner_1) + \
+               0.5 * lengths[2] * lengths[3] * math.sin(corner_3)
 
     def edge_angle_quality(self):
-        area, length_of_edges = self.compute_area()
+        length_of_edges = self.length_4_segments()
+        area = self.area()
         if area <= 0:
             q1 = 0
         else:

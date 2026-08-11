@@ -21,7 +21,7 @@ class SampleExtractionMixin:
         else:
             path[-layer-1] = root
         if layer == 0:
-            paths.append([v for v in path])
+            paths.append(list(path))
             return
         else:
             nodes = [v for v in root.get_connected_vertices() if v not in exclusion and v not in path[:N-layer]]
@@ -67,17 +67,17 @@ class SampleExtractionMixin:
                             sum([ll[j].distance_to(ll[j-1]) for j in range(1, len(ll))]) +
                             rp.distance_to(ll[0])) / (2 * n_neighbor)
 
+                        def encode(p):
+                            return [rp.distance_to(p) / (base_length * radius),
+                                    rp.to_find_clockwise_angle(p, r_p) % round(2 * math.pi, 4)]
+
                         for p in rr:
-                            _sample.extend([rp.distance_to(p) / (base_length * radius),
-                                            rp.to_find_clockwise_angle(p, r_p) % round(2 * math.pi, 4)])
+                            _sample.extend(encode(p))
                         for p in mm:
-                            _sample.extend([rp.distance_to(p) / (base_length * radius),
-                                            rp.to_find_clockwise_angle(p, r_p) % round(2 * math.pi, 4)])
+                            _sample.extend(encode(p))
                         for p in reversed(ll):
-                            _sample.extend([rp.distance_to(p) / (base_length * radius),
-                                            rp.to_find_clockwise_angle(p, r_p) % round(2 * math.pi, 4)])
-                        _target = [rp.distance_to(target) / (base_length * radius),
-                                   rp.to_find_clockwise_angle(target, r_p) % round(2 * math.pi, 4)]
+                            _sample.extend(encode(p))
+                        _target = encode(target)
 
                         if target in rr:
                             types.append([1])

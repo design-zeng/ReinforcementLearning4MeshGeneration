@@ -167,7 +167,7 @@ def full_mesh(domain="boundary6",
     for k in range(attempts):
         info = rollout(model, env)
 
-        coverage = sum(m.compute_area()[0] for m in env.generated_quads) / env.original_area
+        coverage = sum(m.area() for m in env.generated_quads) / env.original_area
 
         if info['is_complete']:
             env.smooth(env.boundary.vertices)

@@ -66,7 +66,7 @@ class MeshEnv(gym.Env):
     def reset(self, static=False):  # pyright: ignore[reportIncompatibleMethodOverride]
         self.mesher.boundary = self.original_boundary.deep_copy()
         self.mesher.updated_boundary = self.mesher.boundary.copy()
-        self.mesher.original_vertices = [v for v in self.mesher.boundary.vertices]
+        self.mesher.original_vertices = list(self.mesher.boundary.vertices)
         self.mesher.generated_quads = []
         self.not_valid_points = []
         self.rewarding = []
@@ -116,7 +116,7 @@ class MeshEnv(gym.Env):
                     quad = self.updated_boundary.rule_element(-1, index) if self.updated_boundary.find_same_point(new_point) \
                         else self.updated_boundary.rule_element(0, index, new_point)
                 else:
-                    reward += -1 / len(self.generated_quads) if len(self.generated_quads) else -1
+                    reward += self.failure_penalty()
                     quad = None
                 rule = 0
 
@@ -127,7 +127,7 @@ class MeshEnv(gym.Env):
                     self.generated_quads.append(quad)
 
                     self.updated_boundary.update_boundary(reference_point, quad, self.boundary)
-                    quad_area = quad.compute_area()[0]
+                    quad_area = quad.area()
                     self.current_area -= quad_area
 
                     quality = self.get_quality(quad, 2)
@@ -148,7 +148,7 @@ class MeshEnv(gym.Env):
                     else:
                         done = False
                 else:
-                    reward += -1 / len(self.generated_quads) if len(self.generated_quads) else -1
+                    reward += self.failure_penalty()
         is_complete = True
         next_state = self.find_next_state(self.not_valid_points)
         # if next_state is None:
@@ -258,6 +258,10 @@ class MeshEnv(gym.Env):
                 is_complete = True
 
         return next_state, 0, done, {'is_complete': is_complete}
+
+    def failure_penalty(self):
+        n = len(self.generated_quads)
+        return -1 / n if n else -1
 
     def get_speed_penalty(self, quad_area):
         min_area = self.estimated_area_range[0] ** 2

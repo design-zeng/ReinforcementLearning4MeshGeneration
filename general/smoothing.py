@@ -10,6 +10,22 @@ def _circle_line_x(lin, M, N, a, b, r):
     return (lin + disc) / denom, (lin - disc) / denom
 
 
+def _circle_line_vertices(a, b, A, B, W, dist):
+    if B == 0:
+        x1, x2 = W/A + a, W/A + a
+        y1, y2 = b + math.sqrt(dist**2-(W/A)**2), b - math.sqrt(dist**2-(W/A)**2)
+    elif A == 0:
+        x1, x2 = a + math.sqrt(dist**2-(W/B)**2), a - math.sqrt(dist**2-(W/B)**2)
+        y1, y2 = W/B + b, W/B + b
+    else:
+        M = -A / B
+        N = (W + A * a + B * b) / B
+        lin = 2 * M * b - 2 * M * N + 2 * a
+        x1, x2 = _circle_line_x(lin, M, N, a, b, dist)
+        y1, y2 = M * x1 + N, M * x2 + N
+    return Vertex(x1, y1), Vertex(x2, y2)
+
+
 def middle_vertex(vertex, left_v, right_v, target_angle):
     m_v = (left_v + right_v) / 2
     A = right_v.x - left_v.x
@@ -37,24 +53,8 @@ def middle_vertex(vertex, left_v, right_v, target_angle):
 
 
 def side_vertex(vertex, next_v, nn_v, angle, dist):
-    a = next_v.x
-    b = next_v.y
-    A = nn_v.x - next_v.x
-    B = nn_v.y - next_v.y
     W = dist * next_v.distance_to(nn_v) * math.cos(math.radians(angle))
-    if B == 0:
-        x1, x2 = W/A + a, W/A + a
-        y1, y2 = b + math.sqrt(dist**2-(W/A)**2), b - math.sqrt(dist**2-(W/A)**2)
-    elif A == 0:
-        x1, x2 = a + math.sqrt(dist**2-(W/B)**2), a - math.sqrt(dist**2-(W/B)**2)
-        y1, y2 = W/B + b, W/B + b
-    else:
-        M = -A / B
-        N = (W + A * a + B * b) / B
-        lin = 2 * M * b - 2 * M * N + 2 * a
-        x1, x2 = _circle_line_x(lin, M, N, a, b, dist)
-        y1, y2 = M * x1 + N, M * x2 + N
-    V1, V2 = Vertex(x1, y1), Vertex(x2, y2)
+    V1, V2 = _circle_line_vertices(next_v.x, next_v.y, nn_v.x - next_v.x, nn_v.y - next_v.y, W, dist)
     if V1.distance_to(vertex) < V2.distance_to(vertex):
         return V1
     else:
@@ -62,25 +62,8 @@ def side_vertex(vertex, next_v, nn_v, angle, dist):
 
 
 def indention_vertex(vertex, left_v, right_v, angle, dist):
-    a = vertex.x
-    b = vertex.y
-    A = left_v.x - vertex.x
-    B = left_v.y - vertex.y
     W = dist * vertex.distance_to(left_v) * math.cos(math.radians(angle))
-
-    if B == 0:
-        x1, x2 = W/A + a, W/A + a
-        y1, y2 = b + math.sqrt(dist**2-(W/A)**2), b - math.sqrt(dist**2-(W/A)**2)
-    elif A == 0:
-        x1, x2 = a + math.sqrt(dist**2-(W/B)**2), a - math.sqrt(dist**2-(W/B)**2)
-        y1, y2 = W/B + b, W/B + b
-    else:
-        M = -A / B
-        N = (W + A * a + B * b) / B
-        lin = 2 * M * b - 2 * M * N + 2 * a
-        x1, x2 = _circle_line_x(lin, M, N, a, b, dist)
-        y1, y2 = M * x1 + N, M * x2 + N
-    V1, V2 = Vertex(x1, y1), Vertex(x2, y2)
+    V1, V2 = _circle_line_vertices(vertex.x, vertex.y, left_v.x - vertex.x, left_v.y - vertex.y, W, dist)
     if V1.to_find_clockwise_angle(left_v, right_v) < V2.to_find_clockwise_angle(left_v, right_v):
         return V1
     else:
@@ -151,13 +134,9 @@ class SmoothingMixin:
 
         m_v = (left_v + right_v) / 2
         d = m_v.distance_to(right_v) * math.tan(math.radians(angle))
-        a = m_v.x
-        b = m_v.y
-        A = vertex.x - m_v.x
-        B = vertex.y - m_v.y
-        s = math.sqrt(d ** 2 / (A ** 2 + B ** 2))
-        n_v = Vertex(a + s * A, b + s * B)
-        return n_v
+        diff = vertex - m_v
+        s = math.sqrt(d ** 2 / (diff.x ** 2 + diff.y ** 2))
+        return m_v + diff * s
 
     def find_side_vertex(self, vertex, _next_v, next_v, nn_v, v_angle):
         dist = (vertex.distance_to(_next_v) + vertex.distance_to(next_v) + next_v.distance_to(nn_v)) / 3

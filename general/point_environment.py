@@ -10,7 +10,7 @@ def clip_angle(angle, max_angle):
     return min(angle, max_angle + math.pi / 2)
 
 
-class PointEnvironment(object):
+class PointEnvironment:
     def __init__(self, reference_point, boundary, neighbor_num=4, radius_num=3,
                  average_edge_length=1, area_ratio=1, radius=6, static=False):
         self.reference_point = reference_point
@@ -25,10 +25,10 @@ class PointEnvironment(object):
         self.average_edge_length =average_edge_length
         self.theta = 0
         self.radius = radius
-        self.state_vertices = [None for i in range(self.neighbor_num + self.radius_num)]
+        self.state_vertices = [None] * (self.neighbor_num + self.radius_num)
         self.area_ratio = area_ratio
         self.static = static
-        self.get_state(state_type=2)
+        self.get_state()
 
     def get_neighbors(self, boundary):
         vertices = boundary.get_neighbors(self.reference_point, num_points=self.neighbor_num)
@@ -36,7 +36,7 @@ class PointEnvironment(object):
         self.base_length = round(sum([vertices[i].distance_to(vertices[i-1])
                                       for i in range(1, len(vertices))]) / self.neighbor_num, 4)
 
-    def get_state(self, state_type=2):
+    def get_state(self):
         self.get_neighbors(self.boundary)
         self.state = self.get_radius_points().flatten()
 
