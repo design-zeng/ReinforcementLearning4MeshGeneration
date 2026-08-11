@@ -8,7 +8,7 @@ import pandas as pd
 from scipy.spatial import ConvexHull
 
 from general.components import Quad, Vertex, Boundary
-from general.component_plotting import show_quad
+from general.plotting import show_quad
 from general.mesh import Mesher
 from general.polygon_reader import read_polygon
 from general.mesh_env import MeshEnv

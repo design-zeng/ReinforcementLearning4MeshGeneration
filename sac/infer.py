@@ -12,7 +12,7 @@ from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
 from general.polygon_reader import read_polygon
 from general.mesh_env import MeshEnv
-from general.mesh_plotting import save_meshes
+from general.plotting import save_meshes
 
 
 base_path = Path(__file__).parent.parent

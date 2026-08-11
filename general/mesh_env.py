@@ -11,7 +11,7 @@ from general.mesh import Mesher
 from general.components import Vertex, Quad
 from general.point_environment import PointEnvironment
 from general.lin_alg import detransformation
-from general.boundary_env_plotting import render_boundary, close_render
+from general.plotting import render_boundary, close_render
 
 
 base_path = Path(__file__).parent.parent

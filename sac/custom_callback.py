@@ -3,7 +3,7 @@ import os
 import numpy as np
 from stable_baselines3.common.callbacks import BaseCallback
 
-from general.mesh_plotting import save_meshes
+from general.plotting import save_meshes
 
 
 class CustomCallback(BaseCallback):

@@ -2,7 +2,7 @@ import os
 
 from general.polygon_reader import read_polygon
 from general.mesh_env import MeshEnv
-from general.mesh_plotting import save_meshes
+from general.plotting import save_meshes
 from ebrd.model import get_action, load_model, domains_path, augmentation_path
 
 

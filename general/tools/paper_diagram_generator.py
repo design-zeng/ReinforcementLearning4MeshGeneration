@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 
 from general.components import Vertex, Segment
-from general.component_plotting import plot_segment
+from general.plotting import plot_segment
 
 
 output_path = Path(__file__).parent.parent.parent / "general" / "output"
