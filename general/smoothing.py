@@ -279,7 +279,7 @@ class SmoothingMixin:
         right_v = self.updated_boundary.vertices[index - 1]
         dist = (vertex.distance_to(left_v) + vertex.distance_to(right_v)) / 2
 
-        c_neighbors = Boundary2D.get_closest_points(
+        c_neighbors = Boundary.get_closest_points(
             self.updated_boundary.vertices,
             self.updated_boundary.vertices[index],
             [
@@ -365,9 +365,9 @@ class SmoothingMixin:
                     if len(connected_vertices) == 2:
                         origins = connected_vertices[0].get_common_vertex(connected_vertices[1])
                         origin = [v for v in origins if v is not vertex]
-                        origin = Boundary2D.compute_dist(origin, vertex)[0][0]
+                        origin = Boundary.compute_dist(origin, vertex)[0][0]
 
-                        p_dist = Boundary2D.compute_dist(
+                        p_dist = Boundary.compute_dist(
                             [
                                 v for v in self.updated_boundary.vertices
                                 if v not in connected_vertices and v is not vertex
@@ -403,11 +403,11 @@ class SmoothingMixin:
 
                         origins = inside_vertex.get_common_vertex(update_boundary_vertices[0])
                         common_v1s = [v for v in origins if v is not vertex]
-                        common_v1s = Boundary2D.compute_dist(common_v1s, vertex)[0]
+                        common_v1s = Boundary.compute_dist(common_v1s, vertex)[0]
 
                         origins = inside_vertex.get_common_vertex(update_boundary_vertices[1])
                         common_v2s = [v for v in origins if v is not vertex]
-                        common_v2s = Boundary2D.compute_dist(common_v2s, vertex)[0]
+                        common_v2s = Boundary.compute_dist(common_v2s, vertex)[0]
 
                         common_v1 = common_v1s[0]
                         common_v2 = common_v2s[0]

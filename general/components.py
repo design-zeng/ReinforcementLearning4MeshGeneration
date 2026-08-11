@@ -208,37 +208,12 @@ class Segment:
             raise ValueError('Not recognized object type!')
 
 
-class Boundary2D:
+class Polygon:
     def __init__(self, vertices):
         self.vertices = vertices
 
     def copy(self):
-        return Boundary2D([vertex for vertex in self.vertices])
-
-    def deep_copy(self):
-        copied = Boundary2D([vertex.copy() for vertex in self.vertices])
-        copied.connect_vertices()
-        return copied
-
-    def connect_vertices(self):
-        for i in range(len(self.vertices)):
-            segmt = Segment(self.vertices[i - 1], self.vertices[i])
-            self.vertices[i - 1].assign_segment(segmt)
-            self.vertices[i].assign_segment(segmt)
-
-    def all_segments(self):
-        segts = []
-        for vertex in self.vertices:
-            if vertex.segments:
-                for segt in vertex.segments:
-                    if segt not in segts and (segt.point1 in self.vertices and segt.point2 in self.vertices):
-                        segts.append(segt)
-        return segts
-
-    def sort_segments_by_length(self, reverse=False):
-        segts = self.all_segments()
-        sorted_segts = sorted([(seg, seg.length()) for seg in segts], key=lambda x: x[1], reverse=reverse)
-        return sorted_segts
+        return type(self)([vertex for vertex in self.vertices])
 
     @staticmethod
     def compute_dist(vertices, vertex):
@@ -251,7 +226,7 @@ class Boundary2D:
 
     @staticmethod
     def get_closest_points(vertices, vertex, exclusion=None, S_T=None):
-        dists = Boundary2D.compute_dist(vertices, vertex)
+        dists = Polygon.compute_dist(vertices, vertex)
         selected = []
         if exclusion:
             for v in dists:
@@ -272,41 +247,6 @@ class Boundary2D:
         target_points = [v for v in vertices
             if start_angle < base_point.to_find_clockwise_angle(start_point, v) < end_angle]
         return target_points
-
-    def get_neighbors(self, vertex, num_points=4):
-        half = int(num_points / 2)
-        if num_points % 2 != 0:
-            raise ValueError("The neighbor number is not even!")
-        p_num = len(self.vertices)
-        index = self.vertices.index(vertex)
-
-        vertices = [self.vertices[(index + i) % p_num] for i in reversed(range(half + 1))]
-        for i in range(1, half + 1):
-            vertices.append(self.vertices[index - i])
-        return vertices
-
-    def find_closest_segments(self, vertex, dist):
-        closest_segments = []
-        for i in range(len(self.vertices)):
-            if vertex in [self.vertices[i-1], self.vertices[i]]:
-                continue
-            s = Segment(self.vertices[i-1], self.vertices[i])
-            _, _dist, inner = s.perpendicular_point(vertex)
-            if inner and _dist <= dist:
-                closest_segments.append(s)
-        return closest_segments
-
-    def find_same_point(self, point):
-        for p in self.vertices:
-            if p.distance_to(point) < 0.001:
-                return p
-
-    def count_segts_in_boundary(self, vertex):
-        count = 0
-        for seg in vertex.segments:
-            if seg.point1 in self.vertices and seg.point2 in self.vertices:
-                count += 1
-        return count
 
     def contains_point(self, vertex):
         ray_segment = Segment(vertex, Vertex(10000, vertex.y))
@@ -356,17 +296,74 @@ class Boundary2D:
     def poly_area(self):
         xy = np.array([[v.x, v.y] for v in self.vertices])
         return 0.5 * np.abs(np.dot(xy[:, 0],np.roll(xy[:, 1],1))-np.dot(xy[:, 1],np.roll(xy[:, 0],1)))
-    
 
-class Quad:
+
+class Boundary(Polygon):
+    def deep_copy(self):
+        copied = type(self)([vertex.copy() for vertex in self.vertices])
+        copied.connect_vertices()
+        return copied
+
+    def connect_vertices(self):
+        for i in range(len(self.vertices)):
+            segmt = Segment(self.vertices[i - 1], self.vertices[i])
+            self.vertices[i - 1].assign_segment(segmt)
+            self.vertices[i].assign_segment(segmt)
+
+    def all_segments(self):
+        segts = []
+        for vertex in self.vertices:
+            if vertex.segments:
+                for segt in vertex.segments:
+                    if segt not in segts and (segt.point1 in self.vertices and segt.point2 in self.vertices):
+                        segts.append(segt)
+        return segts
+
+    def sort_segments_by_length(self, reverse=False):
+        segts = self.all_segments()
+        sorted_segts = sorted([(seg, seg.length()) for seg in segts], key=lambda x: x[1], reverse=reverse)
+        return sorted_segts
+
+    def get_neighbors(self, vertex, num_points=4):
+        half = int(num_points / 2)
+        if num_points % 2 != 0:
+            raise ValueError("The neighbor number is not even!")
+        p_num = len(self.vertices)
+        index = self.vertices.index(vertex)
+
+        vertices = [self.vertices[(index + i) % p_num] for i in reversed(range(half + 1))]
+        for i in range(1, half + 1):
+            vertices.append(self.vertices[index - i])
+        return vertices
+
+    def find_closest_segments(self, vertex, dist):
+        closest_segments = []
+        for i in range(len(self.vertices)):
+            if vertex in [self.vertices[i-1], self.vertices[i]]:
+                continue
+            s = Segment(self.vertices[i-1], self.vertices[i])
+            _, _dist, inner = s.perpendicular_point(vertex)
+            if inner and _dist <= dist:
+                closest_segments.append(s)
+        return closest_segments
+
+    def find_same_point(self, point):
+        for p in self.vertices:
+            if p.distance_to(point) < 0.001:
+                return p
+
+    def count_segts_in_boundary(self, vertex):
+        count = 0
+        for seg in vertex.segments:
+            if seg.point1 in self.vertices and seg.point2 in self.vertices:
+                count += 1
+        return count
+
+
+class Quad(Polygon):
     def __init__(self, vertices):
-        self.vertices = vertices
+        super().__init__(vertices)
         self.segments = None
-
-        self.max_aspect_ratio = 5
-        # self.min_aspect_ratio = 0.3
-        # self.max_taper_ratio = 3
-        # self.min_taper_ratio = 0.3
         self.max_degree = 0.99 * math.pi
         self.min_degree = 0.01 * math.pi
 

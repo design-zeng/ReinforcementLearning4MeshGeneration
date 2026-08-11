@@ -7,7 +7,7 @@ import meshio
 import pandas as pd
 from scipy.spatial import ConvexHull
 
-from general.components import Quad, Vertex, Boundary2D
+from general.components import Quad, Vertex, Boundary
 from general.component_plotting import show_quad
 from general.mesh import MeshGeneration
 from general.polygon_reader import read_polygon
@@ -274,7 +274,7 @@ def draw_elements():
 
 def read_inp_file(filename):
     vertices, elements, _ = generate_mesh_from_inp(filename)
-    boundary = Boundary2D([])
+    boundary = Boundary([])
     mesh = MeshGeneration(boundary)
     mesh.generated_quads = elements
     return mesh
