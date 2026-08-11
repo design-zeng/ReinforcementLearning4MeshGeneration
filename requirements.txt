@@ -1,11 +1,11 @@
 numpy==2.2.5
 scipy==1.16.0
-torch==2.5.1
+torch>=2.8          # stable-baselines3 2.9.0 requires torch>=2.8
 
 gym==0.26.2
 gymnasium==1.2.3
 stable-baselines3==2.9.0
-shimmy==2.0.1          # lets SB3 wrap the classic-gym BoundaryEnv
+shimmy==2.0.1          # lets SB3 wrap the classic-gym MeshEnv
 tensorboard==2.21.0
 
 meshio==5.3.5
