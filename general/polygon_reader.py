@@ -1,6 +1,7 @@
 import json
 
-from general.components import *
+from general.components import Vertex
+from general.boundary import Boundary
 
 
 def read_polygon(filename):

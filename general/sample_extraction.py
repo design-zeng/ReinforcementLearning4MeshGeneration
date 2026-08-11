@@ -3,7 +3,7 @@ import math
 import itertools
 from typing import Any
 
-from general.components import *
+from general.components import Vertex
 
 
 class SampleExtractionMixin:

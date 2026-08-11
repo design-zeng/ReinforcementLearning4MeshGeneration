@@ -7,6 +7,12 @@ def clip_angle(angle, max_angle):
     return min(angle, max_angle + math.pi / 2)
 
 
+def _circle_line_x(lin, M, N, a, b, r):
+    disc = math.sqrt(math.fabs(lin ** 2 - 4 * (M ** 2 + 1) * ((N - b) ** 2 + a ** 2 - r ** 2)))
+    denom = 2 * (M ** 2 + 1)
+    return (lin + disc) / denom, (lin - disc) / denom
+
+
 def transformation(arra, dist, p0, p1):
     matrix = np.asarray(arra, dtype=float).reshape(-1, 2) - p0
     matrix = np.divide(matrix, dist)

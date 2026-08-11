@@ -1,6 +1,3 @@
-import math
-
-from general.components import *
 from general.smoothing import SmoothingMixin
 from general.sample_extraction import SampleExtractionMixin
 
