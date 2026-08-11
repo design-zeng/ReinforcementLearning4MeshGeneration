@@ -14,11 +14,12 @@ class Mesh:
 
     def __init__(self, boundary):
         self.boundary = boundary
-        self.generated_quads = []
         self.updated_boundary = boundary.copy()
         self.all_vertices = boundary.vertices
         self.original_vertices = list(boundary.vertices)
         self.average_edge_length = self.boundary.average_edge_length()
+
+        self.generated_quads = []
 
     def find_related_meshes(self, vertex):
         return list({m for m in self.generated_quads if vertex in m.vertices})

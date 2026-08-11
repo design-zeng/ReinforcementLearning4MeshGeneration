@@ -25,22 +25,22 @@ class Gym_Env(gym.Env):
         self.original_boundary = self.mesh.boundary.deep_copy()
         self.original_area = self.mesh.boundary.poly_area()
         self.current_area = self.original_area
-        self.max_radius = 2
-        self.action_space = spaces.Box(np.array([-1, -1.5, 0]), np.array([1, 1.5, 1.5]), dtype=np.float32)
+        self.estimated_area_range: Any = None
 
         self.neighbor_num = 6
         self.radius_num = 3
         self.radius = 4
+        self.max_radius = 2
+        self.action_space = spaces.Box(np.array([-1, -1.5, 0]), np.array([1, 1.5, 1.5]), dtype=np.float32)
         self.observation_space = spaces.Box(
             low=-999, high=999,
             shape=(2 * (self.neighbor_num + self.radius_num), ),
             dtype=np.float32)
+
         self.current_ref_state: Any = None
         self.not_valid_points = []
         self.last_not_valid_points = []
-
         self.target_angle = 0
-        self.estimated_area_range: Any = None
 
         self.history_info = {
             -1: [],

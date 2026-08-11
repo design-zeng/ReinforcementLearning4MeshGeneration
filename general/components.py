@@ -248,6 +248,7 @@ class Quad(Polygon):
     def __init__(self, vertices):
         super().__init__(vertices)
         self.segments = None
+
         self.max_degree = 0.99 * math.pi
         self.min_degree = 0.01 * math.pi
 

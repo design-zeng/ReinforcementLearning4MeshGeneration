@@ -112,9 +112,10 @@ def clockwise_vertices(inner_v, vertices):
 class Boundary(Polygon):
     def __init__(self, vertices, num_ref_neighbor=4, maximum_reference_angle=math.pi * 0.972):
         super().__init__(vertices)
-        self.candidate_vertices = None
         self.num_ref_neighbor = num_ref_neighbor
         self.maximum_reference_angle = maximum_reference_angle
+
+        self.candidate_vertices = None
 
     def deep_copy(self):
         copied = type(self)([vertex.copy() for vertex in self.vertices])
