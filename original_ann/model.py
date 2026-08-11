@@ -28,8 +28,6 @@ def new_model():
         # nn.Tanh(),
         nn.Linear(H2, D_OUT),
     ).to(device)
-    if device.type == "cuda":
-        model = nn.DataParallel(model)
     return model
 
 
