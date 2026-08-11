@@ -1,7 +1,7 @@
 import os
 
 from general.utils import read_polygon
-from general.gym_env import MeshEnv
+from general.gym_env import Gym_Env
 from general.plotting import save_meshes
 from ebrd.model import get_action, load_model, domains_path, augmentation_path
 
@@ -9,7 +9,7 @@ from ebrd.model import get_action, load_model, domains_path, augmentation_path
 def prepare_eval_envs():
     """Test domains of varying difficulty (FreeMesh-S generalizability set)."""
     names = ["airfoil", "star1", "random1_1", "tool2", "test2", "test3"]
-    return [MeshEnv(read_polygon(domains_path / f"{name}.json")) for name in names]
+    return [Gym_Env(read_polygon(domains_path / f"{name}.json")) for name in names]
 
 
 def evaluation(model_path, version, is_render=False, indexing=False, save_fig=False, save_samples=False):

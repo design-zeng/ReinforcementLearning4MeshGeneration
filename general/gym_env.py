@@ -17,7 +17,7 @@ base_path = Path(__file__).parent.parent
 output_path = base_path / "general" / "output"
 
 
-class MeshEnv(gym.Env):
+class Gym_Env(gym.Env):
     TYPE_THRESHOLD = 0.3
 
     def __init__(self, boundary):
