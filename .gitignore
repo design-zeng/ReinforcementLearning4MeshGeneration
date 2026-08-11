@@ -5,3 +5,28 @@ __pycache__/
 output/
 */output/
 runs/
+
+# Ship the trained models casual users need (rlmesh loads the SAC one).
+# The rest of output/ — logs, figures, evaluations — stays ignored; each line
+# re-opens one directory level, then re-ignores its siblings, down to the model.
+!sac/output/
+sac/output/*
+!sac/output/logs/
+sac/output/logs/*
+!sac/output/logs/sac/
+sac/output/logs/sac/*
+!sac/output/logs/sac/77/
+sac/output/logs/sac/77/*
+!sac/output/logs/sac/77/0/
+sac/output/logs/sac/77/0/*
+!sac/output/logs/sac/77/0/best_model.zip
+
+!ebrd/output/
+ebrd/output/*
+!ebrd/output/data_augmentation/
+ebrd/output/data_augmentation/*
+!ebrd/output/data_augmentation/run1.pt
+
+!original_ann/output/
+original_ann/output/*
+!original_ann/output/model.pt
