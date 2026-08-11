@@ -5,7 +5,7 @@ import torch
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
 from general.polygon_reader import read_polygon
-from general.boundary_env import BoundaryEnv
+from general.mesh_env import MeshEnv
 from sac.custom_callback import CustomCallback
 
 
@@ -73,8 +73,8 @@ method_settings = {
 environments = [
     [
         1500000,
-        BoundaryEnv(read_polygon(base_path / "samples" / "domains" / "random1_1.json")),
-        BoundaryEnv(read_polygon(base_path / "samples" / "domains" / "random1_1.json"))
+        MeshEnv(read_polygon(base_path / "samples" / "domains" / "random1_1.json")),
+        MeshEnv(read_polygon(base_path / "samples" / "domains" / "random1_1.json"))
     ]
 ]
 

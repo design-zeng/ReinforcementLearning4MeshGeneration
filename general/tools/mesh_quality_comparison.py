@@ -11,7 +11,7 @@ from general.components import Quad, Vertex, Boundary
 from general.component_plotting import show_quad
 from general.mesh import Mesher
 from general.polygon_reader import read_polygon
-from general.boundary_env import BoundaryEnv
+from general.mesh_env import MeshEnv
 
 
 base_path = Path(__file__).parent.parent.parent
@@ -244,7 +244,7 @@ def computational_cost_a2c():
 def calculate_initial_boundaries_features():
     domains = sorted(domains_path.glob("*.json"))
 
-    envs = [BoundaryEnv(read_polygon(name)) for name in domains]
+    envs = [MeshEnv(read_polygon(name)) for name in domains]
     for e in envs:
         print(len(e.all_vertices), e.boundary.get_perimeter())
         print(len(e.all_vertices) / e.boundary.get_perimeter())
