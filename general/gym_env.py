@@ -104,7 +104,6 @@ class MeshEnv(gym.Env):
                 quad = self.updated_boundary.rule_element(1, index)
                 rule = 1
             else:
-                # reward -= 0.1 * math.fabs(rule_type)
                 if self.updated_boundary.contains_point(new_point):
                     quad = self.updated_boundary.rule_element(-1, index) if self.updated_boundary.find_same_point(new_point) \
                         else self.updated_boundary.rule_element(0, index, new_point)
@@ -116,10 +115,7 @@ class MeshEnv(gym.Env):
             if quad is not None:
                 if quad.is_valid(0) and \
                         not self.updated_boundary.check_intersection_with_boundary(quad, reference_point): # intersection check remove for type 1 2
-                    quad.connect_vertices()
-                    self.generated_quads.append(quad)
-
-                    self.updated_boundary.update_boundary(reference_point, quad, self.boundary)
+                    self._commit_quad(quad, reference_point)
                     quad_area = quad.area()
                     self.current_area -= quad_area
 
@@ -144,10 +140,6 @@ class MeshEnv(gym.Env):
                     reward += self.failure_penalty()
         is_complete = True
         next_state = self.find_next_state(self.not_valid_points)
-        # if next_state is None:
-        #     self.not_valid_points = []
-        #     next_state = self.find_next_state(self.not_valid_points)
-        #     done = True
 
         if not failed:
             self.failed_num = 0
@@ -181,7 +173,6 @@ class MeshEnv(gym.Env):
 
             if rule_type <= self.TYPE_THRESHOLD:
                 quad = self.updated_boundary.rule_element(-1, index)
-                # reward -= 0.1 * math.fabs(rule_type + 1)
             elif rule_type >= 1 - self.TYPE_THRESHOLD:
                 quad = self.updated_boundary.rule_element(1, index)
             else:
@@ -193,11 +184,8 @@ class MeshEnv(gym.Env):
             elif quad.is_valid(0) and \
                 not self.updated_boundary.check_intersection_with_boundary(quad, reference_point):
 
-                quad.connect_vertices()
                 not_valid_element = False
-                self.generated_quads.append(quad)
-
-                self.updated_boundary.update_boundary(reference_point, quad, self.boundary)
+                self._commit_quad(quad, reference_point)
 
                 next_state = self.find_next_state(self.not_valid_points, static=True)
 
@@ -207,23 +195,12 @@ class MeshEnv(gym.Env):
                         quad = Quad(self.updated_boundary.vertices)
                         self.generated_quads.append(quad)
 
-            ## old handling
             if not_valid_element:
                 if reference_point not in self.not_valid_points:
                     self.not_valid_points.append(reference_point)
                 next_state = self.find_next_state(self.not_valid_points, static=True)
-                # if next_state is None:
-                # done = True
             else:
                 self.not_valid_points = []
-
-            # if next_state is None:
-            #     done = True
-            # if len(self.updated_boundary.vertices) > 4:
-            #     is_complete = False
-            # else:
-            #     is_complete = True
-            #     done = True
 
             if len(self.updated_boundary.vertices) > 4:
                 is_complete = False
@@ -255,6 +232,11 @@ class MeshEnv(gym.Env):
     def failure_penalty(self):
         n = len(self.generated_quads)
         return -1 / n if n else -1
+
+    def _commit_quad(self, quad, reference_point):
+        quad.connect_vertices()
+        self.generated_quads.append(quad)
+        self.updated_boundary.update_boundary(reference_point, quad, self.boundary)
 
     def get_speed_penalty(self, quad_area):
         min_area = self.estimated_area_range[0] ** 2
