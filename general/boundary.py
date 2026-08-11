@@ -1,7 +1,16 @@
 import math
+from collections import namedtuple
+
+import numpy as np
 
 from general.components import Vertex, Segment, Polygon, Quad
-from general.math_utils import _circle_line_x
+from general.math_utils import _circle_line_x, clip_angle
+
+
+# State the agent sees for one reference point on the front: the flattened
+# radius/neighbour feature grid plus the raw pieces the env needs to map an
+# action back to world coordinates.
+ReferenceState = namedtuple("ReferenceState", "reference_point neighbors base_length state")
 
 
 def _circle_line_vertices(a, b, A, B, W, dist):
@@ -404,3 +413,75 @@ class Boundary(Polygon):
             angle_quality = 3 * min(angles) / math.pi if len(angles) else 1
             pow = 1/2
             return math.pow(angle_quality * smoothness, pow)
+
+    def reference_state(self, reference_point, neighbor_num, radius_num, area_ratio, radius, static):
+        neighbors = self.get_neighbors(reference_point, num_points=neighbor_num)
+        base_length = round(sum(neighbors[i].distance_to(neighbors[i - 1])
+                                for i in range(1, len(neighbors))) / neighbor_num, 4)
+        r_points = self._radius_points(reference_point, neighbor_num, radius_num,
+                                       area_ratio, radius, static, base_length)
+        return ReferenceState(reference_point, neighbors, base_length, r_points.flatten())
+
+    def _radius_points(self, rp, neighbor_num, radius_num, area_ratio, radius, static, base_length):
+        bv = self.vertices
+        n = len(bv)
+        r_points = np.full([radius_num + neighbor_num, 2], 1, dtype=np.float32)
+        index = bv.index(rp)
+        right_p = bv[index - 1]
+        left_p = bv[(index + 1) % n]
+        target_length = base_length * radius
+        theta = rp.to_find_clockwise_angle(left_p, right_p)
+
+        def nd(p):
+            return (rp.distance_to(p) / radius) / base_length
+
+        for i in range(neighbor_num // 2):
+            if i == 0:
+                r_points[i] = [nd(right_p), area_ratio if not static else 0]
+                r_points[radius_num + neighbor_num - i - 1] = [nd(left_p), theta]
+            else:
+                _angle = rp.to_find_clockwise_angle(bv[index - i - 1], right_p)
+                r_points[i] = [nd(bv[index - i - 1]),
+                               _angle if _angle < math.pi else max(_angle, 1.5 * math.pi) - 2 * math.pi]
+                _angle = rp.to_find_clockwise_angle(bv[(index + 1 + i) % n], right_p)
+                r_points[radius_num + neighbor_num - i - 1] = [
+                    nd(bv[(index + i + 1) % n]), min(_angle, theta + math.pi / 2)]
+
+        rotation_angle = rp.to_find_clockwise_angle(right_p, rp + Vertex(1, 0))
+        for i in range(radius_num):
+            a = (2 * i + 1) * theta / (2 * radius_num)
+            r_points[neighbor_num // 2 + i][1] = clip_angle(a, theta)
+        p_s = rp + Vertex.rotate_counterclockwise(
+            Vertex(target_length * math.cos(theta / 2), target_length * math.sin(theta / 2)), rotation_angle)
+        shortest_edge = [1, 0]  # dist, id
+
+        for i in range(index - 1, index - n, -1):
+            d = rp.distance_to(bv[i])
+            if bv[i] in [right_p, left_p]:
+                continue
+            angle = rp.to_find_clockwise_angle(bv[i], right_p)
+            if angle == 0:
+                continue
+            k = int(angle / (theta / radius_num))
+            if k < radius_num and d < target_length:
+                if r_points[k + neighbor_num // 2][0] > (d / radius) / base_length:
+                    r_points[k + neighbor_num // 2][0] = (d / radius) / base_length
+                    r_points[k + neighbor_num // 2][1] = clip_angle(angle, theta)
+
+            seg = Segment(bv[i], bv[i + 1])
+            ll = Segment(rp, p_s)
+            flag, vv = ll.intersection_vertex(seg)
+            if flag:
+                _d = rp.distance_to(vv)
+                if shortest_edge[0] > (_d / radius) / base_length:
+                    shortest_edge[0] = (_d / radius) / base_length
+                    shortest_edge[1] = i
+
+        if shortest_edge[0] != 1 and shortest_edge[0] < r_points[(radius_num + neighbor_num) // 2][0]:
+            _i = shortest_edge[1]
+            for i in range(radius_num):
+                r_points[neighbor_num // 2 + i] = [
+                    nd(bv[i - radius_num // 2 + _i]),
+                    rp.to_find_clockwise_angle(bv[i - radius_num // 2 + _i], right_p)]
+
+        return np.asarray([[round(v[0], 4), round(v[1], 4)] for v in r_points])

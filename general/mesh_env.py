@@ -9,7 +9,6 @@ from gym import spaces
 
 from general.mesh import Mesher
 from general.components import Vertex, Quad
-from general.point_environment import PointEnvironment
 from general.math_utils import detransformation
 from general.plotting import render_boundary, close_render
 
@@ -36,7 +35,7 @@ class MeshEnv(gym.Env):
             low=-999, high=999,
             shape=(2 * (self.neighbor_num + self.radius_num), ),
             dtype=np.float32)
-        self.current_point_environment: Any = None
+        self.current_ref_state: Any = None
         self.not_valid_points = []
         self.last_not_valid_points = []
 
@@ -66,7 +65,7 @@ class MeshEnv(gym.Env):
         self.mesher.generated_quads = []
         self.not_valid_points = []
         self.current_area = self.original_area
-        self.current_point_environment = None
+        self.current_ref_state = None
         self.failed_num = 0
         state = self.find_next_state(static=static)
         self.estimated_area_range = self.mesher.boundary.estimate_area_range()
@@ -78,9 +77,9 @@ class MeshEnv(gym.Env):
         return v1, v2
 
     def detransformation(self, point, is_move=False):
-        v1, v2 = self.get_middle_points(Vertex.points_as_array(self.current_point_environment.neighbors))
+        v1, v2 = self.get_middle_points(Vertex.points_as_array(self.current_ref_state.neighbors))
 
-        de_point = detransformation(point, self.current_point_environment.base_length if not is_move else 1, v1, v2)
+        de_point = detransformation(point, self.current_ref_state.base_length if not is_move else 1, v1, v2)
         return Vertex(round(de_point[0], 4), round(de_point[1], 4))
 
     def step(self, action):  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -91,7 +90,7 @@ class MeshEnv(gym.Env):
         rule_type = action[0]
         rule = None
         new_point = self.action_2_point(action[1:])
-        reference_point = self.current_point_environment.reference_point
+        reference_point = self.current_ref_state.reference_point
         index = self.updated_boundary.vertices.index(reference_point)
 
         if len(self.updated_boundary.vertices) <= 5:
@@ -160,8 +159,8 @@ class MeshEnv(gym.Env):
         return next_state, np.float64(reward), done, {'is_complete': is_complete}
 
     def move(self, new_point, rule_type, lr_1=None, lr_2=None):
-        x = self.current_point_environment.base_length * self.radius * new_point[0] * math.cos(new_point[1])
-        y = self.current_point_environment.base_length * self.radius * new_point[0] * math.sin(new_point[1])
+        x = self.current_ref_state.base_length * self.radius * new_point[0] * math.cos(new_point[1])
+        y = self.current_ref_state.base_length * self.radius * new_point[0] * math.sin(new_point[1])
 
         new_point = self.detransformation([round(x, 6), round(y, 6)], is_move=True)
 
@@ -170,7 +169,7 @@ class MeshEnv(gym.Env):
         not_valid_element = True
         is_complete = True
 
-        reference_point = self.current_point_environment.reference_point
+        reference_point = self.current_ref_state.reference_point
 
         if len(self.updated_boundary.vertices) <= 5:
             reward = 10
@@ -273,17 +272,11 @@ class MeshEnv(gym.Env):
         r_p = self.updated_boundary.find_reference_point(not_valid_points, target_angle=self.target_angle)
 
         if r_p:
-            p_e = PointEnvironment(reference_point=r_p, boundary=self.updated_boundary,
-                                   neighbor_num=self.neighbor_num, radius_num=self.radius_num,
-                                   area_ratio=self.current_area / self.original_area,
-                                   radius=self.radius, static=static)
-            self.current_point_environment = p_e
-
-            state = p_e.state
-            return np.array(state).astype(np.float32)
-
+            self.current_ref_state = self.updated_boundary.reference_state(
+                r_p, self.neighbor_num, self.radius_num,
+                self.current_area / self.original_area, self.radius, static)
+            return np.array(self.current_ref_state.state).astype(np.float32)
         else:
-            # self.last_point_environment = None
             return None
 
     def seed(self, seed=None):
