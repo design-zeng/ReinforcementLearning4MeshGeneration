@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from general.lin_alg import detransformation
+from general.math_utils import detransformation
 from general.components import Vertex
 from original_ann.pattern_loader import get_patterns, data_transformation
 from original_ann.model import load_model, pattern_path

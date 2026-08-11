@@ -10,7 +10,7 @@ from gym import spaces
 from general.mesh import Mesher
 from general.components import Vertex, Quad
 from general.point_environment import PointEnvironment
-from general.lin_alg import detransformation
+from general.math_utils import detransformation
 from general.plotting import render_boundary, close_render
 
 
@@ -21,7 +21,7 @@ output_path = base_path / "general" / "output"
 class MeshEnv(gym.Env):
     TYPE_THRESHOLD = 0.3
 
-    def __init__(self, boundary, experiment_version=None, env_name=None):
+    def __init__(self, boundary):
         self.mesher = Mesher(boundary)
         self.original_boundary = self.mesher.boundary.deep_copy()
         self.original_area = self.mesher.boundary.poly_area()
@@ -41,12 +41,8 @@ class MeshEnv(gym.Env):
         self.last_not_valid_points = []
 
         self.target_angle = 0
-        self.rewarding = []
         self.estimated_area_range: Any = None
-        self.current_state = None
 
-        self.experiment_version = experiment_version if experiment_version else 'test'
-        self.env_name = env_name if env_name is not None else 1
         self.history_info = {
             -1: [],
             1: [],
@@ -69,12 +65,10 @@ class MeshEnv(gym.Env):
         self.mesher.original_vertices = list(self.mesher.boundary.vertices)
         self.mesher.generated_quads = []
         self.not_valid_points = []
-        self.rewarding = []
         self.current_area = self.original_area
         self.current_point_environment = None
         self.failed_num = 0
         state = self.find_next_state(static=static)
-        self.current_state = state
         self.estimated_area_range = self.mesher.boundary.estimate_area_range()
         return state
 
@@ -281,7 +275,6 @@ class MeshEnv(gym.Env):
         if r_p:
             p_e = PointEnvironment(reference_point=r_p, boundary=self.updated_boundary,
                                    neighbor_num=self.neighbor_num, radius_num=self.radius_num,
-                                   average_edge_length=self.average_edge_length,
                                    area_ratio=self.current_area / self.original_area,
                                    radius=self.radius, static=static)
             self.current_point_environment = p_e

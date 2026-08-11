@@ -29,8 +29,8 @@ method = "sac"
 
 
 environments = [
-    MeshEnv(read_polygon(domains_path / f"{name}.json"), experiment_version=version, env_name=i)
-    for i, name in enumerate(["boundary15", "random1_1", "random2_2"])
+    MeshEnv(read_polygon(domains_path / f"{name}.json"))
+    for name in ["boundary15", "random1_1", "random2_2"]
 ]
 
 

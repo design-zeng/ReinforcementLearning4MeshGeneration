@@ -1,6 +1,6 @@
 import numpy as np
 
-from general.lin_alg import transformation
+from general.math_utils import transformation
 
 
 def get_patterns(filename):

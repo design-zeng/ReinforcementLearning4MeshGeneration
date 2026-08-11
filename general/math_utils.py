@@ -3,6 +3,10 @@ import math
 import numpy as np
 
 
+def clip_angle(angle, max_angle):
+    return min(angle, max_angle + math.pi / 2)
+
+
 def transformation(arra, dist, p0, p1):
     matrix = np.asarray(arra, dtype=float).reshape(-1, 2) - p0
     matrix = np.divide(matrix, dist)
