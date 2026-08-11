@@ -11,8 +11,8 @@ from general.components import Quad, Vertex
 from general.boundary import Boundary
 from general.plotting import show_quad
 from general.mesh import Mesher
-from general.polygon_reader import read_polygon
-from general.mesh_env import MeshEnv
+from general.utils import read_polygon
+from general.gym_env import MeshEnv
 
 
 base_path = Path(__file__).parent.parent.parent

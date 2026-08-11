@@ -10,8 +10,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from general.polygon_reader import read_polygon
-from general.mesh_env import MeshEnv
+from general.utils import read_polygon
+from general.gym_env import MeshEnv
 from general.plotting import savefig_boundary
 from ebrd.data_augmentation import sampling_main
 from ebrd.model import FNNPolicy, get_action, device, SEED, domains_path, output_path, augmentation_path

@@ -4,8 +4,8 @@ from pathlib import Path
 import torch
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
-from general.polygon_reader import read_polygon
-from general.mesh_env import MeshEnv
+from general.utils import read_polygon
+from general.gym_env import MeshEnv
 from sac.custom_callback import CustomCallback
 
 
