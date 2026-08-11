@@ -1,5 +1,4 @@
 import math
-from typing import Any
 
 from general.components import *
 from general.smoothing import SmoothingMixin
@@ -13,98 +12,7 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         self.updated_boundary = boundary.copy()
         self.all_vertices = boundary.vertices
         self.original_vertices = list(boundary.vertices)
-        self.candidate_vertices: Any = None
-        self.test_candidate_vertices: Any = []
-        self.maximum_reference_angle = math.pi * 0.972
-        self.num_ref_neighbor = 4
-        self.rp_index = 0
         self.average_edge_length = self.boundary.average_edge_length()
-
-    def remove_reference_candidates(self, points):
-        if isinstance(points, list):
-            for p in points:
-                i = 0
-                while i < len(self.candidate_vertices):
-                    if self.candidate_vertices[i][0] == p:
-                        del self.candidate_vertices[i]
-                    else:
-                        i += 1
-                i = 0
-                while i < len(self.test_candidate_vertices):
-                    if self.test_candidate_vertices[i][0] == p:
-                        del self.test_candidate_vertices[i]
-                    else:
-                        i += 1
-        else:
-            raise ValueError("Points should be a list!")
-
-    def add_reference_candidates(self, points):
-        if isinstance(points, list):
-            # v_angles = []
-            for v in points:
-                angle_dist = self.check_boundary_point(v)
-                if angle_dist is not None:
-                    i = 0
-                    while i < len(self.candidate_vertices):
-                        if angle_dist <= self.candidate_vertices[i][1]:
-                            self.candidate_vertices.insert(i, (v, angle_dist))
-                            break
-                        # if angle_dist[1] <= self.candidate_vertices[i][2]:
-                        #     self.candidate_vertices.insert(i, (v, angle_dist[0], angle_dist[1]))
-                        #     break
-                        i += 1
-                    else:
-                        self.candidate_vertices.append((v, angle_dist))
-                    # v_angles.append([v, angle, dist])
-            # self.test_candidate_vertices.extend(sorted(v_angles, key=lambda x: x[1]))
-        else:
-            raise ValueError("Points should be a list!")
-
-    def check_boundary_point(self, vertex, index=None):
-        if index is None:
-            index = self.updated_boundary.vertices.index(vertex)
-
-        if self.num_ref_neighbor % 2 != 0:
-            raise ValueError('Wrong number of reference neighbors')
-        sum_angle = 0
-        if self.num_ref_neighbor // 2 == 2:
-            lam = 0.618
-            weights = [lam, 1-lam]
-        else:
-            weights = [2/self.num_ref_neighbor for i in range(self.num_ref_neighbor // 2)]
-
-        for i in range(self.num_ref_neighbor // 2):
-            clockwise_angle = vertex.to_find_clockwise_angle(
-                self.updated_boundary.vertices[(index + 1 + i) % len(self.updated_boundary.vertices)],
-                self.updated_boundary.vertices[index - 1 - i]
-            )
-            if i == 0:
-                if clockwise_angle >= self.maximum_reference_angle or clockwise_angle == 0:  # 175
-                    return
-            sum_angle += clockwise_angle * weights[i]
-
-        return math.degrees(sum_angle)
-
-    def find_reference_candidates(self, target_angle):
-        candidate_vertices = []
-        for i, vertex in enumerate(self.updated_boundary.vertices):
-            angle_dist = self.check_boundary_point(vertex, i)
-            if angle_dist is not None:
-                candidate_vertices.append((vertex, angle_dist))
-        self.candidate_vertices = sorted(candidate_vertices, key=lambda x: math.fabs(x[1] - target_angle))
-
-    def find_reference_point(self, not_valid_points=None, target_angle=0):
-        if self.candidate_vertices is None:
-            self.find_reference_candidates(target_angle)
-
-        assert self.candidate_vertices is not None
-        if len(self.candidate_vertices):
-            if not_valid_points:
-                for v in self.candidate_vertices:
-                    if not self.is_vertex_inside_list(v[0], not_valid_points):
-                        return v[0]
-            else:
-                return self.candidate_vertices[0][0]
 
     def compute_boundary_quality(self, add_v):
         v = self.updated_boundary.vertices
@@ -200,79 +108,8 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
             pow = 1/2
             return math.pow(angle_quality * smoothness, pow)
 
-    @staticmethod
-    def is_vertex_inside_list(vertex, points):
-        return any(p.distance_to(vertex) < 0.001 for p in points)
-
-    def check_intersection_with_boundary(self, quad, reference_point):
-        max_dist = max([reference_point.distance_to(v) for v in quad.vertices if v is not reference_point])
-        neighboring_vertices = [v for v in self.updated_boundary.vertices
-                                if reference_point.distance_to(v) < max_dist and v not in quad.vertices]
-
-        _index = quad.vertices.index(reference_point)
-        checking_segs = [Segment(quad.vertices[_index - 1], quad.vertices[_index - 2]),
-                         Segment(quad.vertices[_index - 2], quad.vertices[_index - 3])]
-        for v in neighboring_vertices:
-            index = self.updated_boundary.vertices.index(v)
-            for c_g in checking_segs:
-                if self.updated_boundary.vertices[index - 1] not in quad.vertices:
-                    if c_g.is_cross(Segment(v, self.updated_boundary.vertices[index - 1])):
-                        return True
-
-                if self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)] not in quad.vertices:
-                    if c_g.is_cross(Segment(v, self.updated_boundary.vertices[(index + 1) % len(self.updated_boundary.vertices)])):
-                        return True
-
-        return False
-
     def find_related_meshes(self, vertex):
         return list({m for m in self.generated_quads if vertex in m.vertices})
-
-    def update_boundary(self, reference_point, quad):
-        new_vertices = []
-        for v in quad.vertices:
-            if v not in self.updated_boundary.vertices:
-                new_vertices.append(v)
-
-        if len(new_vertices) == 1:
-            id = self.updated_boundary.vertices.index(quad.vertices[quad.vertices.index(new_vertices[0]) - 2])
-            self.updated_boundary.vertices.insert(id, new_vertices[0])
-            self.remove_point(quad.vertices[quad.vertices.index(new_vertices[0]) - 2])
-            if not new_vertices[0] in self.boundary.vertices:
-                self.boundary.vertices.append(new_vertices[0])
-            ref_neighbors = []
-            for i in range(self.num_ref_neighbor // 2):
-                ref_neighbors.extend([
-                    self.updated_boundary.vertices[(id + i + 1) % len(self.updated_boundary.vertices)],
-                    self.updated_boundary.vertices[id - i - 1]
-                ])
-            self.remove_reference_candidates(ref_neighbors + [quad.vertices[quad.vertices.index(new_vertices[0]) - 2]])
-            self.add_reference_candidates(ref_neighbors)
-
-            self.rp_index += 1
-
-        elif len(new_vertices) == 0:
-            removable_vertices = []
-            for v in quad.vertices:
-                if self.updated_boundary.count_segts_in_boundary(v) < 3:
-                    removable_vertices.append(v)
-            for v in removable_vertices:
-                self.updated_boundary.vertices.remove(v)
-
-            id = max([self.updated_boundary.vertices.index(v) for v in quad.vertices
-                      if v not in removable_vertices])
-            ref_neighbors = []
-            for i in range(self.num_ref_neighbor // 2):
-                ref_neighbors.extend([
-                    self.updated_boundary.vertices[(id + i) % len(self.updated_boundary.vertices)],
-                    self.updated_boundary.vertices[id - i - 1]
-                ])
-
-            self.remove_reference_candidates(removable_vertices + ref_neighbors)
-            self.add_reference_candidates(ref_neighbors)
-
-            self.rp_index = max([self.updated_boundary.vertices.index(v) for v in quad.vertices
-                                 if v not in removable_vertices])
 
     def estimate_area_range(self):
         # e_min/e_max robustified to 2nd shortest/longest edge, capped at 2*mean, not raw extremes
@@ -281,9 +118,6 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         max_L = min(lengths[-2], 2 * L)
         min_L = min(L / math.sqrt(2), lengths[1])
         return min_L, (max_L + 3 * min_L) / 4
-
-    def remove_point(self, point):
-        self.updated_boundary.vertices.remove(point)
 
     def get_quality(self, element, index=0):
         if index == 1:

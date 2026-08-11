@@ -127,7 +127,6 @@ class SmoothingMixin:
     # Provided by MeshGeneration; this mixin is only ever combined into it.
     updated_boundary: Any
     original_vertices: Any
-    find_reference_candidates: Any
     find_related_meshes: Any
 
     def smooth_pave(self, vertices, current_boundary_vertices, lr_1=None, lr_2=None, iteration=400, interior=False):
@@ -135,7 +134,7 @@ class SmoothingMixin:
         if not interior:
             self.smooth_current_boundary_3()
         self.smooth_fixed_vertices([v for v in vertices if v not in current_boundary_vertices], iteration)
-        self.find_reference_candidates(target_angle=0)
+        self.updated_boundary.find_reference_candidates(target_angle=0)
 
     @staticmethod
     def estimate_4th_vertex(origin, left, right, factor=0.5, suggest_dist=None):
@@ -439,4 +438,4 @@ class SmoothingMixin:
             sum_coordinates = new_sum_coordinates
         print(f"Iteration numbers: {i_iteration}, the diff of smoothing is {diffs}!")
 
-        self.find_reference_candidates(target_angle=0)
+        self.updated_boundary.find_reference_candidates(target_angle=0)

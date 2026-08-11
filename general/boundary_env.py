@@ -62,8 +62,6 @@ class BoundaryEnv(MeshGeneration, gym.Env):
         self.rewarding = []
         self.current_area = self.original_area
         self.current_point_environment = None
-        self.candidate_vertices = None
-        self.test_candidate_vertices = []
         self.failed_num = 0
         state = self.find_next_state(static=static)
         self.current_state = state
@@ -123,13 +121,11 @@ class BoundaryEnv(MeshGeneration, gym.Env):
 
             if quad is not None:
                 if quad.is_valid(0) and \
-                        not self.check_intersection_with_boundary(quad, reference_point): # intersection check remove for type 1 2
+                        not self.updated_boundary.check_intersection_with_boundary(quad, reference_point): # intersection check remove for type 1 2
                     quad.connect_vertices()
                     self.generated_quads.append(quad)
 
-                    # remove_references, add_references = self.update_boundary(reference_point, quad)
-
-                    self.update_boundary(reference_point, quad)
+                    self.updated_boundary.update_boundary(reference_point, quad, self.boundary)
                     quad_area = quad.compute_area()[0]
                     self.current_area -= quad_area
 
@@ -201,13 +197,13 @@ class BoundaryEnv(MeshGeneration, gym.Env):
             if quad is None:
                 pass
             elif quad.is_valid(0) and \
-                not self.check_intersection_with_boundary(quad, reference_point):
+                not self.updated_boundary.check_intersection_with_boundary(quad, reference_point):
 
                 quad.connect_vertices()
                 not_valid_element = False
                 self.generated_quads.append(quad)
 
-                self.update_boundary(reference_point, quad)
+                self.updated_boundary.update_boundary(reference_point, quad, self.boundary)
 
                 next_state = self.find_next_state(self.not_valid_points, static=True)
 
@@ -275,7 +271,7 @@ class BoundaryEnv(MeshGeneration, gym.Env):
         return speed_penalty
 
     def find_next_state(self, not_valid_points=None, static=False):
-        r_p = self.find_reference_point(not_valid_points, target_angle=self.target_angle)
+        r_p = self.updated_boundary.find_reference_point(not_valid_points, target_angle=self.target_angle)
 
         if r_p:
             p_e = PointEnvironment(reference_point=r_p, boundary=self.updated_boundary,
