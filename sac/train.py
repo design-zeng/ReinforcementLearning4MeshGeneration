@@ -47,16 +47,16 @@ method_settings = {
         "policy_kwargs": {
             "activation_fn": torch.nn.ReLU,
             "net_arch": [128, 128, 128]
-            # [32, 32], [64, 64, 64, 64, 64], [32, 128, 128, 128, 64, 32]
         },
-        "seed": 999, # 356, 567
+        "seed": 999,
         "learning_rate": 3e-4,
+        "buffer_size": 1000000,
+        "batch_size": 256,
+        "gamma": 0.99,
+        "gradient_steps": 1,
+        "tau": 5e-3,
         "learning_starts": 10000,
-        "batch_size": 100, #256
         "device": device,
-        #"gamma": 0.99,
-        #"gradient_steps": 1,
-        #"tau": 5e-3
     }),
     "td3": (TD3, {
         "policy_kwargs": {
@@ -72,7 +72,7 @@ method_settings = {
 
 environments = [
     [
-        1500000,
+        1200000,
         MeshEnv(read_polygon(base_path / "samples" / "domains" / "random1_1.json")),
         MeshEnv(read_polygon(base_path / "samples" / "domains" / "random1_1.json"))
     ]

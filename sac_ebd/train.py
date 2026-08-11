@@ -10,7 +10,7 @@ from gym_env import Gym_Env
 
 base_path = Path(__file__).parent.parent
 
-TIMESTEPS = 100
+TIMESTEPS = 200000
 DOMAINS = ["b15", "basic", "basic1", "bird", "bird1", "boundary4"]
 
 boundary = np.array(json.load(open(base_path / "samples" / "domains" / f"{DOMAINS[0]}.json", "r")))
