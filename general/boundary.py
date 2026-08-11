@@ -485,3 +485,164 @@ class Boundary(Polygon):
                     rp.to_find_clockwise_angle(bv[i - radius_num // 2 + _i], right_p)]
 
         return np.asarray([[round(v[0], 4), round(v[1], 4)] for v in r_points])
+
+    # --- front relaxation (paving smoothing of the evolving front) ---
+
+    def smooth_front(self, original_vertices):
+        i = 0
+        while i < len(self.vertices):
+            index = i
+            if self.vertices[index] in original_vertices:
+                i += 1
+                continue
+
+            v_angle = math.degrees(self.vertices[index].to_find_clockwise_angle(
+                self.vertices[(index + 1) % len(self.vertices)],
+                self.vertices[index - 1]
+            ))
+
+            if v_angle <= 90:
+                target_angle = v_angle if v_angle >= 45 else 45
+                failed = False
+                while True:
+                    new_v = middle_vertex(
+                        self.vertices[index],
+                        self.vertices[(index + 1) % len(self.vertices)],
+                        self.vertices[index - 1],
+                        target_angle
+                    )
+                    connected_vs = self.vertices[index].get_connected_vertices()
+                    if target_angle >= 135:
+                        failed = True
+                        break
+                    clockwise_boundary = clockwise_vertices(self.vertices[index], connected_vs)
+                    if is_inside_boundary(
+                        self.vertices[index],
+                        new_v,
+                        clockwise_boundary,
+                        self.vertices[(index + 1) % len(self.vertices)],
+                        self.vertices[index - 1]
+                    ):
+                        break
+                    else:
+                        target_angle += 5
+                if not failed:
+                    self.vertices[index].x = new_v.x
+                    self.vertices[index].y = new_v.y
+
+            elif 90 < v_angle <= 180:
+                left_angle = self.compute_boundary_angle(
+                    self.vertices[(index + 1) % len(self.vertices)]
+                )
+                right_angle = self.compute_boundary_angle(
+                    self.vertices[index - 1]
+                )
+
+                if right_angle < 45:
+                    n_v = self.find_side_vertex(self.vertices[index],
+                                                self.vertices[(index + 1) % len(self.vertices)],
+                                                self.vertices[index - 1],
+                                                self.vertices[index - 2], right_angle)
+
+                    self.vertices[index].x = n_v.x
+                    self.vertices[index].y = n_v.y
+                elif left_angle < 45:
+                    n_v = self.find_side_vertex(self.vertices[index],
+                                                self.vertices[index - 1],
+                                                self.vertices[(index + 1) % len(self.vertices)],
+                                                self.vertices[(index + 2) % len(self.vertices)], left_angle)
+
+                    self.vertices[index].x = n_v.x
+                    self.vertices[index].y = n_v.y
+
+                else:
+                    n_v = self.find_indention_vertex(self.vertices[index], v_angle)
+                    self.vertices[index].x = n_v.x
+                    self.vertices[index].y = n_v.y
+
+            elif 180 < v_angle <= 270:
+                n_v = self.find_indention_vertex(self.vertices[index], v_angle)
+                self.vertices[index].x = n_v.x
+                self.vertices[index].y = n_v.y
+
+            else:
+                n_v = self.inner_vertex(self.vertices[index], 45)
+                self.vertices[index].x = n_v.x
+                self.vertices[index].y = n_v.y
+
+                n_v = self.find_indention_vertex(self.vertices[index], v_angle)
+                self.vertices[index].x = n_v.x
+                self.vertices[index].y = n_v.y
+
+            i += 1
+
+    def inner_vertex(self, vertex, angle):
+        index = self.vertices.index(vertex)
+        left_v = self.vertices[(index + 1) % len(self.vertices)]
+        right_v = self.vertices[index - 1]
+
+        m_v = (left_v + right_v) / 2
+        d = m_v.distance_to(right_v) * math.tan(math.radians(angle))
+        diff = vertex - m_v
+        s = math.sqrt(d ** 2 / (diff.x ** 2 + diff.y ** 2))
+        return m_v + diff * s
+
+    def find_side_vertex(self, vertex, _next_v, next_v, nn_v, v_angle):
+        dist = (vertex.distance_to(_next_v) + vertex.distance_to(next_v) + next_v.distance_to(nn_v)) / 3
+
+        target_angle = 45
+        failed = False
+        while True:
+            n_v = side_vertex(vertex, next_v, nn_v, target_angle, dist)
+
+            connected_vs = vertex.get_connected_vertices()
+            if target_angle <= v_angle:
+                failed = True
+                break
+            clockwise_boundary = clockwise_vertices(vertex, connected_vs)
+            if is_inside_boundary(vertex, n_v, clockwise_boundary, _next_v, next_v):
+                break
+            else:
+                target_angle -= 5
+
+        if not failed:
+            return n_v
+        return vertex
+
+    def find_indention_vertex(self, vertex, v_angle):
+        index = self.vertices.index(vertex)
+        left_v = self.vertices[(index + 1) % len(self.vertices)]
+        right_v = self.vertices[index - 1]
+        dist = (vertex.distance_to(left_v) + vertex.distance_to(right_v)) / 2
+
+        c_neighbors = self.get_closest_points(
+            self.vertices,
+            self.vertices[index],
+            [
+                self.vertices[index - 2],
+                right_v,
+                left_v,
+                self.vertices[(index + 2) % len(self.vertices)]
+            ],
+            dist
+        )
+
+        neighbors = self.find_closest_segments(vertex, dist)
+
+        if len(neighbors) or len(c_neighbors):
+            failed = False
+            times = 4
+            while True:
+                n_v = indention_vertex(vertex, left_v, right_v, (360 - v_angle) / 2, dist / times)
+                connected_vs = vertex.get_connected_vertices()
+                if times >= 10:
+                    failed = True
+                    break
+                clockwise_boundary = clockwise_vertices(vertex, connected_vs)
+                if is_inside_boundary(vertex, n_v, clockwise_boundary, left_v, right_v):
+                    break
+                else:
+                    times += 1
+            if not failed:
+                return n_v
+        return vertex

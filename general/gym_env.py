@@ -7,7 +7,7 @@ import numpy as np
 import gym
 from gym import spaces
 
-from general.mesh import Mesher
+from general.mesh import Mesh
 from general.components import Vertex, Quad
 from general.math_utils import detransformation
 from general.plotting import render_boundary, close_render
@@ -21,9 +21,9 @@ class MeshEnv(gym.Env):
     TYPE_THRESHOLD = 0.3
 
     def __init__(self, boundary):
-        self.mesher = Mesher(boundary)
-        self.original_boundary = self.mesher.boundary.deep_copy()
-        self.original_area = self.mesher.boundary.poly_area()
+        self.mesh = Mesh(boundary)
+        self.original_boundary = self.mesh.boundary.deep_copy()
+        self.original_area = self.mesh.boundary.poly_area()
         self.current_area = self.original_area
         self.max_radius = 2
         self.action_space = spaces.Box(np.array([-1, -1.5, 0]), np.array([1, 1.5, 1.5]), dtype=np.float32)
@@ -50,25 +50,25 @@ class MeshEnv(gym.Env):
 
     def __getattr__(self, name):
         # Thin gym adapter: anything not defined on the env is delegated to the
-        # composed Mesher (boundary state, generated_quads, smoothing, quality, ...).
+        # composed Mesh (boundary state, generated_quads, smoothing, quality, ...).
         if name.startswith('__') and name.endswith('__'):
             raise AttributeError(name)
-        mesher = self.__dict__.get('mesher')
-        if mesher is not None:
-            return getattr(mesher, name)
+        mesh = self.__dict__.get('mesh')
+        if mesh is not None:
+            return getattr(mesh, name)
         raise AttributeError(name)
 
     def reset(self, static=False):  # pyright: ignore[reportIncompatibleMethodOverride]
-        self.mesher.boundary = self.original_boundary.deep_copy()
-        self.mesher.updated_boundary = self.mesher.boundary.copy()
-        self.mesher.original_vertices = list(self.mesher.boundary.vertices)
-        self.mesher.generated_quads = []
+        self.mesh.boundary = self.original_boundary.deep_copy()
+        self.mesh.updated_boundary = self.mesh.boundary.copy()
+        self.mesh.original_vertices = list(self.mesh.boundary.vertices)
+        self.mesh.generated_quads = []
         self.not_valid_points = []
         self.current_area = self.original_area
         self.current_ref_state = None
         self.failed_num = 0
         state = self.find_next_state(static=static)
-        self.estimated_area_range = self.mesher.boundary.estimate_area_range()
+        self.estimated_area_range = self.mesh.boundary.estimate_area_range()
         return state
 
     def get_middle_points(self, state):

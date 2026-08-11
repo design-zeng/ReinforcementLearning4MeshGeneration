@@ -10,7 +10,7 @@ from scipy.spatial import ConvexHull
 from general.components import Quad, Vertex
 from general.boundary import Boundary
 from general.plotting import show_quad
-from general.mesh import Mesher
+from general.mesh import Mesh
 from general.utils import read_polygon
 from general.gym_env import MeshEnv
 
@@ -276,7 +276,7 @@ def draw_elements():
 def read_inp_file(filename):
     vertices, elements, _ = generate_mesh_from_inp(filename)
     boundary = Boundary([])
-    mesh = Mesher(boundary)
+    mesh = Mesh(boundary)
     mesh.generated_quads = elements
     return mesh
 
