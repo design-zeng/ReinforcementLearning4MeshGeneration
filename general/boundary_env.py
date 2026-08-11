@@ -113,8 +113,8 @@ class BoundaryEnv(MeshGeneration, gym.Env):
                 rule = 1
             else:
                 # reward -= 0.1 * math.fabs(rule_type)
-                if self.is_point_inside_area(new_point):
-                    quad = self.rule_element(-1, index) if self.find_same_point(new_point) \
+                if self.updated_boundary.contains_point(new_point):
+                    quad = self.rule_element(-1, index) if self.updated_boundary.find_same_point(new_point) \
                         else self.rule_element(0, index, new_point)
                 else:
                     reward += -1 / len(self.generated_quads) if len(self.generated_quads) else -1
@@ -195,7 +195,7 @@ class BoundaryEnv(MeshGeneration, gym.Env):
             elif rule_type >= 1 - self.TYPE_THRESHOLD:
                 quad = self.rule_element(1, index)
             else:
-                if self.is_point_inside_area(new_point):
+                if self.updated_boundary.contains_point(new_point):
                     quad = self.rule_element(0, index, new_point)
 
             if quad is None:
@@ -304,11 +304,6 @@ class BoundaryEnv(MeshGeneration, gym.Env):
     def render(self, mode='human'):
         print(f'Generated elements: {len(self.generated_quads)}')
         render_boundary(self.boundary)
-
-    def find_same_point(self, point):
-        for p in self.updated_boundary.vertices:
-            if p.distance_to(point) < 0.001:
-                return p
 
     def action_2_point(self, action):
         if isinstance(action, np.ndarray):

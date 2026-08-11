@@ -296,6 +296,40 @@ class Boundary2D:
                 closest_segments.append(s)
         return closest_segments
 
+    def find_same_point(self, point):
+        for p in self.vertices:
+            if p.distance_to(point) < 0.001:
+                return p
+
+    def count_segts_in_boundary(self, vertex):
+        count = 0
+        for seg in vertex.segments:
+            if seg.point1 in self.vertices and seg.point2 in self.vertices:
+                count += 1
+        return count
+
+    def contains_point(self, vertex):
+        ray_segment = Segment(vertex, Vertex(10000, vertex.y))
+        count = 0
+        n = len(self.vertices)
+        ray_y = ray_segment.point2.y
+        for i in range(n):
+            v_i, v_p = self.vertices[i], self.vertices[i - 1]
+            orientation = round(v_i.y - v_p.y, 4)
+            if orientation == 0:
+                continue
+            if not Segment(v_i, v_p).is_cross(ray_segment):
+                continue
+            if round(v_i.y - ray_y, 4) == 0:
+                no = round(self.vertices[(i + 1) % n].y - v_i.y, 4)
+                count += (no * orientation > 0 and orientation < 0)
+            elif round(v_p.y - ray_y, 4) == 0:
+                po = round(v_p.y - self.vertices[i - 2].y, 4)
+                count += (po * orientation > 0 and orientation > 0)
+            else:
+                count += 1
+        return count % 2 != 0
+
     def average_edge_length(self):
         _length = len(self.vertices)
         dist = 0

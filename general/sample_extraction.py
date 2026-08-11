@@ -11,7 +11,8 @@ class SampleExtractionMixin:
     boundary: Any
     get_quality: Any
 
-    def get_nodes(self, root, exclusion, layer, path, paths, N):
+    @staticmethod
+    def get_nodes(root, exclusion, layer, path, paths, N):
         if root is None:
             return
 
@@ -25,7 +26,7 @@ class SampleExtractionMixin:
         else:
             nodes = [v for v in root.get_connected_vertices() if v not in exclusion and v not in path[:N-layer]]
             for i in range(len(nodes)):
-                self.get_nodes(nodes[i], exclusion, layer-1, path, paths, N)
+                SampleExtractionMixin.get_nodes(nodes[i], exclusion, layer-1, path, paths, N)
 
     def extract_samples_2(self, quads, n_neighbor, n_radius, radius, index=1, quality_threshold=0.7):
         all_samples, outputs, types = [], [], []

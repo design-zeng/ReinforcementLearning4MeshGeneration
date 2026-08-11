@@ -20,34 +20,6 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         self.rp_index = 0
         self.average_edge_length = self.boundary.average_edge_length()
 
-    @staticmethod
-    def calculate_crossing_segments(closed_curve_vertices, ray_segment):
-        count = 0
-        n = len(closed_curve_vertices)
-        ray_y = ray_segment.point2.y
-        for i in range(n):
-            v_i, v_p = closed_curve_vertices[i], closed_curve_vertices[i - 1]
-            orientation = round(v_i.y - v_p.y, 4)
-            if orientation == 0:
-                continue
-            if not Segment(v_i, v_p).is_cross(ray_segment):
-                continue
-            if round(v_i.y - ray_y, 4) == 0:
-                no = round(closed_curve_vertices[(i + 1) % n].y - v_i.y, 4)
-                count += (no * orientation > 0 and orientation < 0)
-            elif round(v_p.y - ray_y, 4) == 0:
-                po = round(v_p.y - closed_curve_vertices[i - 2].y, 4)
-                count += (po * orientation > 0 and orientation > 0)
-            else:
-                count += 1
-        return count
-
-    def count_crossing_segments(self, ray_segment):
-        return self.calculate_crossing_segments(self.updated_boundary.vertices, ray_segment)
-
-    def is_inside(self, ray_segment):
-        return self.count_crossing_segments(ray_segment) % 2 != 0
-
     def remove_reference_candidates(self, points):
         if isinstance(points, list):
             for p in points:
@@ -232,16 +204,6 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
     def is_vertex_inside_list(vertex, points):
         return any(p.distance_to(vertex) < 0.001 for p in points)
 
-    def count_segts_in_boundary(self, vertex):
-        count = 0
-        for seg in vertex.segments:
-            if seg.point1 in self.updated_boundary.vertices and seg.point2 in self.updated_boundary.vertices:
-                count += 1
-        return count
-
-    def get_neighbors(self, reference_point, num_points=4):
-        return self.updated_boundary.get_neighbors(reference_point, num_points=num_points)
-
     def check_intersection_with_boundary(self, quad, reference_point):
         max_dist = max([reference_point.distance_to(v) for v in quad.vertices if v is not reference_point])
         neighboring_vertices = [v for v in self.updated_boundary.vertices
@@ -262,11 +224,6 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
                         return True
 
         return False
-
-    def is_point_inside_area(self, vertex):
-        remote_dist = 10000
-        ray_segment = Segment(vertex, Vertex(remote_dist, vertex.y))
-        return self.is_inside(ray_segment)
 
     def find_related_meshes(self, vertex):
         return list({m for m in self.generated_quads if vertex in m.vertices})
@@ -297,7 +254,7 @@ class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
         elif len(new_vertices) == 0:
             removable_vertices = []
             for v in quad.vertices:
-                if self.count_segts_in_boundary(v) < 3:
+                if self.updated_boundary.count_segts_in_boundary(v) < 3:
                     removable_vertices.append(v)
             for v in removable_vertices:
                 self.updated_boundary.vertices.remove(v)
