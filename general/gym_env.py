@@ -49,8 +49,9 @@ class MeshEnv(gym.Env):
         }
 
     def __getattr__(self, name):
-        # Thin gym adapter: anything not defined on the env is delegated to the
-        # composed Mesh (boundary state, generated_quads, smoothing, quality, ...).
+        # Thin gym adapter: anything not defined on the env (generated_quads,
+        # boundary/updated_boundary, quality, mesh smoothing, sample extraction,
+        # .inp export, ...) is delegated to the composed Mesh.
         if name.startswith('__') and name.endswith('__'):
             raise AttributeError(name)
         mesh = self.__dict__.get('mesh')
