@@ -3,7 +3,8 @@ import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from general.components import Segment
+from general.geometry import Segment
+from general.mesh import edge_angle_quality
 
 
 def plot_segment(segment, style='b.-', linewidth=2, markersize=0.1):
@@ -76,7 +77,7 @@ def show_quad(quad, quality=3):
     plt.gca().set_aspect('equal', adjustable='box')
     if quality != 0:
         center = quad.get_centroid()
-        q1, q2 = quad.edge_angle_quality()
+        q1, q2 = edge_angle_quality(quad)
         _quality = round(math.sqrt(q1 * q2), 2)
         plt.text(center.x * 0.8, center.y * 0.8, str(_quality), fontsize=15)
     plt.gca().set_frame_on(False)
@@ -96,16 +97,16 @@ def close_render():
 
 def generate_meshes_canvas(mesh_gen, quads, quality, indexing, quality_index, style):
     plot_boundary(mesh_gen.boundary, style=style, linewidth=1)
-    for id, m in enumerate(quads):
+    for idx, m in enumerate(quads):
         center = m.get_centroid(diff=True)
         if quality and indexing:
             _quality = round(mesh_gen.get_quality(element=m, index=quality_index), 4)
-            plt.text(center.x, center.y, f"{id}; {_quality}", fontsize=6)
+            plt.text(center.x, center.y, f"{idx}; {_quality}", fontsize=6)
         elif quality:
             _quality = round(mesh_gen.get_quality(element=m, index=quality_index), 4)
             plt.text(center.x, center.y, str(_quality), fontsize=6)
         elif indexing:
-            plt.text(center.x, center.y, str(id), fontsize=4)
+            plt.text(center.x, center.y, str(idx), fontsize=4)
 
 
 def save_meshes(mesh_gen, name, quads, quality=False, indexing=False, quality_index=0, dpi=300, style='k.-'):

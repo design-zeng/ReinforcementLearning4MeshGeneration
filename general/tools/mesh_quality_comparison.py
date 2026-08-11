@@ -7,12 +7,13 @@ import meshio
 import pandas as pd
 from scipy.spatial import ConvexHull
 
-from general.components import Quad, Vertex
-from general.boundary import Boundary
+from general.geometry import Quad, Vertex
+from general.mesh import Boundary
 from general.plotting import show_quad
 from general.mesh import Mesh
 from general.utils import read_polygon
-from general.gym_env import Gym_Env
+from general.mesh_env import MeshEnv
+from general.mesh import quad_quality
 
 
 base_path = Path(__file__).parent.parent.parent
@@ -66,13 +67,13 @@ def calculate_metrics(vertices, elements, metrics, metrics_ind):
 
         for ele in elements:
             # q1, q2 = ele.edge_angle_quality()
-            element_qualities.append(ele.get_quality(quality_type='robust')) #ele.get_quality()
+            element_qualities.append(quad_quality(ele, 'robust')) #ele.get_quality()
             if 'Stretch' in metrics_ind:
-                stretch.append(ele.get_quality(quality_type='stretch'))
+                stretch.append(quad_quality(ele, 'stretch'))
             if 'Taper' in metrics_ind:
-                taper.append(ele.get_quality(quality_type='taper'))
+                taper.append(quad_quality(ele, 'taper'))
             if 'Scaled Jacobian' in metrics_ind:
-                s_jacobian.append(ele.get_quality(quality_type='s_jacobian'))
+                s_jacobian.append(quad_quality(ele, 's_jacobian'))
             angles = ele.inner_angles()
             if 'MinAngle' in metrics_ind:
                 min_angles.append(min(angles))
@@ -112,10 +113,10 @@ def calculate_metrics(vertices, elements, metrics, metrics_ind):
 
     if 'Singularity' in metrics_ind:
         singularity_count = [0 for i in range(len(vertices))]
-        for id, v in enumerate(vertices):
+        for idx, v in enumerate(vertices):
             for ele in elements:
                 if v in ele.vertices:
-                    singularity_count[id] += 1
+                    singularity_count[idx] += 1
         metrics['Singularity'].append(sum([1 for re in singularity_count if re != 4 and re != 2 and re != 1]))
                                  # len(vertices), \
                                  # sum([1 for re in singularity_count if re != 4 and re != 2 and re != 1]), \
@@ -245,10 +246,10 @@ def computational_cost_a2c():
 def calculate_initial_boundaries_features():
     domains = sorted(domains_path.glob("*.json"))
 
-    envs = [Gym_Env(read_polygon(name)) for name in domains]
+    envs = [MeshEnv(read_polygon(name)) for name in domains]
     for e in envs:
-        print(len(e.all_vertices), e.boundary.get_perimeter())
-        print(len(e.all_vertices) / e.boundary.get_perimeter())
+        print(len(e.mesh.all_vertices), e.mesh.boundary.get_perimeter())
+        print(len(e.mesh.all_vertices) / e.mesh.boundary.get_perimeter())
 
 
 # calculate_initial_boundaries_features()
@@ -284,8 +285,8 @@ def read_inp_file(filename):
 def extract_samples_from_file():
     for m in discover_meshes():
         env = read_inp_file(str(m))
-        samples, output_types, outputs = env.extract_samples_2(env.generated_quads, 3, 3, index=5, radius=6, quality_threshold=0.7)
-        env.save_samples(f"{output_path}/data_augmentation/{m.stem}.json",
+        samples, output_types, outputs = env.mesh.extract_samples(env.generated_quads, 3, 3, index=5, radius=6, quality_threshold=0.7)
+        env.mesh.save_samples(f"{output_path}/data_augmentation/{m.stem}.json",
                          {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
     print("Saved!")
 

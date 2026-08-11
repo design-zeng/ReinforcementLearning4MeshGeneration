@@ -19,13 +19,6 @@ np.random.seed(SEED)
 
 
 class FNNPolicy(nn.Module):
-    """Feedforward policy network of FreeMesh-S (Pan et al., 2021).
-
-    Maps a normalized partial-boundary state to (a) an element-type class and
-    (b) the coordinates of the new vertex. The hidden layers [64, 128, 64, 32, 16]
-    match the optimal FNN structure reported in the paper (Table 8).
-    """
-
     def __init__(self):
         super().__init__()
         self.state_space = 18
@@ -50,18 +43,12 @@ class FNNPolicy(nn.Module):
 
 
 def get_action(state, model):
-    """Run the policy and decode its output into (vertex coords, element type).
-
-    The type head's argmax class {0, 1, 2} is mapped to the environment's type
-    encoding {0, 0.5, 1.0} via the division by 2.
-    """
     state = torch.FloatTensor(state).to(device)
     action, type_values = model(state)
     return action.tolist(), float(torch.argmax(type_values) / 2)
 
 
 def load_model(model_path):
-    """Rebuild the FNN policy and load a trained checkpoint (eval mode)."""
     model = FNNPolicy().to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()

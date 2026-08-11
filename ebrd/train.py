@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from general.utils import read_polygon
-from general.gym_env import Gym_Env
+from ebrd.env import EbrdEnv
 from general.plotting import savefig_boundary
 from ebrd.data_augmentation import sampling_main
 from ebrd.model import FNNPolicy, get_action, device, SEED, domains_path, output_path, augmentation_path
@@ -35,12 +35,6 @@ def build_training_data(data):
     y = torch.from_numpy(np.concatenate((output_types, outputs), axis=1)).float().to(device)
     return x, y
 
-"""
-Train the FNN with a single joint MSE loss (FreeMesh-S paper, Eq. 21).
-
-train_fnn() is the improved variant that splits the type (classification)
-and coordinate (regression) objectives, and is what start_training() uses in practice.
-"""
 # def train_fnn_mse(model, x, y, model_path, tensorboard_log, epoches=500000):
 #     loss_fn = torch.nn.MSELoss(reduction='sum')
 #     learning_rate = 3e-4
@@ -63,7 +57,6 @@ and coordinate (regression) objectives, and is what start_training() uses in pra
 
 
 def types_to_class_indices(types):
-    """Map the environment type encoding {0, 0.5, 1} to class indices {0, 1, 2}."""
     result = []
     for value in types:
         if value.item() == 0:
@@ -78,9 +71,6 @@ def types_to_class_indices(types):
 
 
 def train_fnn(train_data, model, num_epoches, batch_size, tensorboard_log, model_path, lr=None):
-    """Train the FNN with split objectives: cross-entropy on the element type and
-    MSE on the vertex coordinates (an improvement over the paper's single joint
-    MSE in train_fnn_mse)."""
     torch.manual_seed(SEED)  # reproducible weight init order / DataLoader shuffling
     optimizer = optim.Adam(model.parameters(), lr=lr or 1e-3)
 
@@ -115,19 +105,12 @@ def train_fnn(train_data, model, num_epoches, batch_size, tensorboard_log, model
 
 
 def start_training(model_path, data_path, tensorboard_log):
-    """Load extracted samples, build tensors, and train a fresh FNN policy."""
     x, y = build_training_data(load_training_data(data_path))
     model = FNNPolicy().to(device)
     train_fnn(list(zip(x, y)), model, 2000, 128, tensorboard_log, model_path)
 
 
 def self_evolving_training(env, version, model=None, episodes=100, max_steps=8000):
-    """Self-evolving loop of FreeMesh-S (paper Table 6).
-
-    Each round: mesh the domain with the current FNN policy, harvest fresh
-    training samples from the good-quality elements it produced, and retrain the
-    policy on those samples, so the model bootstraps itself from its own output.
-    """
     model = model or FNNPolicy().to(device)
     running_reward = 10
     step = 0
@@ -147,26 +130,26 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
             step += 1
             action, type_value = get_action(state, model)
             state, reward, done, _ = env.move(action, round(type_value, 2), 0.9, 0.5)
-            print(_, reward, len(env.updated_boundary.vertices))
+            print(_, reward, len(env.mesh.updated_boundary.vertices))
             ep_reward += reward
             if done:
                 break
 
         print(f"Execution time: {time.time() - start}s.")
 
-        if len(env.updated_boundary.vertices) <= 5:
-            env.smooth(env.boundary.vertices)
+        if len(env.mesh.updated_boundary.vertices) <= 5:
+            env.mesh.smooth(env.mesh.boundary.vertices)
         else:
-            env.smooth_pave(env.boundary.vertices, env.updated_boundary.vertices, iteration=400, interior=True)
+            env.mesh.smooth_pave(env.mesh.boundary.vertices, env.mesh.updated_boundary.vertices, iteration=400, interior=True)
 
-        savefig_boundary(env.boundary, plots_dir / f"{i_episode}.png", style='k-', dpi=300)
+        savefig_boundary(env.mesh.boundary, plots_dir / f"{i_episode}.png", style='k-', dpi=300)
         print("Figure saved!")
 
         running_reward = 0.05 * ep_reward + 0.95 * running_reward
 
-        samples, output_types, outputs = env.extract_samples_2(
-            env.generated_quads, 2, 3, radius=4, quality_threshold=0.7)
-        env.save_samples(samples_dir / f"ebrd_{i_episode}.json",
+        samples, output_types, outputs = env.mesh.extract_samples(
+            env.mesh.generated_quads, 2, 3, radius=4, quality_threshold=0.7)
+        env.mesh.save_samples(samples_dir / f"ebrd_{i_episode}.json",
                          {'samples': samples, 'output_types': output_types, 'outputs': outputs},
                          _type=2)
 
@@ -184,8 +167,6 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
 
 
 def data_sampling(data_path, n, threshold):
-    """Experience Extraction: sample training data filtered by a mesh-quality
-    threshold (FreeMesh-S)."""
     os.makedirs(Path(data_path).parent, exist_ok=True)
     start_time = time.time()
     sampling_main(10, n, threshold, file_name=str(data_path))
@@ -193,8 +174,6 @@ def data_sampling(data_path, n, threshold):
 
 
 def hyperparameter_search():
-    """Quality-threshold ablation (FreeMesh-S, Table 7): sweep the extraction
-    quality threshold, then sample -> train -> evaluate for each value."""
     from ebrd.infer import evaluation  # local import: the sweep also evaluates
     quality_thresholds = [i / 100 for i in range(60, 90, 2)]
     for q in quality_thresholds:
@@ -232,4 +211,4 @@ if __name__ == '__main__':
 
     # Alternative experiments:
     # hyperparameter_search()   # sweep the extraction quality threshold (paper Table 7)
-    # self_evolving_training(Gym_Env(read_polygon(domains_path / "random1_1.json")), version)  # paper Table 6
+    # self_evolving_training(EbrdEnv(read_polygon(domains_path / "random1_1.json")), version)  # paper Table 6

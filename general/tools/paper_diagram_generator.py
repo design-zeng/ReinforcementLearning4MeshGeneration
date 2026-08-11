@@ -4,7 +4,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib import patches
 
-from general.components import Vertex, Segment
+from general.geometry import Vertex, Segment
 from general.plotting import plot_segment
 
 

@@ -36,6 +36,40 @@ If you use this implementation in your work, please add a reference/citation to 
 }
 ```
 
+## Use it as a library
+
+If you just want to mesh a 2D domain and don't need the RL/training internals,
+use `rlmesh.py`. It wraps the trained soft actor–critic policy behind a small API.
+You supply the domain boundary; rlmesh meshes it.
+
+```python
+from general.utils import read_polygon
+from rlmesh import Mesher
+
+boundary = read_polygon("samples/domains/random1_1.json")   # -> a Boundary
+result = Mesher().mesh(boundary)
+print(len(result.quads), "elements,", f"{result.coverage:.0%} area covered")
+
+result.save("mesh.inp")                          # export an Abaqus .inp file
+nodes, faces = result.to_arrays()                # or plain data for your own tools
+```
+
+Build the boundary from your own points instead of reading a file:
+
+```python
+from general.geometry import Vertex
+from general.mesh import Boundary
+
+boundary = Boundary([Vertex(x, y) for x, y in my_points])
+boundary.connect_vertices()
+result = Mesher().mesh(boundary)
+```
+
+The policy is stochastic, so `mesh()` retries a domain up to `attempts` times
+(default 60) until it is fully meshed — check `result.complete`. By default
+`Mesher()` loads `sac/output/logs/sac/77/0/best_model.zip`; pass
+`Mesher(model_path=...)` to use another, or train one with `python -m sac.train`.
+
 ## Setup
 
 **Requirements:** Python 3.10+ and the packages pinned in `requirements.txt`.
@@ -61,21 +95,18 @@ On Intel (x86_64) macOS, install PyTorch with conda instead
 
 ## Repository Layout
 
-- `general/` shared geometry/meshing library 
-  - `components.py` Vertex, Segment, Boundary, Mesh
-  - `mesh.py` mesh generation
-  - `boundary_env.py` boundary gym environment
-  - `point_environment.py` point perspective
-  - `lin_alg.py` linear transformations utility
-  - `polygon_reader.py` reads a json polygon file
-  - `boundary_renderer.py` boundary display interface
+- `rlmesh.py` — library entry point (`Mesher`) for meshing a domain, see above
+- `general/` shared geometry + meshing library
+  - `geometry.py` — Vertex, Segment, Polygon, Quad, coordinate transforms, geometric constructions
+  - `mesh.py` — Boundary (the advancing front) and Mesh (elements, smoothing, quality metrics, sample extraction, IO)
+  - `mesh_env.py` — `MeshEnv`, the base RL environment wrapping a `Mesh`
+  - `plotting.py` — rendering / figure helpers
+  - `utils.py` — read a JSON polygon into a `Boundary`
   - `tools/`
-    - `generate_airfoil_domain.py`
     - `json_gmsh_abaqus_unv_conversion.py`
     - `mesh_quality_comparison.py`
     - `paper_diagram_generator.py`
     - `polygon_editor_ui_v2.py`
-    - `quad_quality_fourth_vertex_sweep.py`
     - `vtk_quality_verdict.py`
 - `ebrd/` Paper 1: FreeMesh-S
   - `data_augmentation.py` training sample generator

@@ -11,7 +11,7 @@ from matplotlib.gridspec import GridSpec
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
 from general.utils import read_polygon
-from general.gym_env import Gym_Env
+from sac.gym_env import Gym_Env
 from general.plotting import save_meshes
 
 
@@ -69,28 +69,29 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
         info = rollout(model, env, deterministic=deterministic, render=is_render)
 
         results['completed'].append(info['is_complete'])
-        results['n_elements'].append(len(env.generated_quads))
+        results['n_elements'].append(len(env.mesh.generated_quads))
         results['n_complete'] += 1 if info['is_complete'] else 0
 
         tag = f"{method}_env_{i}_{'T' if deterministic else 'F'}"
 
         if info['is_complete']:
-            env.smooth(env.boundary.vertices)
+            env.mesh.smooth(env.mesh.boundary.vertices)
 
-        if save_fig and env.generated_quads:
-            save_meshes(env, eval_path / version / f"{tag}.png", quads=env.generated_quads,
+        if save_fig and env.mesh.generated_quads:
+            save_meshes(env, eval_path / version / f"{tag}.png", quads=env.mesh.generated_quads,
                             quality=False, quality_index=4, indexing=indexing, style='k-')
 
-            env.write_generated_elements_2_file(eval_path / version / f"{tag}.inp")
+            env.mesh.write_elements_to_file(eval_path / version / f"{tag}.inp")
 
-            env.save_history_info(experiments_path / version / f"{tag}_history_info")
+            with open(experiments_path / version / f"{tag}_history_info", 'w') as fw:
+                json.dump(env.history_info, fw)
 
-            q = [env.get_quality(env.generated_quads[j], 4) for j in range(len(env.generated_quads))]
+            q = [env.mesh.get_quality(env.mesh.generated_quads[j], 4) for j in range(len(env.mesh.generated_quads))]
             print(f"element quality mean/std: {np.mean(q):.3f} / {np.std(q):.3f}")
 
-        if save_samples and env.generated_quads:
-            samples, output_types, outputs = env.extract_samples_2(env.generated_quads, 2, 3, radius=4)
-            env.save_samples(eval_path / version / f"{tag}.json",
+        if save_samples and env.mesh.generated_quads:
+            samples, output_types, outputs = env.mesh.extract_samples(env.mesh.generated_quads, 2, 3, radius=4)
+            env.mesh.save_samples(eval_path / version / f"{tag}.json",
                              {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
 
     with open(eval_path / version / 'evaluation.txt', 'w') as outfile:
@@ -99,7 +100,6 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
 
 
 def replication_evaluation(is_render=False, deterministic=False, indexing=False, save_fig=False, save_samples=False):
-    """Mesh one domain many times."""
     os.makedirs(eval_path / version, exist_ok=True)
 
     ckpt = logs_path / method / version / stage / "best_model.zip"
@@ -115,19 +115,17 @@ def replication_evaluation(is_render=False, deterministic=False, indexing=False,
     for j in range(times):
         info = rollout(model, env, deterministic=deterministic, render=is_render)
         results['sac']['completed'].append(info['is_complete'])
-        results['sac']['n_elements'].append(len(env.generated_quads))
+        results['sac']['n_elements'].append(len(env.mesh.generated_quads))
         results['sac']['n_complete'] += 1 if info['is_complete'] else 0
 
         if save_fig and info['is_complete']:
-            env.smooth(env.boundary.vertices)
+            env.mesh.smooth(env.mesh.boundary.vertices)
 
     with open(eval_path / version / "evaluation_repli.txt", 'w') as outfile:
         json.dump(results, outfile)
 
 
 def element_number_box_plot():
-    """Element-count-by-density box plot (paper figure). The three density panels
-    are read from meshes produced by evaluation() (eval_path/<version>)."""
     data = pd.DataFrame({"Element number": [], "model": []})
     sparse = pd.DataFrame({"model": ['Sparse\ndensity'] * 10, "Element number": [69, 92, 72, 92, 84, 77, 78, 74, 85, 80]})
     medium = pd.DataFrame({"model": ['Medium\ndensity'] * 10, "Element number": [100, 95, 95, 108, 94, 103, 95, 97, 100, 100]})
@@ -167,17 +165,17 @@ def full_mesh(domain="boundary6",
     for k in range(attempts):
         info = rollout(model, env)
 
-        coverage = sum(m.area() for m in env.generated_quads) / env.original_area
+        coverage = sum(m.area() for m in env.mesh.generated_quads) / env.mesh.original_area
 
         if info['is_complete']:
-            env.smooth(env.boundary.vertices)
+            env.mesh.smooth(env.mesh.boundary.vertices)
 
-            save_meshes(env, out, quads=env.generated_quads, quality=False, quality_index=4, style='k-')
+            save_meshes(env, out, quads=env.mesh.generated_quads, quality=False, quality_index=4, style='k-')
             print(f"Completed {domain} on attempt {k + 1} "
-                  f"({len(env.generated_quads)} elements, {coverage * 100:.0f}% area). Saved {out}")
+                  f"({len(env.mesh.generated_quads)} elements, {coverage * 100:.0f}% area). Saved {out}")
             return
 
-    save_meshes(env, out, quads=env.generated_quads, quality=False, quality_index=4, style='k-')
+    save_meshes(env, out, quads=env.mesh.generated_quads, quality=False, quality_index=4, style='k-')
     print(f"No full completion in {attempts} attempts; saved best-effort partial to {out}")
 
 

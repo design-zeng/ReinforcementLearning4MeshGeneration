@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 
-from general.math_utils import detransformation
-from general.components import Vertex
+from general.geometry import detransformation
+from general.geometry import Vertex
 from original_ann.pattern_loader import get_patterns, data_transformation
 from original_ann.model import load_model, pattern_path
 

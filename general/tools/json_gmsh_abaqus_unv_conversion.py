@@ -7,12 +7,12 @@ def json_to_gmsh(filename):
 
     points = []
     lines = []
-    for id, point in enumerate(result):
-        points.append(f"Point({id+1}) = {{{point[0]/100}, {point[1]/100}, {0}, {1.0}}};")
-        if id == len(result) - 1:
-            lines.append(f"Line({id+1}) = {{{id+1}, {1}}};")
+    for idx, point in enumerate(result):
+        points.append(f"Point({idx+1}) = {{{point[0]/100}, {point[1]/100}, {0}, {1.0}}};")
+        if idx == len(result) - 1:
+            lines.append(f"Line({idx+1}) = {{{idx+1}, {1}}};")
         else:
-            lines.append(f"Line({id+1}) = {{{id+1}, {id+2}}};")
+            lines.append(f"Line({idx+1}) = {{{idx+1}, {idx+2}}};")
 
     with open(filename+'.txt', 'w') as fw:
         for point in points:
@@ -22,7 +22,6 @@ def json_to_gmsh(filename):
 
 
 def read_inp_file(inp_file):
-    """ Reads the .inp file and extracts node and element data """
     nodes = []
     elements = []
 
@@ -65,7 +64,6 @@ def read_inp_file(inp_file):
 
 
 def write_unv_file(unv_file, nodes, elements):
-    """ Writes nodes and elements to a .unv file """
     with open(unv_file, 'w') as f:
         # Write header for nodes (Universal file format section 2411)
         f.write("    -1\n")
@@ -91,7 +89,6 @@ def write_unv_file(unv_file, nodes, elements):
 
 
 def inp_to_unv(inp_file, unv_file):
-    """ Main function to convert .inp file to .unv format """
     nodes, elements = read_inp_file(inp_file)
     write_unv_file(unv_file, nodes, elements)
 

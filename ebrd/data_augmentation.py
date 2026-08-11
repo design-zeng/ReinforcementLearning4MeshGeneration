@@ -8,7 +8,8 @@ import numpy as np
 from numpy.random import uniform
 from multiprocessing import Process, Manager
 
-from general.components import Segment, Vertex, Quad
+from general.geometry import Segment, Vertex, Quad
+from general.mesh import quad_quality
 
 
 base_path = Path(__file__).parent.parent
@@ -204,25 +205,13 @@ def decode_geometry(obs, action):
 
 
 def estimate_max_quality(obs, action, method=3):
-    """Ideal (max-achievable) element/boundary quality for this neighborhood, used to
-    normalize the measured quality in sample_for_type. Element quality is the geometric
-    mean sqrt(q_a * q_e) (FreeMesh-S Eq. 14).
-
-    method 2 -> angle quality q_a is Eq. 16: (prod (1 - |a-90|/90))^(1/4) over the 4
-                element angles (the 3 unknown angles assumed equal at rem_angle).
-    method 3 -> (current live default) ad-hoc min/max angle ratio (NOT Eq. 16); edge
-                quality q_e uses Eq. 15's 4th root.
-    Neither is fully Eq.15+Eq.16 faithful: method 2 has Eq.16's angle but a 1/2-power
-    edge term, method 3 has Eq.15's edge but a non-paper angle. A perpendicular-bisector
-    "ideal element" variant was removed -- it matches no equation in any source paper.
-    """
     neighbor_points, radius_points, rule_type, new_point = decode_geometry(obs, action)
     index = int(len(neighbor_points) / 2)
 
     left_v = neighbor_points[index - 1]
     right_v = neighbor_points[index + 1]
 
-    angle = neighbor_points[index].to_find_clockwise_angle(left_v, right_v)
+    angle = neighbor_points[index].clockwise_angle(left_v, right_v)
     rem_angle = (2 * math.pi - angle) / 3
     l1, l2 = neighbor_points[index].distance_to(left_v), neighbor_points[index].distance_to(right_v)
     edge_product = 1
@@ -249,12 +238,6 @@ def estimate_max_quality(obs, action, method=3):
 
 
 def compute_quality(obs, action):
-    '''
-    Compute the quality for the sample
-    :param obs: observation (local boundary neighborhood)
-    :param action: [type, radius, angle]
-    :return: the integration of element quality and boundary quality
-    '''
     neighbor_points, radius_points, rule_type, new_point = decode_geometry(obs, action)
 
     index = int(len(neighbor_points) / 2)
@@ -284,7 +267,7 @@ def compute_quality(obs, action):
     if quad.is_valid(0) and \
             not quad_crosses_boundary(quad, neighbor_points, radius_points) and \
             not quad_encloses_point(quad, radius_points + [neighbor_points[0], neighbor_points[-1]]):
-        element_quality = quad.get_quality(quality_type='strong')
+        element_quality = quad_quality(quad, 'strong')
         boundary_quality = compute_boundary_quality(quad, neighbor_points, radius_points)
         return element_quality, boundary_quality
     else:
@@ -331,11 +314,11 @@ def compute_boundary_quality(quad, neighbor_points, radius_points):
 
     if len(new_v):
         # Has newly generated vertex
-        id, new_v = new_v[0]
-        left_v = quad.vertices[id-1]
-        right_v = quad.vertices[(id + 1) % 4]
-        left_angle = left_v.to_find_clockwise_angle(neighbor_points[neighbor_points.index(left_v) - 1], new_v)
-        right_angle = right_v.to_find_clockwise_angle(new_v, neighbor_points[neighbor_points.index(right_v) + 1])
+        idx, new_v = new_v[0]
+        left_v = quad.vertices[idx-1]
+        right_v = quad.vertices[(idx + 1) % 4]
+        left_angle = left_v.clockwise_angle(neighbor_points[neighbor_points.index(left_v) - 1], new_v)
+        right_angle = right_v.clockwise_angle(new_v, neighbor_points[neighbor_points.index(right_v) + 1])
         angles = []
         if left_angle < math.pi / 2:
             angles.append(left_angle)
@@ -373,23 +356,23 @@ def compute_boundary_quality(quad, neighbor_points, radius_points):
         angles = []
 
         if left_ind == 0:
-            right_angle = neighbor_points[right_ind].to_find_clockwise_angle(neighbor_points[left_ind],
+            right_angle = neighbor_points[right_ind].clockwise_angle(neighbor_points[left_ind],
                                                                        neighbor_points[right_ind + 1])
             if right_angle < math.pi / 2:
                 angles.append(right_angle)
 
             _dists = [neighbor_points[left_ind], neighbor_points[right_ind], neighbor_points[right_ind + 1]]
         elif right_ind == len(neighbor_points) - 1:
-            left_angle = neighbor_points[left_ind].to_find_clockwise_angle(neighbor_points[left_ind - 1],
+            left_angle = neighbor_points[left_ind].clockwise_angle(neighbor_points[left_ind - 1],
                                                                      neighbor_points[right_ind])
 
             if left_angle < math.pi / 2:
                 angles.append(left_angle)
             _dists = [neighbor_points[left_ind - 1], neighbor_points[left_ind], neighbor_points[right_ind]]
         else:
-            left_angle = neighbor_points[left_ind].to_find_clockwise_angle(neighbor_points[left_ind - 1],
+            left_angle = neighbor_points[left_ind].clockwise_angle(neighbor_points[left_ind - 1],
                                                                      neighbor_points[right_ind])
-            right_angle = neighbor_points[right_ind].to_find_clockwise_angle(neighbor_points[left_ind],
+            right_angle = neighbor_points[right_ind].clockwise_angle(neighbor_points[left_ind],
                                                                        neighbor_points[right_ind + 1])
             if left_angle < math.pi / 2:
                 angles.append(left_angle)
