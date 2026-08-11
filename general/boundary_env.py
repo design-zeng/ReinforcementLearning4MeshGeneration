@@ -7,7 +7,7 @@ import numpy as np
 import gym
 from gym import spaces
 
-from general.mesh import MeshGeneration
+from general.mesh import Mesher
 from general.components import Vertex, Quad
 from general.point_environment import PointEnvironment
 from general.lin_alg import detransformation
@@ -18,13 +18,13 @@ base_path = Path(__file__).parent.parent
 output_path = base_path / "general" / "output"
 
 
-class BoundaryEnv(MeshGeneration, gym.Env):
+class BoundaryEnv(gym.Env):
     TYPE_THRESHOLD = 0.3
 
     def __init__(self, boundary, experiment_version=None, env_name=None):
-        super(BoundaryEnv, self).__init__(boundary)
-        self.original_boundary = self.boundary.deep_copy()
-        self.original_area = self.boundary.poly_area()
+        self.mesher = Mesher(boundary)
+        self.original_boundary = self.mesher.boundary.deep_copy()
+        self.original_area = self.mesher.boundary.poly_area()
         self.current_area = self.original_area
         self.max_radius = 2
         self.action_space = spaces.Box(np.array([-1, -1.5, 0]), np.array([1, 1.5, 1.5]), dtype=np.float32)
@@ -53,11 +53,21 @@ class BoundaryEnv(MeshGeneration, gym.Env):
             0: []
         }
 
+    def __getattr__(self, name):
+        # Thin gym adapter: anything not defined on the env is delegated to the
+        # composed Mesher (boundary state, generated_quads, smoothing, quality, ...).
+        if name.startswith('__') and name.endswith('__'):
+            raise AttributeError(name)
+        mesher = self.__dict__.get('mesher')
+        if mesher is not None:
+            return getattr(mesher, name)
+        raise AttributeError(name)
+
     def reset(self, static=False):  # pyright: ignore[reportIncompatibleMethodOverride]
-        self.boundary = self.original_boundary.deep_copy()
-        self.updated_boundary = self.boundary.copy()
-        self.original_vertices = [v for v in self.boundary.vertices]
-        self.generated_quads = []
+        self.mesher.boundary = self.original_boundary.deep_copy()
+        self.mesher.updated_boundary = self.mesher.boundary.copy()
+        self.mesher.original_vertices = [v for v in self.mesher.boundary.vertices]
+        self.mesher.generated_quads = []
         self.not_valid_points = []
         self.rewarding = []
         self.current_area = self.original_area

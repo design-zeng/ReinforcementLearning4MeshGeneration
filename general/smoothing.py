@@ -124,7 +124,7 @@ def clockwise_vertices(inner_v, vertices):
 
 
 class SmoothingMixin:
-    # Provided by MeshGeneration; this mixin is only ever combined into it.
+    # Provided by Mesher; this mixin is only ever combined into it.
     updated_boundary: Any
     original_vertices: Any
     find_related_meshes: Any

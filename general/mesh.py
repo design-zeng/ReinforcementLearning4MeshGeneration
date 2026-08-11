@@ -5,7 +5,7 @@ from general.smoothing import SmoothingMixin
 from general.sample_extraction import SampleExtractionMixin
 
 
-class MeshGeneration(SmoothingMixin, SampleExtractionMixin):
+class Mesher(SmoothingMixin, SampleExtractionMixin):
     def __init__(self, boundary):
         self.boundary = boundary
         self.generated_quads = []

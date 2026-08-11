@@ -7,7 +7,7 @@ from general.components import *
 
 
 class SampleExtractionMixin:
-    # Provided by MeshGeneration; this mixin is only ever combined into it.
+    # Provided by Mesher; this mixin is only ever combined into it.
     boundary: Any
     get_quality: Any
 
