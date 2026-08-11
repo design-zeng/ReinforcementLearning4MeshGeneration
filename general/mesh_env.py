@@ -75,7 +75,7 @@ class MeshEnv(gym.Env):
         self.failed_num = 0
         state = self.find_next_state(static=static)
         self.current_state = state
-        self.estimated_area_range = self.estimate_area_range()
+        self.estimated_area_range = self.mesher.boundary.estimate_area_range()
         return state
 
     def get_middle_points(self, state):
@@ -88,15 +88,6 @@ class MeshEnv(gym.Env):
 
         de_point = detransformation(point, self.current_point_environment.base_length if not is_move else 1, v1, v2)
         return Vertex(round(de_point[0], 4), round(de_point[1], 4))
-
-    def rule_element(self, rule, index, new_point=None):
-        v = self.updated_boundary.vertices
-        n = len(v)
-        if rule == -1:
-            return Quad([v[index - 1], v[index], v[(index + 1) % n], v[(index + 2) % n]])
-        if rule == 1:
-            return Quad([v[index - 2], v[index - 1], v[index], v[(index + 1) % n]])
-        return Quad([new_point, v[index - 1], v[index], v[(index + 1) % n]])
 
     def step(self, action):  # pyright: ignore[reportIncompatibleMethodOverride]
         done = False
@@ -114,16 +105,16 @@ class MeshEnv(gym.Env):
             done = True
         else:
             if rule_type <= -0.5: #self.TYPE_THRESHOLD:
-                quad = self.rule_element(-1, index)
+                quad = self.updated_boundary.rule_element(-1, index)
                 rule = -1
             elif rule_type >= 0.5: #1 - self.TYPE_THRESHOLD:
-                quad = self.rule_element(1, index)
+                quad = self.updated_boundary.rule_element(1, index)
                 rule = 1
             else:
                 # reward -= 0.1 * math.fabs(rule_type)
                 if self.updated_boundary.contains_point(new_point):
-                    quad = self.rule_element(-1, index) if self.updated_boundary.find_same_point(new_point) \
-                        else self.rule_element(0, index, new_point)
+                    quad = self.updated_boundary.rule_element(-1, index) if self.updated_boundary.find_same_point(new_point) \
+                        else self.updated_boundary.rule_element(0, index, new_point)
                 else:
                     reward += -1 / len(self.generated_quads) if len(self.generated_quads) else -1
                     quad = None
@@ -196,13 +187,13 @@ class MeshEnv(gym.Env):
             quad = None
 
             if rule_type <= self.TYPE_THRESHOLD:
-                quad = self.rule_element(-1, index)
+                quad = self.updated_boundary.rule_element(-1, index)
                 # reward -= 0.1 * math.fabs(rule_type + 1)
             elif rule_type >= 1 - self.TYPE_THRESHOLD:
-                quad = self.rule_element(1, index)
+                quad = self.updated_boundary.rule_element(1, index)
             else:
                 if self.updated_boundary.contains_point(new_point):
-                    quad = self.rule_element(0, index, new_point)
+                    quad = self.updated_boundary.rule_element(0, index, new_point)
 
             if quad is None:
                 pass
