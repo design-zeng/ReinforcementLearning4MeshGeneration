@@ -23,6 +23,8 @@ To build a boundary from your own points instead of a file:
 """
 from pathlib import Path
 
+from general.geometry import Vertex
+from general.mesh import Boundary
 from sac.gym_env import Gym_Env
 
 __all__ = ["Mesher", "MeshResult", "DEFAULT_MODEL"]
@@ -77,9 +79,15 @@ class Mesher:
         The policy is stochastic, so the domain is retried up to ``attempts``
         times until it is fully meshed. Returns a :class:`MeshResult`; check
         ``result.complete`` to see whether meshing finished. The supplied
-        ``boundary`` is not modified.
+        ``boundary`` is not modified, and its winding (clockwise or
+        counter-clockwise) doesn't matter.
         """
-        env = Gym_Env(boundary)
+        env = Gym_Env(_as_clockwise(boundary))
+        if env.reset() is None:
+            raise ValueError(
+                "Could not start meshing this boundary. Supply a simple "
+                "(non-self-intersecting) polygon with more than five vertices."
+            )
         for _ in range(attempts):
             info = _rollout(self.model, env, deterministic)
             if info["is_complete"]:
@@ -87,6 +95,19 @@ class Mesher:
                     env.mesh.smooth(env.mesh.boundary.vertices)
                 return MeshResult(env.mesh, complete=True)
         return MeshResult(env.mesh, complete=False)
+
+
+def _as_clockwise(boundary):
+    """The mesher expects clockwise boundaries; reverse counter-clockwise input
+    on a copy, so the caller's boundary is left untouched."""
+    v = boundary.vertices
+    n = len(v)
+    twice_area = sum(v[i].x * v[(i + 1) % n].y - v[(i + 1) % n].x * v[i].y for i in range(n))
+    if twice_area <= 0:  # already clockwise
+        return boundary
+    flipped = Boundary([Vertex(p.x, p.y) for p in reversed(v)])
+    flipped.connect_vertices()
+    return flipped
 
 
 def _rollout(model, env, deterministic):
