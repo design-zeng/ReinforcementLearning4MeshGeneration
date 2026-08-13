@@ -4,13 +4,26 @@ import numpy as np
 import gym
 from gym import spaces
 
-from general.geometry import Quad
-from general.mesh_env import MeshEnv
+from general.mesh import Mesh
+from general.geometry import Quad, Vertex, Lin_Alg
+from general.plotting import render_boundary, close_render
 
 
-class Gym_Env(MeshEnv, gym.Env):
+class Sac_Env(gym.Env):
     def __init__(self, boundary):
-        super().__init__(boundary)
+        self.mesh = Mesh(boundary)
+        self.boundary = boundary.copy()
+        self.current_area = self.mesh.original_area
+
+        self.neighbor_num = 6
+        self.radius_num = 3
+        self.radius = 4
+
+        self.current_ref_state: dict = None
+        self.not_valid_points = []
+        self.last_not_valid_points = []
+        self.target_angle = 0
+
         self.action_space = spaces.Box(np.array([-1, -1.5, 0]), np.array([1, 1.5, 1.5]), dtype=np.float32)
         self.observation_space = spaces.Box(
             low=-999, high=999,
@@ -28,10 +41,42 @@ class Gym_Env(MeshEnv, gym.Env):
         return [seed]
 
     def reset(self, static=False):
-        state = super().reset(static=static)
+        self.mesh.reset()
+        self.boundary = self.mesh.boundary.copy()
+        self.not_valid_points = []
+        self.current_area = self.mesh.original_area
+        self.current_ref_state = None
         self.failed_num = 0
         self.estimated_area_range = self.mesh.boundary.estimate_area_range()
-        return state
+        return self.find_next_state(static=static)
+
+    def find_next_state(self, not_valid_points=None, static=False):
+        r_p = self.boundary.find_reference_point(not_valid_points, target_angle=self.target_angle)
+
+        if r_p:
+            self.current_ref_state = self.boundary.reference_state(
+                r_p, self.neighbor_num, self.radius_num,
+                self.current_area / self.mesh.original_area, self.radius, static)
+            return np.array(self.current_ref_state['state']).astype(np.float32)
+        else:
+            return None
+
+    def get_middle_points(self, state):
+        v1 = np.asarray([state[self.neighbor_num], state[self.neighbor_num + 1]], dtype=float)
+        v2 = np.asarray([state[self.neighbor_num + 2], state[self.neighbor_num + 3]], dtype=float)
+        return v1, v2
+
+    def detransformation(self, point, is_move=False):
+        v1, v2 = self.get_middle_points(Vertex.flatten(self.current_ref_state['neighbors']))
+
+        de_point = Lin_Alg.detransformation(point, self.current_ref_state['base_length'] if not is_move else 1, v1, v2)
+        return Vertex(round(de_point[0], 4), round(de_point[1], 4))
+
+    def close(self):
+        close_render()
+
+    def render(self, mode='human'):
+        render_boundary(self.mesh.boundary)
 
     def step(self, action):
         done = False
@@ -41,7 +86,7 @@ class Gym_Env(MeshEnv, gym.Env):
         rule_type = action[0]
         rule = None
         new_point = self.detransformation([round(action[1], 4), round(action[2], 4)])
-        reference_point = self.current_ref_state.reference_point
+        reference_point = self.current_ref_state['reference_point']
         index = self.boundary.vertices.index(reference_point)
 
         quad = None

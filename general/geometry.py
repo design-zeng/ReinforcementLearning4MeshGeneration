@@ -21,10 +21,6 @@ class Vertex:
     def dot(self, other):
         return self.x * other.x + self.y * other.y
 
-    @staticmethod
-    def points_as_array(vertices):
-        return [coord for vertex in vertices for coord in (vertex.x, vertex.y)]
-
     def __sub__(self, other):
         return Vertex(self.x - other.x, self.y - other.y)
 
@@ -36,9 +32,6 @@ class Vertex:
 
     def __truediv__(self, other):
         return Vertex(self.x / other, self.y / other)
-
-    def __str__(self):
-        return f"({self.x, self.y})"
 
     def assign_segment(self, segment):
         if self.segments:
@@ -54,10 +47,10 @@ class Vertex:
 
         return round(theta, 4) if math.copysign(1, theta) >= 0 else round(2 * math.pi + theta, 4)
 
-    def has_segment_with_vertex(self, vertex):
+    def is_neighbor(self, vertex):
         return bool(self.segments) and any(seg.has_vertex(vertex) for seg in self.segments)
 
-    def get_connected_vertices(self):
+    def get_neighbors(self):
         if not self.segments:
             return []
 
@@ -71,6 +64,32 @@ class Vertex:
     def copy(self):
         return Vertex(self.x, self.y)
 
+    def get_common_neighbors(self, another_vertex):
+        connected_v = self.get_neighbors()
+        another_vertex_v = another_vertex.get_neighbors()
+        return [v for v in connected_v if v in another_vertex_v]
+
+    def sorted_by_distance(self, vertices):
+        dists = [(v, self.distance_to(v)) for v in vertices if self is not v]
+        return sorted(dists, key=lambda x: x[1])
+
+    def get_closest_points(self, vertices, exclusion=None, max_dist=None):
+        exclusion = exclusion or []
+        selected = []
+        for v, d in self.sorted_by_distance(vertices):
+            if d > max_dist:
+                break
+            if v not in exclusion:
+                selected.append(v)
+        return selected
+
+    def coincides_with_any(self, points):
+        return any(p.distance_to(self) < 0.001 for p in points)
+
+    @staticmethod
+    def flatten(vertices):
+        return [coord for vertex in vertices for coord in (vertex.x, vertex.y)]
+
     @staticmethod
     def rotate_counterclockwise(vertex, angle, origin=None):
         o = np.array([0.0, 0.0]) if origin is None else np.array([origin.x, origin.y])
@@ -78,18 +97,13 @@ class Vertex:
         q = o + np.array([[c, -s], [s, c]]) @ (np.array([vertex.x, vertex.y]) - o)
         return Vertex(float(q[0]), float(q[1]))
 
-    def get_common_vertex(self, another_vertex):
-        connected_v = self.get_connected_vertices()
-        another_vertex_v = another_vertex.get_connected_vertices()
-        return [v for v in connected_v if v in another_vertex_v]
-
 
 class Segment:
     def __init__(self, point1, point2):
         self.point1 = point1
         self.point2 = point2
 
-    def is_cross(self, another_segment):
+    def is_intersecting(self, another_segment):
         def straddle(seg, other):
             sa = round(math.sin(seg.point1.clockwise_angle(other.point1, seg.point2)), 4)
             sb = round(math.sin(seg.point1.clockwise_angle(other.point2, seg.point2)), 4)
@@ -103,24 +117,9 @@ class Segment:
 
         return straddle(self, another_segment) and straddle(another_segment, self)
 
-    def seg_angle(self):
+    def angle(self):
         d = self.point2 - self.point1
         return math.atan2(d.y, d.x)
-
-    @staticmethod
-    def get_ray_segment(segment, another_segment, remote_dist):
-        ray_point1 = (segment.point1 + another_segment.point1) / 2
-        ray_point2 = (segment.point2 + another_segment.point2) / 2
-
-        average_segment = Segment(ray_point1, ray_point2)
-        return Segment.build_ray(average_segment, remote_dist)
-
-    @staticmethod
-    def build_ray(segment, remote_dist):
-        theta = segment.seg_angle()
-        p1 = segment.point1.copy()
-        p2 = Vertex(p1.x + remote_dist * math.cos(theta), p1.y + remote_dist * math.sin(theta))
-        return Segment(p1, p2)
 
     def has_vertex(self, vertex):
         return vertex == self.point1 or vertex == self.point2
@@ -159,6 +158,21 @@ class Segment:
         else:
             raise ValueError('Not recognized object type!')
 
+    @staticmethod
+    def get_ray_segment(segment, another_segment, remote_dist):
+        ray_point1 = (segment.point1 + another_segment.point1) / 2
+        ray_point2 = (segment.point2 + another_segment.point2) / 2
+
+        average_segment = Segment(ray_point1, ray_point2)
+        return Segment.build_ray(average_segment, remote_dist)
+
+    @staticmethod
+    def build_ray(segment, remote_dist):
+        theta = segment.angle()
+        p1 = segment.point1.copy()
+        p2 = Vertex(p1.x + remote_dist * math.cos(theta), p1.y + remote_dist * math.sin(theta))
+        return Segment(p1, p2)
+
 
 class Polygon:
     def __init__(self, vertices):
@@ -175,19 +189,23 @@ class Polygon:
     def connect_vertices(self):
         for i in range(len(self.vertices)):
             prev, curr = self.vertices[i - 1], self.vertices[i]
-            if curr.has_segment_with_vertex(prev):
+            if curr.is_neighbor(prev):
                 continue
             seg = Segment(prev, curr)
             prev.assign_segment(seg)
             curr.assign_segment(seg)
 
-    def all_segments(self):
+    def own_segments(self):
         segts = []
         for vertex in self.vertices:
             for seg in vertex.segments or []:
                 if seg not in segts and seg.point1 in self.vertices and seg.point2 in self.vertices:
                     segts.append(seg)
         return segts
+
+    def n_sides(self, vertex):
+        return sum(1 for seg in vertex.segments
+                   if seg.point1 in self.vertices and seg.point2 in self.vertices)
 
     def get_neighbors(self, vertex, num_points=4):
         if num_points % 2 != 0:
@@ -200,32 +218,6 @@ class Polygon:
         vertices += [self.vertices[index - i] for i in range(1, half + 1)]
         return vertices
 
-    @staticmethod
-    def sorted_by_distance(vertices, vertex):
-        dists = [(v, vertex.distance_to(v)) for v in vertices if vertex is not v]
-        return sorted(dists, key=lambda x: x[1])
-
-    @staticmethod
-    def get_closest_points(vertices, vertex, exclusion=None, max_dist=None):
-        exclusion = exclusion or []
-        selected = []
-        for v, d in Polygon.sorted_by_distance(vertices, vertex):
-            if d > max_dist:
-                break
-            if v not in exclusion:
-                selected.append(v)
-        return selected
-
-    @staticmethod
-    def get_points_within_angle(vertices, base_point, start_point, start_angle, end_angle):
-        target_points = [v for v in vertices
-            if start_angle < base_point.clockwise_angle(start_point, v) < end_angle]
-        return target_points
-
-    @staticmethod
-    def coincides_with_any(vertex, points):
-        return any(p.distance_to(vertex) < 0.001 for p in points)
-
     def contains_point(self, vertex):
         ray_segment = Segment(vertex, Vertex(10000, vertex.y))
         count = 0
@@ -236,7 +228,7 @@ class Polygon:
             orientation = round(v_i.y - v_p.y, 4)
             if orientation == 0:
                 continue
-            if not Segment(v_i, v_p).is_cross(ray_segment):
+            if not Segment(v_i, v_p).is_intersecting(ray_segment):
                 continue
             if round(v_i.y - ray_y, 4) == 0:
                 no = round(self.vertices[(i + 1) % n].y - v_i.y, 4)
@@ -270,98 +262,95 @@ class Polygon:
         left_v = self.vertices[(index + 1) % len(self.vertices)]
         return math.degrees(vertex.clockwise_angle(left_v, right_v))
 
-    def poly_area(self):
+    def area(self):
         xy = np.array([[v.x, v.y] for v in self.vertices])
         return 0.5 * np.abs(np.dot(xy[:, 0],np.roll(xy[:, 1],1))-np.dot(xy[:, 1],np.roll(xy[:, 0],1)))
 
-
-class Quad(Polygon):
-    def __init__(self, vertices):
-        super().__init__(vertices)
-        self.segments = None
-
-        self.max_degree = 0.99 * math.pi
-        self.min_degree = 0.01 * math.pi
-
-    def length_4_segments(self):
+    def edge_lengths(self):
         return [self.vertices[i - 1].distance_to(self.vertices[i]) for i in range(len(self.vertices))]
 
     def corner_angles(self):
-        return [self.vertices[i].clockwise_angle(self.vertices[(i + 1) % 4], self.vertices[i - 1])
-                for i in range(4)]
-
-    def is_valid(self, quality_method=0):
-        if self.segments_crossed():
-            return False
-
-        if quality_method == 0:
-            for degree in self.corner_angles():
-                if degree > self.max_degree or degree < self.min_degree:
-                    return False
-        return True
-
-    def segments_crossed(self):
-        v = self.vertices
-        return (Segment(v[0], v[1]).is_cross(Segment(v[2], v[3])) or
-                Segment(v[0], v[3]).is_cross(Segment(v[1], v[2])))
-
-    def get_centroid(self, diff=False):
-        centroid = sum(self.vertices, Vertex(0, 0)) / len(self.vertices)
-        if diff:
-            _diff = sum(self.length_4_segments()) / 4
-            centroid.x -= _diff / 3
-            centroid.y -= _diff * 0.1
-        return centroid
+        n = len(self.vertices)
+        return [self.vertices[i].clockwise_angle(self.vertices[(i + 1) % n], self.vertices[i - 1])
+                for i in range(n)]
 
     def inner_angles(self):
         return [math.degrees(math.fabs(a - math.pi / 2)) for a in self.corner_angles()]
 
-    def area(self):
-        lengths = self.length_4_segments()
-        corner_1 = self.vertices[0].clockwise_angle(self.vertices[1], self.vertices[-1])
-        corner_3 = self.vertices[2].clockwise_angle(self.vertices[3], self.vertices[1])
+    def segments_crossed(self):
+        n = len(self.vertices)
+        edges = [Segment(self.vertices[i], self.vertices[(i + 1) % n]) for i in range(n)]
+        for i in range(n):
+            for j in range(i + 1, n):
+                if j == i + 1 or (i == 0 and j == n - 1):
+                    continue
+                if edges[i].is_intersecting(edges[j]):
+                    return True
+        return False
 
-        return 0.5 * lengths[0] * lengths[1] * math.sin(corner_1) + \
-               0.5 * lengths[2] * lengths[3] * math.sin(corner_3)
-
-
-def clip_angle(angle, max_angle):
-    return min(angle, max_angle + math.pi / 2)
-
-
-def transformation(points, dist, p0, p1):
-    matrix = np.asarray(points, dtype=float).reshape(-1, 2) - p0
-    matrix = np.divide(matrix, dist)
-
-    d = p1 - p0
-    theta = math.atan2(d[1], d[0])
-
-    rotation_matrix = np.array([
-        [np.cos(theta), np.sin(theta)],
-        [- np.sin(theta), np.cos(theta)]
-    ])
-    matrix = np.matmul(rotation_matrix, matrix.T).T
-
-    return np.asarray(matrix).reshape(-1)
+    def get_centroid(self, diff=False):
+        centroid = sum(self.vertices, Vertex(0, 0)) / len(self.vertices)
+        if diff:
+            _diff = sum(self.edge_lengths()) / len(self.vertices)
+            centroid.x -= _diff / 3
+            centroid.y -= _diff * 0.1
+        return centroid
 
 
-def detransformation(point, dist, p0, p1):
-    d = p1 - p0
-    theta = 2 * math.pi - math.atan2(d[1], d[0])
-    original_point = np.empty(2)
-
-    original_point[0] = np.cos(theta) * point[0] + np.sin(theta) * point[1]
-    original_point[1] = -np.sin(theta) * point[0] + np.cos(theta) * point[1]
-
-    original_point *= dist
-
-    original_point[0] += p0[0]
-    original_point[1] += p0[1]
-
-    return original_point
+class Quad(Polygon):
+    def __init__(self, vertices):
+        if len(vertices) != 4:
+            raise ValueError(f"A Quad requires exactly 4 vertices, got {len(vertices)}.")
+        super().__init__(vertices)
 
 
-def _circle_line_vertices(a, b, A, B, W, dist):
+class Angle:
+    @staticmethod
+    def clip_angle(angle, max_angle):
+        return min(angle, max_angle + math.pi / 2)
+
+    @staticmethod
+    def get_points_within_angle(vertices, base_point, start_point, start_angle, end_angle):
+        target_points = [v for v in vertices
+            if start_angle < base_point.clockwise_angle(start_point, v) < end_angle]
+        return target_points
+
+
+class Lin_Alg:
+    @staticmethod
+    def transformation(points, dist, p0, p1):
+        matrix = np.asarray(points, dtype=float).reshape(-1, 2) - p0
+        matrix = np.divide(matrix, dist)
+
+        d = p1 - p0
+        theta = math.atan2(d[1], d[0])
+
+        rotation_matrix = np.array([
+            [np.cos(theta), np.sin(theta)],
+            [- np.sin(theta), np.cos(theta)]
+        ])
+        matrix = np.matmul(rotation_matrix, matrix.T).T
+
+        return np.asarray(matrix).reshape(-1)
+
+    @staticmethod
+    def detransformation(point, dist, p0, p1):
+        d = p1 - p0
+        theta = 2 * math.pi - math.atan2(d[1], d[0])
+        original_point = np.empty(2)
+
+        original_point[0] = np.cos(theta) * point[0] + np.sin(theta) * point[1]
+        original_point[1] = -np.sin(theta) * point[0] + np.cos(theta) * point[1]
+
+        original_point *= dist
+
+        original_point[0] += p0[0]
+        original_point[1] += p0[1]
+
+        return original_point
+
+
+def circle_line_intersection(a, b, A, B, W, dist):
     if B == 0:
         x1 = x2 = W / A + a
         y1, y2 = b + math.sqrt(dist ** 2 - (W / A) ** 2), b - math.sqrt(dist ** 2 - (W / A) ** 2)
@@ -379,38 +368,6 @@ def _circle_line_vertices(a, b, A, B, W, dist):
     return Vertex(x1, y1), Vertex(x2, y2)
 
 
-def middle_vertex(vertex, left_v, right_v, target_angle):
-    m_v = (left_v + right_v) / 2
-    A = right_v.x - left_v.x
-    B = right_v.y - left_v.y
-    D = left_v.distance_to(m_v) / math.tan(math.radians(target_angle / 2))
-
-    V1, V2 = _circle_line_vertices(m_v.x, m_v.y, A, B, 0, D)
-    return V1 if V1.distance_to(vertex) < V2.distance_to(vertex) else V2
-
-
-def side_vertex(vertex, next_v, next_next_v, angle, dist):
-    W = dist * next_v.distance_to(next_next_v) * math.cos(math.radians(angle))
-    V1, V2 = _circle_line_vertices(next_v.x, next_v.y, next_next_v.x - next_v.x, next_next_v.y - next_v.y, W, dist)
-    return V1 if V1.distance_to(vertex) < V2.distance_to(vertex) else V2
-
-
-def indention_vertex(vertex, left_v, right_v, angle, dist):
-    W = dist * vertex.distance_to(left_v) * math.cos(math.radians(angle))
-    V1, V2 = _circle_line_vertices(vertex.x, vertex.y, left_v.x - vertex.x, left_v.y - vertex.y, W, dist)
-    return V1 if V1.clockwise_angle(left_v, right_v) < V2.clockwise_angle(left_v, right_v) else V2
-
-
-def stays_inside_ring(original, candidate, ring, left_v, right_v):
-    for i in range(len(ring)):
-        if left_v in [ring[i], ring[i - 1]] and right_v in [ring[i], ring[i - 1]]:
-            continue
-        if (candidate.clockwise_angle(ring[i], ring[i - 1]) < math.pi) != \
-                (original.clockwise_angle(ring[i], ring[i - 1]) < math.pi):
-            return False
-    return True
-
-
 def clockwise_vertices(inner_v, vertices):
     for i in range(1, len(vertices)):
         max_angle = -1
@@ -425,8 +382,8 @@ def clockwise_vertices(inner_v, vertices):
 
     final_vertices = []
     for i in range(len(vertices)):
-        inter_v = [v for v in vertices[i].get_connected_vertices()
-                   if v in vertices[i - 1].get_connected_vertices() and v is not inner_v]
+        inter_v = [v for v in vertices[i].get_neighbors()
+                   if v in vertices[i - 1].get_neighbors() and v is not inner_v]
         final_vertices.append(vertices[i - 1])
         if inter_v:
             final_vertices.append(inter_v[0])

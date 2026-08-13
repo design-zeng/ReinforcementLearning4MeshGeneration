@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from general.geometry import detransformation
+from general.geometry import Lin_Alg
 from general.geometry import Vertex
 from original_ann.pattern_loader import get_patterns, data_transformation
 from original_ann.model import load_model, pattern_path
@@ -29,7 +29,7 @@ def predict(model, vertices):
     vertex_to_detransform = np.array([y[0][1], y[0][2]])
     p0 = np.array([flattened_vertices[4], flattened_vertices[5]])
     p1 = np.array([flattened_vertices[6], flattened_vertices[7]])
-    detransformed_predict = detransformation(vertex_to_detransform, np.linalg.norm(p0 - p1), p0, p1)
+    detransformed_predict = Lin_Alg.detransformation(vertex_to_detransform, np.linalg.norm(p0 - p1), p0, p1)
 
     action_type = round(float(y[0][0]))
 

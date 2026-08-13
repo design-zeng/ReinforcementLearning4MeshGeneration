@@ -12,7 +12,6 @@ from general.boundary import Boundary
 from general.plotting import show_quad
 from general.mesh import Mesh
 from general.utils import read_polygon
-from general.mesh_env import MeshEnv
 from general.mesh import quad_quality
 
 
@@ -246,10 +245,10 @@ def computational_cost_a2c():
 def calculate_initial_boundaries_features():
     domains = sorted(domains_path.glob("*.json"))
 
-    envs = [MeshEnv(read_polygon(name)) for name in domains]
+    envs = [Mesh(read_polygon(name)) for name in domains]
     for e in envs:
-        print(len(e.mesh.all_vertices), e.mesh.boundary.get_perimeter())
-        print(len(e.mesh.all_vertices) / e.mesh.boundary.get_perimeter())
+        print(len(e.all_vertices), e.mesh.boundary.get_perimeter())
+        print(len(e.all_vertices) / e.mesh.boundary.get_perimeter())
 
 
 # calculate_initial_boundaries_features()

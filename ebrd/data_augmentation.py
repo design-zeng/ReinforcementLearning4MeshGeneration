@@ -9,7 +9,7 @@ from numpy.random import uniform
 from multiprocessing import Process, Manager
 
 from general.geometry import Segment, Vertex, Quad
-from general.mesh import quad_quality
+from general.mesh import quad_quality, is_valid_quad
 
 
 base_path = Path(__file__).parent.parent
@@ -161,13 +161,13 @@ def is_degenerate_state(obs):
         for j in range(i + 2, len(neighbor_points)):
             s1 = Segment(neighbor_points[i], neighbor_points[i - 1])
             s2 = Segment(neighbor_points[j], neighbor_points[j - 1])
-            if s1.is_cross(s2):
+            if s1.is_intersecting(s2):
                 return True
 
         for k in range(1, len(radius_points)):
             s1 = Segment(neighbor_points[i], neighbor_points[i - 1])
             s2 = Segment(radius_points[k], radius_points[k - 1])
-            if s1.is_cross(s2):
+            if s1.is_intersecting(s2):
                 return True
 
     lengths = [neighbor_points[i].distance_to(neighbor_points[i-1]) for i in range(1, len(neighbor_points))]
@@ -264,7 +264,7 @@ def compute_quality(obs, action):
                      neighbor_points[index - 1]
                      ])
 
-    if quad.is_valid(0) and \
+    if is_valid_quad(quad, 0) and \
             not quad_crosses_boundary(quad, neighbor_points, radius_points) and \
             not quad_encloses_point(quad, radius_points + [neighbor_points[0], neighbor_points[-1]]):
         element_quality = quad_quality(quad, 'strong')
@@ -281,14 +281,14 @@ def quad_crosses_boundary(quad, neighbor_points, radius_points):
             s = Segment(neighbor_points[j], neighbor_points[j-1])
             if quad.vertices[i] not in [neighbor_points[j], neighbor_points[j-1]] and \
                 quad.vertices[i-1] not in [neighbor_points[j], neighbor_points[j-1]]:
-                if s1.is_cross(s):
+                if s1.is_intersecting(s):
                     return True
 
         for j in range(1, len(radius_points)):
             s = Segment(radius_points[j], radius_points[j-1])
             if quad.vertices[i] not in [radius_points[j], radius_points[j-1]] and \
                 quad.vertices[i-1] not in [radius_points[j], radius_points[j-1]]:
-                if s1.is_cross(s):
+                if s1.is_intersecting(s):
                     return True
     return False
 
@@ -301,7 +301,7 @@ def quad_encloses_point(quad, radius_points):
         crossed = False
         for i in range(4):
             s = Segment(quad.vertices[i], quad.vertices[i - 1])
-            if s1.is_cross(s):
+            if s1.is_intersecting(s):
                 crossed = True
                 break
         if not crossed:

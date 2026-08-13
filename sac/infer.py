@@ -11,7 +11,7 @@ from matplotlib.gridspec import GridSpec
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
 from general.utils import read_polygon
-from sac.gym_env import Gym_Env
+from sac.gym_env import Sac_Env
 from general.plotting import save_meshes
 
 
@@ -29,7 +29,7 @@ method = "sac"
 
 
 environments = [
-    Gym_Env(read_polygon(domains_path / f"{name}.json"))
+    Sac_Env(read_polygon(domains_path / f"{name}.json"))
     for name in ["boundary15", "random1_1", "random2_2"]
 ]
 
@@ -106,7 +106,7 @@ def replication_evaluation(is_render=False, deterministic=False, indexing=False,
     if not ckpt.exists():
         raise FileNotFoundError(f"{ckpt} not found. Run `python -m sac.train` first.")
 
-    env = Gym_Env(read_polygon(domains_path / "boundary_fly_r2.json"))
+    env = Sac_Env(read_polygon(domains_path / "boundary_fly_r2.json"))
 
     model = prepare_model(method, ckpt, env)
 
@@ -156,7 +156,7 @@ def full_mesh(domain="boundary6",
                attempts=60):
     os.makedirs(eval_path, exist_ok=True)
 
-    env = Gym_Env(read_polygon(domains_path / f"{domain}.json"))
+    env = Sac_Env(read_polygon(domains_path / f"{domain}.json"))
 
     model = prepare_model(method, ckpt, env)
 

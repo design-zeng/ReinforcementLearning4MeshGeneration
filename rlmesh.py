@@ -25,7 +25,7 @@ from pathlib import Path
 
 from general.geometry import Vertex
 from general.boundary import Boundary
-from sac.gym_env import Gym_Env
+from sac.gym_env import Sac_Env
 
 __all__ = ["Mesher", "MeshResult", "DEFAULT_MODEL"]
 
@@ -82,7 +82,7 @@ class Mesher:
         ``boundary`` is not modified, and its winding (clockwise or
         counter-clockwise) doesn't matter.
         """
-        env = Gym_Env(_as_clockwise(boundary))
+        env = Sac_Env(_as_clockwise(boundary))
         if env.reset() is None:
             raise ValueError(
                 "Could not start meshing this boundary. Supply a simple "

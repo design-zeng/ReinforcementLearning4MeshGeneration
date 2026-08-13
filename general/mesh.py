@@ -3,7 +3,6 @@ import math
 import itertools
 
 from general.geometry import Vertex, Segment
-from general.boundary import Boundary
 
 
 class Mesh:
@@ -14,7 +13,7 @@ class Mesh:
         self.average_edge_length = self.boundary.average_edge_length()
 
         self.original_boundary = boundary.deep_copy()
-        self.original_area = boundary.poly_area()
+        self.original_area = boundary.area()
         self.generated_quads = []
 
     def reset(self):
@@ -23,7 +22,7 @@ class Mesh:
         self.generated_quads = []
 
     def can_commit_quad(self, boundary, quad, reference_point):
-        return quad.is_valid(0) and \
+        return is_valid_quad(quad, 0) and \
             not boundary.check_intersection_with_boundary(quad, reference_point)
 
     def commit_quad(self, boundary, quad, reference_point):
@@ -79,14 +78,6 @@ class Mesh:
         self.smooth_fixed_vertices([v for v in vertices if v not in current_boundary_vertices], iteration)
         boundary.find_reference_candidates(target_angle=0)
 
-    @staticmethod
-    def estimate_4th_vertex(origin, left, right, factor=0.5, suggest_dist=None):
-        distance = (origin.distance_to(left) + origin.distance_to(right)) * factor
-        if suggest_dist is not None:
-            distance = min(distance, 0.6 * suggest_dist)
-        s = Segment.get_ray_segment(Segment(origin, left), Segment(origin, right), distance)
-        return s.point2
-
     def smooth_fixed_vertices(self, vertices, iteration):
         sum_coordinates = 0
         diffs = 100
@@ -97,7 +88,7 @@ class Mesh:
             for vertex in vertices:
                 if vertex in self.original_vertices:
                     continue
-                connected = vertex.get_connected_vertices()
+                connected = vertex.get_neighbors()
                 if not connected:
                     continue
                 count = len(connected)
@@ -115,23 +106,23 @@ class Mesh:
             i_iteration += 1
             for vertex in vertices:
                 if vertex not in self.original_vertices:
-                    self._smooth_vertex(boundary, vertex, lr_1, lr_2)
+                    self.smooth_vertex(boundary, vertex, lr_1, lr_2)
             new_sum_coordinates = sum(v.x + v.y for v in vertices)
             diffs = math.fabs(new_sum_coordinates - sum_coordinates)
             sum_coordinates = new_sum_coordinates
 
         boundary.find_reference_candidates(target_angle=0)
 
-    def _smooth_vertex(self, boundary, vertex, lr_1, lr_2):
-        connected = vertex.get_connected_vertices()
+    def smooth_vertex(self, boundary, vertex, lr_1, lr_2):
+        connected = vertex.get_neighbors()
         n_meshes = len(self.find_related_quads(vertex))
 
         if n_meshes == 1 and len(connected) == 2:
-            origins = [v for v in connected[0].get_common_vertex(connected[1]) if v is not vertex]
-            origin = Boundary.sorted_by_distance(origins, vertex)[0][0]
-            p_dist = Boundary.sorted_by_distance(
+            origins = [v for v in connected[0].get_common_neighbors(connected[1]) if v is not vertex]
+            origin = vertex.sorted_by_distance(origins)[0][0]
+            p_dist = origin.sorted_by_distance(
                 [v for v in boundary.vertices
-                 if v not in connected and v is not vertex], origin)
+                 if v not in connected and v is not vertex])
             if not p_dist:
                 return
             estimate = self.estimate_4th_vertex(origin, connected[0], connected[1], suggest_dist=p_dist[0][1])
@@ -143,10 +134,10 @@ class Mesh:
             interior = [v for v in connected if v not in boundary.vertices]
             if len(interior) == 1 and len(on_front) == 2:
                 inside = interior[0]
-                origins1 = [v for v in inside.get_common_vertex(on_front[0]) if v is not vertex]
-                origins2 = [v for v in inside.get_common_vertex(on_front[1]) if v is not vertex]
-                e1 = self.estimate_4th_vertex(Boundary.sorted_by_distance(origins1, vertex)[0][0], on_front[0], inside, factor=0.7)
-                e2 = self.estimate_4th_vertex(Boundary.sorted_by_distance(origins2, vertex)[0][0], on_front[1], inside, factor=0.7)
+                origins1 = [v for v in inside.get_common_neighbors(on_front[0]) if v is not vertex]
+                origins2 = [v for v in inside.get_common_neighbors(on_front[1]) if v is not vertex]
+                e1 = self.estimate_4th_vertex(vertex.sorted_by_distance(origins1)[0][0], on_front[0], inside, factor=0.7)
+                e2 = self.estimate_4th_vertex(vertex.sorted_by_distance(origins2)[0][0], on_front[1], inside, factor=0.7)
                 vertex.x = (e1.x + e2.x) / 2
                 vertex.y = (e1.y + e2.y) / 2
                 return
@@ -169,23 +160,6 @@ class Mesh:
             vertex.y = lr * vertex.y + (1 - lr) * c.y
 
     # --- offline sample extraction (training data for the imitation network) ---
-
-    @staticmethod
-    def collect_neighbor_paths(root, exclusion, layer, path, paths, N):
-        if root is None:
-            return
-
-        if len(path) < N:
-            path.append(root)
-        else:
-            path[-layer-1] = root
-        if layer == 0:
-            paths.append(list(path))
-            return
-        else:
-            nodes = [v for v in root.get_connected_vertices() if v not in exclusion and v not in path[:N-layer]]
-            for i in range(len(nodes)):
-                Mesh.collect_neighbor_paths(nodes[i], exclusion, layer-1, path, paths, N)
 
     def extract_samples(self, quads, n_neighbor, n_radius, radius, index=1, quality_threshold=0.7):
         all_samples, outputs, types = [], [], []
@@ -248,16 +222,52 @@ class Mesh:
         return all_samples, types, outputs
 
     @staticmethod
+    def estimate_4th_vertex(origin, left, right, factor=0.5, suggest_dist=None):
+        distance = (origin.distance_to(left) + origin.distance_to(right)) * factor
+        if suggest_dist is not None:
+            distance = min(distance, 0.6 * suggest_dist)
+        s = Segment.get_ray_segment(Segment(origin, left), Segment(origin, right), distance)
+        return s.point2
+
+    @staticmethod
+    def collect_neighbor_paths(root, exclusion, layer, path, paths, N):
+        if root is None:
+            return
+
+        if len(path) < N:
+            path.append(root)
+        else:
+            path[-layer-1] = root
+        if layer == 0:
+            paths.append(list(path))
+            return
+        else:
+            nodes = [v for v in root.get_neighbors() if v not in exclusion and v not in path[:N-layer]]
+            for i in range(len(nodes)):
+                Mesh.collect_neighbor_paths(nodes[i], exclusion, layer-1, path, paths, N)
+
+    @staticmethod
     def save_samples(file_name, res, _type=1):
         if _type == 1:
-            res['samples'] = [Vertex.points_as_array(s) for s in res['samples']]
-            res['outputs'] = [Vertex.points_as_array(s) for s in res['outputs']]
+            res['samples'] = [Vertex.flatten(s) for s in res['samples']]
+            res['outputs'] = [Vertex.flatten(s) for s in res['outputs']]
         with open(file_name, 'w') as fw:
             json.dump(res, fw)
 
 
+def is_valid_quad(quad, quality_method=0):
+    if quad.segments_crossed():
+        return False
+    if quality_method == 0:
+        max_degree, min_degree = 0.99 * math.pi, 0.01 * math.pi
+        for degree in quad.corner_angles():
+            if degree > max_degree or degree < min_degree:
+                return False
+    return True
+
+
 def edge_angle_quality(quad):
-    length_of_edges = quad.length_4_segments()
+    length_of_edges = quad.edge_lengths()
     area = quad.area()
     if area <= 0:
         q1 = 0
@@ -281,7 +291,7 @@ def edge_angle_quality(quad):
 
 def quad_quality(quad, quality_type='robust'):
     if quality_type == 'stretch':
-        return math.sqrt(2) * min(quad.length_4_segments()) / max(quad.vertices[0].distance_to(quad.vertices[2]), quad.vertices[1].distance_to(quad.vertices[3]))
+        return math.sqrt(2) * min(quad.edge_lengths()) / max(quad.vertices[0].distance_to(quad.vertices[2]), quad.vertices[1].distance_to(quad.vertices[3]))
     elif quality_type == 'robust':
         q1 = quad_quality(quad, 'stretch')
         angles = quad.corner_angles()

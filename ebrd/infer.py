@@ -1,14 +1,14 @@
 import os
 
 from general.utils import read_polygon
-from ebrd.env import EbrdEnv
+from ebrd.env import Ebrd_Env
 from general.plotting import save_meshes
 from ebrd.model import get_action, load_model, domains_path, augmentation_path
 
 
 def prepare_eval_envs():
     names = ["airfoil", "star1", "random1_1", "tool2", "test2", "test3"]
-    return [EbrdEnv(read_polygon(domains_path / f"{name}.json")) for name in names]
+    return [Ebrd_Env(read_polygon(domains_path / f"{name}.json")) for name in names]
 
 
 def evaluation(model_path, version, is_render=False, indexing=False, save_fig=False, save_samples=False):

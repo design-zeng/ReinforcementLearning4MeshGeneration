@@ -5,7 +5,7 @@ import torch
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
 from general.utils import read_polygon
-from sac.gym_env import Gym_Env
+from sac.gym_env import Sac_Env
 from sac.custom_callback import CustomCallback
 
 
@@ -73,8 +73,8 @@ method_settings = {
 environments = [
     [
         1200000,
-        Gym_Env(read_polygon(base_path / "samples" / "domains" / "random1_1.json")),
-        Gym_Env(read_polygon(base_path / "samples" / "domains" / "random1_1.json"))
+        Sac_Env(read_polygon(base_path / "samples" / "domains" / "random1_1.json")),
+        Sac_Env(read_polygon(base_path / "samples" / "domains" / "random1_1.json"))
     ]
 ]
 

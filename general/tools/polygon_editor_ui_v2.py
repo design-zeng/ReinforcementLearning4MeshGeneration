@@ -74,7 +74,7 @@ class MeshFrame(Frame):
         self.points = [(p[0], p[1]) for p in res]
 
         self.canvas.delete("all")
-        [self._create_circle(p[0], p[1], 3, fill="#000", outline="") for p in self.points]
+        [self.create_circle(p[0], p[1], 3, fill="#000", outline="") for p in self.points]
         [self.canvas.create_text(p[0] - 2, p[1] - 2, fill="darkblue", font="Times 11 italic bold",
                                  text=f"{i}")
          for i, p in enumerate(self.points)]
@@ -127,7 +127,7 @@ class MeshFrame(Frame):
             return
         print("Adding point #%d with position(%d,%d)" % (len(self.points), event.x, event.y))
         self.points.append((event.x, event.y))
-        self._create_circle(event.x, event.y, 3, fill="#000", outline="")
+        self.create_circle(event.x, event.y, 3, fill="#000", outline="")
 
         self.last_draw = self.canvas.create_line(self.points[-1][0], self.points[-1][1], event.x, event.y,
                                                  fill=self.fore_color)
@@ -141,14 +141,14 @@ class MeshFrame(Frame):
         print("Completing polygon with %d points." % len(self.points))
 
         self.canvas.delete("all")
-        [self._create_circle(p[0], p[1], 3, fill="#000", outline="") for p in self.points]
+        [self.create_circle(p[0], p[1], 3, fill="#000", outline="") for p in self.points]
         [self.canvas.create_text(p[0]-2, p[1]-2, fill="darkblue",font="Times 11 italic bold", text=f"{i}: ({p[0]}, {p[1]})")
          for i, p in enumerate(self.points)]
         self.canvas.create_polygon(self.points, outline='#6e6565', fill="",
                               width=2)
         self.done = True
 
-    def _create_circle(self, x, y, r, **kwargs):
+    def create_circle(self, x, y, r, **kwargs):
         return self.canvas.create_oval(x - r, y - r, x + r, y + r, **kwargs)
 
     def cre_canvas(self):
@@ -227,12 +227,6 @@ class Density(Frame):
                 max_length = dist
         return round(max_length, 2)
 
-    @staticmethod
-    def distance(point1, point2):
-        dist = math.sqrt((point1[0] - point2[0]) ** 2 +
-                         (point1[1] - point2[1]) ** 2)
-        return dist
-
     def calculate_density(self, event):
         base_length = float(self.base_entry.get())
         points_density = {p: float(self.density_entries[i].get()) for i, p in enumerate(self.points)}
@@ -255,8 +249,15 @@ class Density(Frame):
                                 list_points_density[i - 1][0][1] + inter * math.sin(angle))
                                for inter in interpolations])
 
-        [self.base_frame._create_circle(p[0], p[1], 3, fill="#f00", outline="") for p in res_points]
+        [self.base_frame.create_circle(p[0], p[1], 3, fill="#f00", outline="") for p in res_points]
         self.base_frame.points = res_points
+
+    @staticmethod
+    def distance(point1, point2):
+        dist = math.sqrt((point1[0] - point2[0]) ** 2 +
+                         (point1[1] - point2[1]) ** 2)
+        return dist
+
 
 if __name__=="__main__":
     root = Tk()

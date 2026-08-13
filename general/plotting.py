@@ -14,7 +14,7 @@ def plot_segment(segment, style='b.-', linewidth=2, markersize=0.1):
 
 
 def show_boundary(boundary, style='b.-', linewidth=1, markersize=6, show=True):
-    segts = boundary.all_segments()
+    segts = boundary.own_segments()
     for segt in segts:
         if segt.point1 not in boundary.vertices or segt.point2 not in boundary.vertices:
             continue
@@ -27,7 +27,7 @@ def show_boundary(boundary, style='b.-', linewidth=1, markersize=6, show=True):
 def plot_boundary(boundary, style='b.-', linewidth=2, markersize=10):
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    segts = boundary.all_segments()
+    segts = boundary.own_segments()
     x, y = [], []
     for segt in segts:
         if segt.point1 not in boundary.vertices or segt.point2 not in boundary.vertices:
@@ -49,7 +49,7 @@ def savefig_boundary(boundary, name, title="", style="k.-", dpi=600):
 
     ax = fig.add_subplot(111)
     ax.set_title(title)
-    segts = boundary.all_segments()
+    segts = boundary.own_segments()
     x, y = [], []
     for segt in segts:
         if segt.point1 not in boundary.vertices or segt.point2 not in boundary.vertices:

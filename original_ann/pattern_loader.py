@@ -1,6 +1,6 @@
 import numpy as np
 
-from general.geometry import transformation
+from general.geometry import Lin_Alg
 
 
 def get_patterns(filename):
@@ -23,5 +23,5 @@ def data_transformation(data):
     for line in data:
         p0 = np.array([line[4], line[5]])
         p1 = np.array([line[6], line[7]])
-        data_transformed.append(transformation(line, np.linalg.norm(p0 - p1), p0, p1))
+        data_transformed.append(Lin_Alg.transformation(line, np.linalg.norm(p0 - p1), p0, p1))
     return np.array(data_transformed)

@@ -1,15 +1,68 @@
 import math
 
-from general.geometry import Quad
-from general.mesh_env import MeshEnv
+import numpy as np
+
+from general.mesh import Mesh
+from general.geometry import Quad, Vertex, Lin_Alg
+from general.plotting import render_boundary, close_render
 
 
-class EbrdEnv(MeshEnv):
+class Ebrd_Env:
     TYPE_THRESHOLD = 0.3
 
+    def __init__(self, boundary):
+        self.mesh = Mesh(boundary)
+        self.boundary = boundary.copy()
+        self.current_area = self.mesh.original_area
+
+        self.neighbor_num = 6
+        self.radius_num = 3
+        self.radius = 4
+
+        self.current_ref_state: dict = None
+        self.not_valid_points = []
+        self.last_not_valid_points = []
+        self.target_angle = 0
+
+    def reset(self, static=False):
+        self.mesh.reset()
+        self.boundary = self.mesh.boundary.copy()
+        self.not_valid_points = []
+        self.current_area = self.mesh.original_area
+        self.current_ref_state = None
+        return self.find_next_state(static=static)
+
+    def find_next_state(self, not_valid_points=None, static=False):
+        r_p = self.boundary.find_reference_point(not_valid_points, target_angle=self.target_angle)
+
+        if r_p:
+            self.current_ref_state = self.boundary.reference_state(
+                r_p, self.neighbor_num, self.radius_num,
+                self.current_area / self.mesh.original_area, self.radius, static)
+            return np.array(self.current_ref_state['state']).astype(np.float32)
+        else:
+            return None
+
+    def get_middle_points(self, state):
+        v1 = np.asarray([state[self.neighbor_num], state[self.neighbor_num + 1]], dtype=float)
+        v2 = np.asarray([state[self.neighbor_num + 2], state[self.neighbor_num + 3]], dtype=float)
+        return v1, v2
+
+    def detransformation(self, point, is_move=False):
+        v1, v2 = self.get_middle_points(Vertex.flatten(self.current_ref_state['neighbors']))
+
+        de_point = Lin_Alg.detransformation(point, self.current_ref_state['base_length'] if not is_move else 1, v1, v2)
+        return Vertex(round(de_point[0], 4), round(de_point[1], 4))
+
+    def close(self):
+        close_render()
+
+    def render(self, mode='human'):
+        render_boundary(self.mesh.boundary)
+
     def move(self, new_point, rule_type, lr_1=None, lr_2=None):
-        x = self.current_ref_state.base_length * self.radius * new_point[0] * math.cos(new_point[1])
-        y = self.current_ref_state.base_length * self.radius * new_point[0] * math.sin(new_point[1])
+        x = self.current_ref_state['base_length'] * self.radius * new_point[0] * math.cos(new_point[1])
+        y = self.current_ref_state['base_length'] * self.radius * new_point[0] * math.sin(new_point[1])
 
         new_point = self.detransformation([round(x, 6), round(y, 6)], is_move=True)
 
@@ -18,7 +71,7 @@ class EbrdEnv(MeshEnv):
         not_valid_element = True
         is_complete = True
 
-        reference_point = self.current_ref_state.reference_point
+        reference_point = self.current_ref_state['reference_point']
 
         if len(self.boundary.vertices) <= 5:
             reward = 10

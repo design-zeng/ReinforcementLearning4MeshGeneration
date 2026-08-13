@@ -1,12 +1,10 @@
 import math
 import itertools
-from types import SimpleNamespace
 
 import numpy as np
 
-from general.geometry import (Vertex, Segment, Polygon, Quad, clip_angle,
-                              middle_vertex, side_vertex, indention_vertex,
-                              stays_inside_ring, clockwise_vertices)
+from general.geometry import (Vertex, Segment, Polygon, Quad, Angle,
+                              circle_line_intersection, clockwise_vertices)
 
 
 class Boundary(Polygon):
@@ -17,7 +15,7 @@ class Boundary(Polygon):
         self.candidate_vertices = None
 
     def sort_segments_by_length(self, reverse=False):
-        return sorted(((seg, seg.length()) for seg in self.all_segments()),
+        return sorted(((seg, seg.length()) for seg in self.own_segments()),
                       key=lambda x: x[1], reverse=reverse)
 
     def find_closest_segments(self, vertex, dist):
@@ -31,10 +29,6 @@ class Boundary(Polygon):
             if inner and perp_dist <= dist:
                 closest.append(seg)
         return closest
-
-    def count_boundary_segments(self, vertex):
-        return sum(1 for seg in vertex.segments
-                   if seg.point1 in self.vertices and seg.point2 in self.vertices)
 
     def reference_angle_score(self, vertex, index=None):
         if index is None:
@@ -69,7 +63,7 @@ class Boundary(Polygon):
         if not not_valid_points:
             return self.candidate_vertices[0][0]
         for vertex, _ in self.candidate_vertices:
-            if not self.coincides_with_any(vertex, not_valid_points):
+            if not vertex.coincides_with_any(not_valid_points):
                 return vertex
         return None
 
@@ -118,9 +112,9 @@ class Boundary(Polygon):
             index = self.vertices.index(v)
             prev, nxt = self.vertices[index - 1], self.vertices[(index + 1) % n]
             for seg in checking_segs:
-                if prev not in quad.vertices and seg.is_cross(Segment(v, prev)):
+                if prev not in quad.vertices and seg.is_intersecting(Segment(v, prev)):
                     return True
-                if nxt not in quad.vertices and seg.is_cross(Segment(v, nxt)):
+                if nxt not in quad.vertices and seg.is_intersecting(Segment(v, nxt)):
                     return True
         return False
 
@@ -145,7 +139,7 @@ class Boundary(Polygon):
             self.add_reference_candidates(ref_neighbors)
 
         elif len(new_vertices) == 0:
-            removable = [v for v in quad.vertices if self.count_boundary_segments(v) < 3]
+            removable = [v for v in quad.vertices if self.n_sides(v) < 3]
             for v in removable:
                 self.vertices.remove(v)
 
@@ -197,7 +191,7 @@ class Boundary(Polygon):
         v = self.vertices
         n = len(v)
         new_vs = [x for x in element.vertices
-                  if len(x.get_connected_vertices()) == 2 and x in v]
+                  if len(x.get_neighbors()) == 2 and x in v]
 
         if new_vs:
             return self.compute_boundary_quality(new_vs[0])
@@ -226,12 +220,12 @@ class Boundary(Polygon):
         neighbors = self.get_neighbors(reference_point, num_points=neighbor_num)
         base_length = round(sum(neighbors[i].distance_to(neighbors[i - 1])
                                 for i in range(1, len(neighbors))) / neighbor_num, 4)
-        r_points = self._radius_points(reference_point, neighbor_num, radius_num,
+        r_points = self.radius_points(reference_point, neighbor_num, radius_num,
                                        area_ratio, radius, static, base_length)
-        return SimpleNamespace(reference_point=reference_point, neighbors=neighbors,
-                               base_length=base_length, state=r_points.flatten())
+        return {'reference_point': reference_point, 'neighbors': neighbors,
+                'base_length': base_length, 'state': r_points.flatten()}
 
-    def _radius_points(self, rp, neighbor_num, radius_num, area_ratio, radius, static, base_length):
+    def radius_points(self, rp, neighbor_num, radius_num, area_ratio, radius, static, base_length):
         bv = self.vertices
         n = len(bv)
         r_points = np.full([radius_num + neighbor_num, 2], 1, dtype=np.float32)
@@ -259,7 +253,7 @@ class Boundary(Polygon):
         rotation_angle = rp.clockwise_angle(right_p, rp + Vertex(1, 0))
         for i in range(radius_num):
             a = (2 * i + 1) * theta / (2 * radius_num)
-            r_points[neighbor_num // 2 + i][1] = clip_angle(a, theta)
+            r_points[neighbor_num // 2 + i][1] = Angle.clip_angle(a, theta)
         p_s = rp + Vertex.rotate_counterclockwise(
             Vertex(target_length * math.cos(theta / 2), target_length * math.sin(theta / 2)), rotation_angle)
         shortest_edge = [1, 0]
@@ -275,7 +269,7 @@ class Boundary(Polygon):
             if k < radius_num and d < target_length:
                 if r_points[k + neighbor_num // 2][0] > (d / radius) / base_length:
                     r_points[k + neighbor_num // 2][0] = (d / radius) / base_length
-                    r_points[k + neighbor_num // 2][1] = clip_angle(angle, theta)
+                    r_points[k + neighbor_num // 2][1] = Angle.clip_angle(angle, theta)
 
             seg = Segment(bv[i], bv[i + 1])
             ll = Segment(rp, p_s)
@@ -298,11 +292,10 @@ class Boundary(Polygon):
     def get_radius_neighbors(self, base_point, start_point, end_point, exclusion, radius, N=3):
         def radius_neighbors_with_angle(start_angle, end_angle):
             base_length = radius * (0.5 * base_point.distance_to(start_point) + 0.5 * base_point.distance_to(end_point))
-            closest_neighbors = self.get_closest_points(
-                self.get_points_within_angle(
+            closest_neighbors = base_point.get_closest_points(
+                Angle.get_points_within_angle(
                     self.vertices, base_point, start_point, start_angle, end_angle
                 ),
-                base_point,
                 exclusion=exclusion,
                 max_dist=base_length
             )
@@ -359,7 +352,7 @@ class Boundary(Polygon):
             n_v = middle_vertex(vertex, left_v, right_v, target_angle)
             if target_angle >= 135:
                 return vertex
-            clockwise_boundary = clockwise_vertices(vertex, vertex.get_connected_vertices())
+            clockwise_boundary = clockwise_vertices(vertex, vertex.get_neighbors())
             if stays_inside_ring(vertex, n_v, clockwise_boundary, left_v, right_v):
                 return n_v
             target_angle += 5
@@ -371,7 +364,7 @@ class Boundary(Polygon):
             n_v = side_vertex(vertex, next_v, next_next_v, target_angle, dist)
             if target_angle <= v_angle:
                 return vertex
-            clockwise_boundary = clockwise_vertices(vertex, vertex.get_connected_vertices())
+            clockwise_boundary = clockwise_vertices(vertex, vertex.get_neighbors())
             if stays_inside_ring(vertex, n_v, clockwise_boundary, _next_v, next_v):
                 return n_v
             target_angle -= 5
@@ -383,8 +376,8 @@ class Boundary(Polygon):
         right_v = self.vertices[index - 1]
         dist = (vertex.distance_to(left_v) + vertex.distance_to(right_v)) / 2
 
-        c_neighbors = self.get_closest_points(
-            self.vertices, vertex,
+        c_neighbors = vertex.get_closest_points(
+            self.vertices,
             [self.vertices[index - 2], right_v, left_v, self.vertices[(index + 2) % n]], dist)
         neighbors = self.find_closest_segments(vertex, dist)
         if not (neighbors or c_neighbors):
@@ -395,7 +388,7 @@ class Boundary(Polygon):
             n_v = indention_vertex(vertex, left_v, right_v, (360 - v_angle) / 2, dist / times)
             if times >= 10:
                 return vertex
-            clockwise_boundary = clockwise_vertices(vertex, vertex.get_connected_vertices())
+            clockwise_boundary = clockwise_vertices(vertex, vertex.get_neighbors())
             if stays_inside_ring(vertex, n_v, clockwise_boundary, left_v, right_v):
                 return n_v
             times += 1
@@ -410,3 +403,35 @@ class Boundary(Polygon):
         diff = vertex - m_v
         s = math.sqrt(d ** 2 / (diff.x ** 2 + diff.y ** 2))
         return m_v + diff * s
+
+
+def middle_vertex(vertex, left_v, right_v, target_angle):
+    m_v = (left_v + right_v) / 2
+    A = right_v.x - left_v.x
+    B = right_v.y - left_v.y
+    D = left_v.distance_to(m_v) / math.tan(math.radians(target_angle / 2))
+
+    V1, V2 = circle_line_intersection(m_v.x, m_v.y, A, B, 0, D)
+    return V1 if V1.distance_to(vertex) < V2.distance_to(vertex) else V2
+
+
+def side_vertex(vertex, next_v, next_next_v, angle, dist):
+    W = dist * next_v.distance_to(next_next_v) * math.cos(math.radians(angle))
+    V1, V2 = circle_line_intersection(next_v.x, next_v.y, next_next_v.x - next_v.x, next_next_v.y - next_v.y, W, dist)
+    return V1 if V1.distance_to(vertex) < V2.distance_to(vertex) else V2
+
+
+def indention_vertex(vertex, left_v, right_v, angle, dist):
+    W = dist * vertex.distance_to(left_v) * math.cos(math.radians(angle))
+    V1, V2 = circle_line_intersection(vertex.x, vertex.y, left_v.x - vertex.x, left_v.y - vertex.y, W, dist)
+    return V1 if V1.clockwise_angle(left_v, right_v) < V2.clockwise_angle(left_v, right_v) else V2
+
+
+def stays_inside_ring(original, candidate, ring, left_v, right_v):
+    for i in range(len(ring)):
+        if left_v in [ring[i], ring[i - 1]] and right_v in [ring[i], ring[i - 1]]:
+            continue
+        if (candidate.clockwise_angle(ring[i], ring[i - 1]) < math.pi) != \
+                (original.clockwise_angle(ring[i], ring[i - 1]) < math.pi):
+            return False
+    return True
