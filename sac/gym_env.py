@@ -42,36 +42,36 @@ class Gym_Env(MeshEnv, gym.Env):
         rule = None
         new_point = self.detransformation([round(action[1], 4), round(action[2], 4)])
         reference_point = self.current_ref_state.reference_point
-        index = self.mesh.updated_boundary.vertices.index(reference_point)
+        index = self.boundary.vertices.index(reference_point)
 
         quad = None
-        if len(self.mesh.updated_boundary.vertices) <= 5:
+        if len(self.boundary.vertices) <= 5:
             reward = 10
             done = True
         elif rule_type <= -0.5:
-            quad = self.mesh.updated_boundary.rule_element(-1, index)
+            quad = self.boundary.rule_element(-1, index)
             rule = -1
         elif rule_type >= 0.5:
-            quad = self.mesh.updated_boundary.rule_element(1, index)
+            quad = self.boundary.rule_element(1, index)
             rule = 1
         else:
-            if self.mesh.updated_boundary.contains_point(new_point):
-                quad = self.mesh.updated_boundary.rule_element(-1, index) if self.mesh.updated_boundary.find_same_point(new_point) \
-                    else self.mesh.updated_boundary.rule_element(0, index, new_point)
+            if self.boundary.contains_point(new_point):
+                quad = self.boundary.rule_element(-1, index) if self.boundary.find_same_point(new_point) \
+                    else self.boundary.rule_element(0, index, new_point)
             else:
                 n = len(self.mesh.generated_quads)
                 reward += -1 / n if n else -1
                 quad = None
             rule = 0
 
-        valid = quad is not None and self.mesh.can_commit_quad(quad, reference_point)
+        valid = quad is not None and self.mesh.can_commit_quad(self.boundary, quad, reference_point)
 
         if valid:
-            self.mesh.commit_quad(quad, reference_point)
+            self.mesh.commit_quad(self.boundary, quad, reference_point)
             quad_area = quad.area()
             self.current_area -= quad_area
 
-            quality = self.mesh.get_quality(quad, 2)
+            quality = self.mesh.get_quality(self.boundary, quad, 2)
 
             min_area = self.estimated_area_range[0] ** 2
             critical_area = self.estimated_area_range[1] ** 2
@@ -86,11 +86,11 @@ class Gym_Env(MeshEnv, gym.Env):
             self.history_info[rule].append(reward)
 
             failed = False
-            if len(self.mesh.updated_boundary.vertices) <= 5:
+            if len(self.boundary.vertices) <= 5:
                 reward += 10
                 done = True
-                if len(self.mesh.updated_boundary.vertices) == 4:
-                    quad = Quad(self.mesh.updated_boundary.vertices)
+                if len(self.boundary.vertices) == 4:
+                    quad = Quad(self.boundary.vertices)
                     quad.connect_vertices()
                     self.mesh.generated_quads.append(quad)
             else:

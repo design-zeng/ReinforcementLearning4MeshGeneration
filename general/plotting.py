@@ -100,10 +100,10 @@ def generate_meshes_canvas(mesh_gen, quads, quality, indexing, quality_index, st
     for idx, m in enumerate(quads):
         center = m.get_centroid(diff=True)
         if quality and indexing:
-            _quality = round(mesh_gen.get_quality(element=m, index=quality_index), 4)
+            _quality = round(mesh_gen.get_quality(mesh_gen.boundary, element=m, index=quality_index), 4)
             plt.text(center.x, center.y, f"{idx}; {_quality}", fontsize=6)
         elif quality:
-            _quality = round(mesh_gen.get_quality(element=m, index=quality_index), 4)
+            _quality = round(mesh_gen.get_quality(mesh_gen.boundary, element=m, index=quality_index), 4)
             plt.text(center.x, center.y, str(_quality), fontsize=6)
         elif indexing:
             plt.text(center.x, center.y, str(idx), fontsize=4)

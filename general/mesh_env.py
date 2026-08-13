@@ -12,6 +12,7 @@ from general.plotting import render_boundary, close_render
 class MeshEnv:
     def __init__(self, boundary):
         self.mesh = Mesh(boundary)
+        self.boundary = boundary.copy()
         self.current_area = self.mesh.original_area
 
         self.neighbor_num = 6
@@ -25,16 +26,17 @@ class MeshEnv:
 
     def reset(self, static=False):
         self.mesh.reset()
+        self.boundary = self.mesh.boundary.copy()
         self.not_valid_points = []
         self.current_area = self.mesh.original_area
         self.current_ref_state = None
         return self.find_next_state(static=static)
 
     def find_next_state(self, not_valid_points=None, static=False):
-        r_p = self.mesh.updated_boundary.find_reference_point(not_valid_points, target_angle=self.target_angle)
+        r_p = self.boundary.find_reference_point(not_valid_points, target_angle=self.target_angle)
 
         if r_p:
-            self.current_ref_state = self.mesh.updated_boundary.reference_state(
+            self.current_ref_state = self.boundary.reference_state(
                 r_p, self.neighbor_num, self.radius_num,
                 self.current_area / self.mesh.original_area, self.radius, static)
             return np.array(self.current_ref_state.state).astype(np.float32)
@@ -56,5 +58,4 @@ class MeshEnv:
         close_render()
 
     def render(self, mode='human'):
-        print(f'Generated elements: {len(self.mesh.generated_quads)}')
         render_boundary(self.mesh.boundary)

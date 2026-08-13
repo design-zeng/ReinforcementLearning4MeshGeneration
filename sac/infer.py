@@ -75,7 +75,7 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
         tag = f"{method}_env_{i}_{'T' if deterministic else 'F'}"
 
         if info['is_complete']:
-            env.mesh.smooth(env.mesh.boundary.vertices)
+            env.mesh.smooth(env.boundary, env.mesh.boundary.vertices)
 
         if save_fig and env.mesh.generated_quads:
             save_meshes(env, eval_path / version / f"{tag}.png", quads=env.mesh.generated_quads,
@@ -86,7 +86,7 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
             with open(experiments_path / version / f"{tag}_history_info", 'w') as fw:
                 json.dump(env.history_info, fw)
 
-            q = [env.mesh.get_quality(env.mesh.generated_quads[j], 4) for j in range(len(env.mesh.generated_quads))]
+            q = [env.mesh.get_quality(env.boundary, env.mesh.generated_quads[j], 4) for j in range(len(env.mesh.generated_quads))]
             print(f"element quality mean/std: {np.mean(q):.3f} / {np.std(q):.3f}")
 
         if save_samples and env.mesh.generated_quads:
@@ -119,7 +119,7 @@ def replication_evaluation(is_render=False, deterministic=False, indexing=False,
         results['sac']['n_complete'] += 1 if info['is_complete'] else 0
 
         if save_fig and info['is_complete']:
-            env.mesh.smooth(env.mesh.boundary.vertices)
+            env.mesh.smooth(env.boundary, env.mesh.boundary.vertices)
 
     with open(eval_path / version / "evaluation_repli.txt", 'w') as outfile:
         json.dump(results, outfile)
@@ -168,7 +168,7 @@ def full_mesh(domain="boundary6",
         coverage = sum(m.area() for m in env.mesh.generated_quads) / env.mesh.original_area
 
         if info['is_complete']:
-            env.mesh.smooth(env.mesh.boundary.vertices)
+            env.mesh.smooth(env.boundary, env.mesh.boundary.vertices)
 
             save_meshes(env, out, quads=env.mesh.generated_quads, quality=False, quality_index=4, style='k-')
             print(f"Completed {domain} on attempt {k + 1} "

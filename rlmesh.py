@@ -17,14 +17,14 @@ actor-critic policy (Pan et al., 2023).
 To build a boundary from your own points instead of a file:
 
     from general.geometry import Vertex
-    from general.mesh import Boundary
+    from general.boundary import Boundary
     boundary = Boundary([Vertex(x, y) for x, y in my_points])
     boundary.connect_vertices()
 """
 from pathlib import Path
 
 from general.geometry import Vertex
-from general.mesh import Boundary
+from general.boundary import Boundary
 from sac.gym_env import Gym_Env
 
 __all__ = ["Mesher", "MeshResult", "DEFAULT_MODEL"]
@@ -92,7 +92,7 @@ class Mesher:
             info = _rollout(self.model, env, deterministic)
             if info["is_complete"]:
                 if smooth:
-                    env.mesh.smooth(env.mesh.boundary.vertices)
+                    env.mesh.smooth(env.boundary, env.mesh.boundary.vertices)
                 return MeshResult(env.mesh, complete=True)
         return MeshResult(env.mesh, complete=False)
 

@@ -130,17 +130,17 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
             step += 1
             action, type_value = get_action(state, model)
             state, reward, done, _ = env.move(action, round(type_value, 2), 0.9, 0.5)
-            print(_, reward, len(env.mesh.updated_boundary.vertices))
+            print(_, reward, len(env.boundary.vertices))
             ep_reward += reward
             if done:
                 break
 
         print(f"Execution time: {time.time() - start}s.")
 
-        if len(env.mesh.updated_boundary.vertices) <= 5:
-            env.mesh.smooth(env.mesh.boundary.vertices)
+        if len(env.boundary.vertices) <= 5:
+            env.mesh.smooth(env.boundary, env.mesh.boundary.vertices)
         else:
-            env.mesh.smooth_pave(env.mesh.boundary.vertices, env.mesh.updated_boundary.vertices, iteration=400, interior=True)
+            env.mesh.smooth_pave(env.boundary, env.mesh.boundary.vertices, env.boundary.vertices, iteration=400, interior=True)
 
         savefig_boundary(env.mesh.boundary, plots_dir / f"{i_episode}.png", style='k-', dpi=300)
         print("Figure saved!")

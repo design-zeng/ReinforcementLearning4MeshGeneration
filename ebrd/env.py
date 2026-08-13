@@ -20,35 +20,35 @@ class EbrdEnv(MeshEnv):
 
         reference_point = self.current_ref_state.reference_point
 
-        if len(self.mesh.updated_boundary.vertices) <= 5:
+        if len(self.boundary.vertices) <= 5:
             reward = 10
             done = True
 
         else:
-            index = self.mesh.updated_boundary.vertices.index(reference_point)
+            index = self.boundary.vertices.index(reference_point)
             quad = None
 
             if rule_type <= self.TYPE_THRESHOLD:
-                quad = self.mesh.updated_boundary.rule_element(-1, index)
+                quad = self.boundary.rule_element(-1, index)
             elif rule_type >= 1 - self.TYPE_THRESHOLD:
-                quad = self.mesh.updated_boundary.rule_element(1, index)
+                quad = self.boundary.rule_element(1, index)
             else:
-                if self.mesh.updated_boundary.contains_point(new_point):
-                    quad = self.mesh.updated_boundary.rule_element(0, index, new_point)
+                if self.boundary.contains_point(new_point):
+                    quad = self.boundary.rule_element(0, index, new_point)
 
             if quad is None:
                 pass
-            elif self.mesh.can_commit_quad(quad, reference_point):
+            elif self.mesh.can_commit_quad(self.boundary, quad, reference_point):
 
                 not_valid_element = False
-                self.mesh.commit_quad(quad, reference_point)
+                self.mesh.commit_quad(self.boundary, quad, reference_point)
 
                 next_state = self.find_next_state(self.not_valid_points, static=True)
 
-                if len(self.mesh.updated_boundary.vertices) <= 5:
+                if len(self.boundary.vertices) <= 5:
                     done = True
-                    if len(self.mesh.updated_boundary.vertices) == 4:
-                        quad = Quad(self.mesh.updated_boundary.vertices)
+                    if len(self.boundary.vertices) == 4:
+                        quad = Quad(self.boundary.vertices)
                         self.mesh.generated_quads.append(quad)
 
             if not_valid_element:
@@ -58,13 +58,13 @@ class EbrdEnv(MeshEnv):
             else:
                 self.not_valid_points = []
 
-            if len(self.mesh.updated_boundary.vertices) > 4:
+            if len(self.boundary.vertices) > 4:
                 is_complete = False
                 if next_state is None:
                     if lr_1 and lr_2:
-                        self.mesh.smooth_pave(self.mesh.boundary.vertices, self.mesh.updated_boundary.vertices, lr_1, lr_2, iteration=400)
+                        self.mesh.smooth_pave(self.boundary, self.mesh.boundary.vertices, self.boundary.vertices, lr_1, lr_2, iteration=400)
                     else:
-                        self.mesh.smooth_pave(self.mesh.boundary.vertices, self.mesh.updated_boundary.vertices, iteration=400)
+                        self.mesh.smooth_pave(self.boundary, self.mesh.boundary.vertices, self.boundary.vertices, iteration=400)
 
                     if len(self.last_not_valid_points) > 0 and len(self.not_valid_points) > 0:
                         if self.last_not_valid_points[0] == self.not_valid_points[0] and \
