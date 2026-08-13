@@ -6,6 +6,8 @@ from gym import spaces
 
 from general.mesh import Mesh
 from general.geometry import Quad, Vertex, Lin_Alg
+from general.state_encoding import reference_state
+from general.boundary_quality import estimate_area_range
 from general.plotting import render_boundary, close_render
 
 
@@ -47,15 +49,15 @@ class Sac_Env(gym.Env):
         self.current_area = self.mesh.original_area
         self.current_ref_state = None
         self.failed_num = 0
-        self.estimated_area_range = self.mesh.boundary.estimate_area_range()
+        self.estimated_area_range = estimate_area_range(self.mesh.boundary)
         return self.find_next_state(static=static)
 
     def find_next_state(self, not_valid_points=None, static=False):
         r_p = self.boundary.find_reference_point(not_valid_points, target_angle=self.target_angle)
 
         if r_p:
-            self.current_ref_state = self.boundary.reference_state(
-                r_p, self.neighbor_num, self.radius_num,
+            self.current_ref_state = reference_state(
+                self.boundary, r_p, self.neighbor_num, self.radius_num,
                 self.current_area / self.mesh.original_area, self.radius, static)
             return np.array(self.current_ref_state['state']).astype(np.float32)
         else:

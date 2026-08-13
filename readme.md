@@ -7,9 +7,10 @@ This repository contains a Python implementation of the RL-based mesh generation
 
 which were evolved from the following:
 
-3. Zeng, Y., & Yao, S. (2009). Understanding design activities through computer simulation. *Advanced Engineering Informatics, 23(3)*, 294-308.
-4. Yao, S., Yan, B., Chen, B., & Zeng, Y. (2005). An ANN-based element extraction method for automatic mesh generation. *Expert Systems with Applications, 29(1)*, 193-206.
-5. Zeng, Y., & Cheng, G. (1993). Knowledge‐Based Free Mesh Generation of Quadrilateral Elements in Two‐Dimensional Domains. *Computer‐Aided Civil and Infrastructure Engineering, 8(4)*, 259-270.
+3. Zeng, Y. (2015). Environment-Based Design (EBD): a Methodology for Transdisciplinary Design. *Journal of Integrated Design and Process Science, 19(1)*, 5-20. — the design methodology whose element-extraction rules the FreeMesh work follows.
+4. Zeng, Y., & Yao, S. (2009). Understanding design activities through computer simulation. *Advanced Engineering Informatics, 23(3)*, 294-308.
+5. Yao, S., Yan, B., Chen, B., & Zeng, Y. (2005). An ANN-based element extraction method for automatic mesh generation. *Expert Systems with Applications, 29(1)*, 193-206.
+6. Zeng, Y., & Cheng, G. (1993). Knowledge‐Based Free Mesh Generation of Quadrilateral Elements in Two‐Dimensional Domains. *Computer‐Aided Civil and Infrastructure Engineering, 8(4)*, 259-270.
 
 If you use this implementation in your work, please add a reference/citation to the paper:
 
@@ -58,7 +59,7 @@ Build the boundary from your own points instead of reading a file:
 
 ```python
 from general.geometry import Vertex
-from general.mesh import Boundary
+from general.boundary import Boundary
 
 boundary = Boundary([Vertex(x, y) for x, y in my_points])
 boundary.connect_vertices()
@@ -98,8 +99,13 @@ On Intel (x86_64) macOS, install PyTorch with conda instead
 - `rlmesh.py` — library entry point (`Mesher`) for meshing a domain, see above
 - `general/` shared geometry + meshing library
   - `geometry.py` — Vertex, Segment, Polygon, Quad, coordinate transforms, geometric constructions
-  - `mesh.py` — Boundary (the advancing front) and Mesh (elements, smoothing, quality metrics, sample extraction, IO)
-  - `mesh_env.py` — `MeshEnv`, the base RL environment wrapping a `Mesh`
+  - `boundary.py` — `Boundary`, the advancing front: reference-point selection, element rules, front updates
+  - `mesh.py` — `Mesh`, the committed elements: quad commit/validation and reward-quality dispatch
+  - `quad_quality.py` — element quality metrics (stretch, robust, edge–angle, taper, scaled Jacobian)
+  - `boundary_quality.py` — front-side quality and target element sizing
+  - `state_encoding.py` — encode the local front around a reference point into the RL observation vector
+  - `smoothing.py` — mesh and front smoothing (Laplacian / rule-based relaxation)
+  - `sample_extraction.py` — turn finished meshes into training samples; Abaqus `.inp` export
   - `plotting.py` — rendering / figure helpers
   - `utils.py` — read a JSON polygon into a `Boundary`
   - `tools/`
@@ -172,10 +178,6 @@ On Intel (x86_64) macOS, install PyTorch with conda instead
 - Infer
   ```bash
   python -m original_ann.infer
-  ```
-- Visualize `pattern.txt`
-  ```bash
-  python -m original_ann.tools.plot_patterns
   ```
 
 ### Other Tools

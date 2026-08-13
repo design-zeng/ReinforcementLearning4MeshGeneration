@@ -4,6 +4,8 @@ import numpy as np
 
 from general.mesh import Mesh
 from general.geometry import Quad, Vertex, Lin_Alg
+from general.state_encoding import reference_state
+from general.smoothing import smooth_pave
 from general.plotting import render_boundary, close_render
 
 
@@ -36,8 +38,8 @@ class Ebrd_Env:
         r_p = self.boundary.find_reference_point(not_valid_points, target_angle=self.target_angle)
 
         if r_p:
-            self.current_ref_state = self.boundary.reference_state(
-                r_p, self.neighbor_num, self.radius_num,
+            self.current_ref_state = reference_state(
+                self.boundary, r_p, self.neighbor_num, self.radius_num,
                 self.current_area / self.mesh.original_area, self.radius, static)
             return np.array(self.current_ref_state['state']).astype(np.float32)
         else:
@@ -115,9 +117,9 @@ class Ebrd_Env:
                 is_complete = False
                 if next_state is None:
                     if lr_1 and lr_2:
-                        self.mesh.smooth_pave(self.boundary, self.mesh.boundary.vertices, self.boundary.vertices, lr_1, lr_2, iteration=400)
+                        smooth_pave(self.mesh, self.boundary, self.mesh.boundary.vertices, self.boundary.vertices, lr_1, lr_2, iteration=400)
                     else:
-                        self.mesh.smooth_pave(self.boundary, self.mesh.boundary.vertices, self.boundary.vertices, iteration=400)
+                        smooth_pave(self.mesh, self.boundary, self.mesh.boundary.vertices, self.boundary.vertices, iteration=400)
 
                     if len(self.last_not_valid_points) > 0 and len(self.not_valid_points) > 0:
                         if self.last_not_valid_points[0] == self.not_valid_points[0] and \

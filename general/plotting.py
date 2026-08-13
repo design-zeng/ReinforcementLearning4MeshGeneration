@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from general.geometry import Segment
-from general.mesh import edge_angle_quality
+from general.quad_quality import edge_angle_quality
 
 
 def plot_segment(segment, style='b.-', linewidth=2, markersize=0.1):

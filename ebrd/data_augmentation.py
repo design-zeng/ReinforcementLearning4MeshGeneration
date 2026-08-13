@@ -9,7 +9,7 @@ from numpy.random import uniform
 from multiprocessing import Process, Manager
 
 from general.geometry import Segment, Vertex, Quad
-from general.mesh import quad_quality, is_valid_quad
+from general.quad_quality import quad_quality, is_valid_quad
 
 
 base_path = Path(__file__).parent.parent

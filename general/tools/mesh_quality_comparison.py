@@ -12,7 +12,8 @@ from general.boundary import Boundary
 from general.plotting import show_quad
 from general.mesh import Mesh
 from general.utils import read_polygon
-from general.mesh import quad_quality
+from general.quad_quality import quad_quality
+from general.sample_extraction import extract_samples, write_samples
 
 
 base_path = Path(__file__).parent.parent.parent
@@ -284,8 +285,8 @@ def read_inp_file(filename):
 def extract_samples_from_file():
     for m in discover_meshes():
         env = read_inp_file(str(m))
-        samples, output_types, outputs = env.mesh.extract_samples(env.generated_quads, 3, 3, index=5, radius=6, quality_threshold=0.7)
-        env.mesh.save_samples(f"{output_path}/data_augmentation/{m.stem}.json",
+        samples, output_types, outputs = extract_samples(env.mesh, env.generated_quads, 3, 3, index=5, radius=6, quality_threshold=0.7)
+        write_samples(f"{output_path}/data_augmentation/{m.stem}.json",
                          {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
     print("Saved!")
 

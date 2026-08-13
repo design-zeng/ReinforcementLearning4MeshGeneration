@@ -25,7 +25,9 @@ from pathlib import Path
 
 from general.geometry import Vertex
 from general.boundary import Boundary
-from sac.gym_env import Sac_Env
+from general.smoothing import smooth_mesh
+from general.sample_extraction import write_inp
+from sac.sac_env import Sac_Env
 
 __all__ = ["Mesher", "MeshResult", "DEFAULT_MODEL"]
 
@@ -48,7 +50,7 @@ class MeshResult:
 
     def save(self, path):
         """Write the mesh to an Abaqus ``.inp`` file."""
-        self._mesh.write_elements_to_file(str(path))
+        write_inp(self._mesh, str(path))
 
     def to_arrays(self):
         """Return ``(nodes, faces)``: node coordinates as ``(x, y)`` tuples and
@@ -92,7 +94,7 @@ class Mesher:
             info = _rollout(self.model, env, deterministic)
             if info["is_complete"]:
                 if smooth:
-                    env.mesh.smooth(env.boundary, env.mesh.boundary.vertices)
+                    smooth_mesh(env.mesh, env.boundary, env.mesh.boundary.vertices)
                 return MeshResult(env.mesh, complete=True)
         return MeshResult(env.mesh, complete=False)
 

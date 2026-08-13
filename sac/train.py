@@ -5,7 +5,7 @@ import torch
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
 from general.utils import read_polygon
-from sac.gym_env import Sac_Env
+from sac.sac_env import Sac_Env
 from sac.custom_callback import CustomCallback
 
 

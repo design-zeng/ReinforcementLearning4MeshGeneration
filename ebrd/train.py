@@ -11,7 +11,9 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from general.utils import read_polygon
-from ebrd.env import Ebrd_Env
+from ebrd.ebrd_env import Ebrd_Env
+from general.smoothing import smooth_mesh, smooth_pave
+from general.sample_extraction import extract_samples, write_samples
 from general.plotting import savefig_boundary
 from ebrd.data_augmentation import sampling_main
 from ebrd.model import FNNPolicy, get_action, device, SEED, domains_path, output_path, augmentation_path
@@ -138,18 +140,18 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
         print(f"Execution time: {time.time() - start}s.")
 
         if len(env.boundary.vertices) <= 5:
-            env.mesh.smooth(env.boundary, env.mesh.boundary.vertices)
+            smooth_mesh(env.mesh, env.boundary, env.mesh.boundary.vertices)
         else:
-            env.mesh.smooth_pave(env.boundary, env.mesh.boundary.vertices, env.boundary.vertices, iteration=400, interior=True)
+            smooth_pave(env.mesh, env.boundary, env.mesh.boundary.vertices, env.boundary.vertices, iteration=400, interior=True)
 
         savefig_boundary(env.mesh.boundary, plots_dir / f"{i_episode}.png", style='k-', dpi=300)
         print("Figure saved!")
 
         running_reward = 0.05 * ep_reward + 0.95 * running_reward
 
-        samples, output_types, outputs = env.mesh.extract_samples(
-            env.mesh.generated_quads, 2, 3, radius=4, quality_threshold=0.7)
-        env.mesh.save_samples(samples_dir / f"ebrd_{i_episode}.json",
+        samples, output_types, outputs = extract_samples(
+            env.mesh, env.mesh.generated_quads, 2, 3, radius=4, quality_threshold=0.7)
+        write_samples(samples_dir / f"ebrd_{i_episode}.json",
                          {'samples': samples, 'output_types': output_types, 'outputs': outputs},
                          _type=2)
 
