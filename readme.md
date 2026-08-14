@@ -122,9 +122,8 @@ On Intel (x86_64) macOS, install PyTorch with conda instead
   the front the product–environment interface, and meshing the recursive resolution of
   conflicts on it
   - `config.py` — all tweakable constants in one place
-  - `geometry.py` — Vertex (primitive object), Segment (vertex–vertex interaction), Polygon, Quad, geometric constructions
-  - `boundary.py` — `Boundary`, the advancing front where product meets environment: reference-point selection, rule quads, front updates
-  - `mesh.py` — `Mesh`, the product: absorbs one quad at a time
+  - `geometry.py` — Vertex (primitive object), Segment (vertex–vertex interaction), Polygon, Quad, Mesh (quads accumulated over a polygon), geometric constructions
+  - `boundary.py` — `Boundary`, the advancing front where product meets environment: reference-point selection, rule quads, quad acceptance, front updates
   - `quality.py` — quad and front quality metrics
   - `recognition.py` — the agent's bounded view of the front around a reference point
   - `action.py` — carry a policy action back into the domain (local frame decode)

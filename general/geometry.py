@@ -303,6 +303,26 @@ class Quad(Polygon):
             all(0.01 * math.pi <= a <= 0.99 * math.pi for a in self.corner_angles())
 
 
+class Mesh:
+    def __init__(self, polygon):
+        self.original_vertices = list(polygon.vertices)
+        self.original_area = polygon.area()
+        self.generated_quads = []
+
+    def vertices(self):
+        vertices = list(self.original_vertices)
+        for quad in self.generated_quads:
+            vertices.extend(v for v in quad.vertices if v not in vertices)
+        return vertices
+
+    def add_quad(self, quad):
+        quad.connect_vertices()
+        self.generated_quads.append(quad)
+
+    def find_related_quads(self, vertex):
+        return list({m for m in self.generated_quads if vertex in m.vertices})
+
+
 def circle_line_intersection(a, b, A, B, W, dist):
     if B == 0:
         h = math.sqrt(dist ** 2 - (W / A) ** 2)

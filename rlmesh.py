@@ -29,9 +29,8 @@ and ``engine="sac_fast"``, the vectorized reimplementation trained with
 """
 from pathlib import Path
 
-from general.geometry import Vertex, Quad
+from general.geometry import Vertex, Quad, Mesh
 from general.boundary import Boundary
-from general.mesh import Mesh
 from general.smoothing import smooth_mesh
 from general.mesh_io import write_inp
 
@@ -156,7 +155,7 @@ def _as_clockwise(boundary):
 
 
 def _fast_to_mesh(env, smooth):
-    """Rebuild a ``general.mesh.Mesh`` from a sac_fast rollout so the result
+    """Rebuild a ``general.geometry.Mesh`` from a sac_fast rollout so the result
     surface (quads, coverage, save, smoothing) matches the sac engine. Like
     Sac_Env, a remaining four-vertex front becomes the closing quad.
 

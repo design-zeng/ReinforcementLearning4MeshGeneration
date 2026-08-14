@@ -7,10 +7,9 @@ import meshio
 import pandas as pd
 from scipy.spatial import ConvexHull
 
-from general.geometry import Quad, Vertex
+from general.geometry import Quad, Vertex, Mesh
 from general.boundary import Boundary
 from general.plotting import show_quad
-from general.mesh import Mesh
 from general.mesh_io import read_polygon
 from general.quality import robust_quality, stretch_quality, taper_quality, scaled_jacobian_quality, strong_quality
 from ebrd.sample_extraction import extract_samples, write_samples

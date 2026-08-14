@@ -3,8 +3,7 @@ import gym
 from gym import spaces
 
 from general.config import NEIGHBOR_NUM, RADIUS_NUM, MAX_FAILURES
-from general.geometry import Quad, Polygon
-from general.mesh import Mesh
+from general.geometry import Quad, Polygon, Mesh
 from general.recognition import reference_state, reference_candidates, next_reference_point, updated_candidates
 from general.action import action_point
 from general.quality import combined_quality
@@ -76,8 +75,9 @@ class Sac_Env(gym.Env):
                     quad = self.boundary.rule_quad(0, index, new_point)
                     new_vertex = new_point
 
-            if quad is not None and self.mesh.can_commit_quad(self.boundary, quad, reference_point):
-                retired, rescored = self.mesh.commit_quad(self.boundary, quad)
+            if quad is not None and self.boundary.can_add_quad(quad, reference_point):
+                self.mesh.add_quad(quad)
+                retired, rescored = self.boundary.update_boundary(quad)
                 self.candidates = updated_candidates(self.candidates, self.boundary, retired, rescored)
                 self.current_area -= quad.area()
 

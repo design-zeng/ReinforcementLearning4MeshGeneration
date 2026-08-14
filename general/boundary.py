@@ -24,6 +24,10 @@ class Boundary(Polygon):
             return Quad([v[index - 2], v[index - 1], v[index], v[(index + 1) % n]])
         return Quad([new_point, v[index - 1], v[index], v[(index + 1) % n]])
 
+    def can_add_quad(self, quad, reference_point):
+        return quad.is_valid() and \
+            not self.check_intersection_with_boundary(quad, reference_point)
+
     def check_intersection_with_boundary(self, quad, reference_point):
         max_dist = max(reference_point.distance_to(v) for v in quad.vertices if v is not reference_point)
         neighbouring = [v for v in self.vertices

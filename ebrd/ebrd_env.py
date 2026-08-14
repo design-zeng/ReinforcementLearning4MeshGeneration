@@ -3,8 +3,7 @@ import math
 import numpy as np
 
 from general.config import NEIGHBOR_NUM, RADIUS
-from general.mesh import Mesh
-from general.geometry import Quad, Vertex, Polygon
+from general.geometry import Quad, Vertex, Polygon, Mesh
 from general.recognition import reference_state, reference_candidates, next_reference_point, updated_candidates
 from general.action import from_local_frame
 from general.smoothing import smooth_pave
@@ -92,10 +91,11 @@ class Ebrd_Env:
 
             if quad is None:
                 pass
-            elif self.mesh.can_commit_quad(self.boundary, quad, reference_point):
+            elif self.boundary.can_add_quad(quad, reference_point):
 
                 not_valid_element = False
-                retired, rescored = self.mesh.commit_quad(self.boundary, quad)
+                self.mesh.add_quad(quad)
+                retired, rescored = self.boundary.update_boundary(quad)
                 self.candidates = updated_candidates(self.candidates, self.boundary, retired, rescored)
 
                 next_state = self.find_next_state(self.not_valid_points, static=True)
