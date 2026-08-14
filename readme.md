@@ -71,6 +71,26 @@ The policy is stochastic, so `mesh()` retries a domain up to `attempts` times
 `Mesher()` loads `sac/output/logs/sac/77/0/best_model.zip`; pass
 `Mesher(model_path=...)` to use another, or train one with `python -m sac.train`.
 
+To mesh with the vectorized `sac_fast` policy instead, pass `engine="sac_fast"`:
+
+```python
+result = Mesher(engine="sac_fast").mesh(boundary)
+```
+
+This loads `sac_fast/output/model.zip` by default and returns the same
+`MeshResult`.
+
+> **The shipped `sac_fast` model is provisional — prefer the default `sac`
+> engine for real meshes.** It was trained for only 30k steps per domain
+> (`python -m sac_fast.train 30000`) instead of the full 200k, because the full
+> run takes ~10 h on a CPU. It is roughly 16× faster than `sac` (0.5 s vs 8.1 s
+> per domain), but over a 17-domain check it left **26% of elements invalid**
+> (tangled, zero-area, or non-convex) against **0.03%** for `sac`, at mean
+> element quality 0.33 vs 0.62. It also produces far coarser meshes: it picks
+> the two vertex-removing rules ~87% of the time, so it collapses the front in
+> a few large slivers rather than building refined elements. Retrain with
+> `python -m sac_fast.train` (full 200k) before relying on it.
+
 ## Setup
 
 **Requirements:** Python 3.10+ and the packages pinned in `requirements.txt`.
@@ -134,7 +154,11 @@ On Intel (x86_64) macOS, install PyTorch with conda instead
   - `train.py`
   - `infer.py`
   - `custom_callback.py`
-- `sac_ebd/` work-in-progress from-scratch reimplementation in EBD style
+- `sac_fast/` vectorized approach for faster GPU inference
+  - `polygon.py`, `boundary.py`, `mesh.py`, `geometry_lib.py` — numpy reimplementation of the front and mesh
+  - `gym_env.py` — gymnasium environment
+  - `train.py`
+  - `infer.py`
 - `samples/domains/` json boundary samples
 - `*/output/` model zip, logs, figures
 
@@ -156,6 +180,16 @@ On Intel (x86_64) macOS, install PyTorch with conda instead
 4. Plot rule usage frequency
    ```bash
    python -m sac.tools.rule_frequency_analysis
+   ```
+
+### SAC (fast)
+1. Train
+   ```bash
+   python -m sac_fast.train
+   ```
+2. Evaluate
+   ```bash
+   python -m sac_fast.infer
    ```
 
 ### EBRD

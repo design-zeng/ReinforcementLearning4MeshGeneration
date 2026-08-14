@@ -2,8 +2,8 @@ import numpy as np
 import numpy.typing as npt
 import gymnasium as gym
 
-from boundary import Boundary
-from mesh import Mesh
+from sac_fast.boundary import Boundary
+from sac_fast.mesh import Mesh
 
 
 class Gym_Env(gym.Env):

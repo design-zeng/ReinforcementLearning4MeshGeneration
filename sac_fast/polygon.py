@@ -2,7 +2,7 @@ import math
 import numpy as np
 import numpy.typing as npt
 
-from geometry_lib import segment_intersect
+from sac_fast.geometry_lib import segment_intersect
 
 
 # array of N 2-tuples, counter-clockwise

@@ -2,7 +2,7 @@ from typing import Literal
 
 import numpy as np
 
-from boundary import Boundary
+from sac_fast.boundary import Boundary
 
 
 class Mesh:
@@ -15,6 +15,10 @@ class Mesh:
 
         self.boundary = initial_boundary
         self.boundary_indices_mapping = np.arange(N)
+
+        # each generated element as 4 indices into self.vertices,
+        # in the same order type0_r/type1_r build their reward quads
+        self.quads: list[tuple[int, int, int, int]] = []
 
     def type0_update_mesh(self, polar_pair=(None, None)):
         N = self.boundary.vertices.shape[0]
@@ -35,6 +39,13 @@ class Mesh:
         new_edge1 = np.array(((left_vertex_mesh_index, self.vertices.shape[0]), ))
         new_edge2 = np.array(((right_vertex_mesh_index, self.vertices.shape[0]), ))
 
+        self.quads.append((
+            int(self.boundary_indices_mapping[boundary_index]),
+            int(right_vertex_mesh_index),
+            int(self.vertices.shape[0]),
+            int(left_vertex_mesh_index),
+        ))
+
         # update the indices mapping to point to the new mesh vertex
         self.boundary_indices_mapping[boundary_index] = self.vertices.shape[0]
 
@@ -52,6 +63,13 @@ class Mesh:
 
         new_edge = np.array(((left_vertex_mesh_index, right_vertex_mesh_index), ))
         self.edges = np.vstack((self.edges, new_edge))
+
+        self.quads.append((
+            int(self.boundary_indices_mapping[boundary_index1]),
+            int(self.boundary_indices_mapping[boundary_index2]),
+            int(right_vertex_mesh_index),
+            int(left_vertex_mesh_index),
+        ))
 
         self.boundary_indices_mapping = np.delete(self.boundary_indices_mapping, [boundary_index1, boundary_index2])
 

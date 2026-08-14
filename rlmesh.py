@@ -20,19 +20,26 @@ To build a boundary from your own points instead of a file:
     from general.boundary import Boundary
     boundary = Boundary([Vertex(x, y) for x, y in my_points])
     boundary.connect_vertices()
+
+Two policy engines are available: ``engine="sac"`` (default, Pan et al. 2023)
+and ``engine="sac_fast"``, the vectorized reimplementation trained with
+``python -m sac_fast.train``:
+
+    result = Mesher(engine="sac_fast").mesh(boundary)
 """
 from pathlib import Path
 
-from general.geometry import Vertex
+from general.geometry import Vertex, Quad
 from general.boundary import Boundary
+from general.mesh import Mesh
 from general.smoothing import smooth_mesh
 from general.mesh_io import write_inp
-from sac.sac_env import Sac_Env
 
-__all__ = ["Mesher", "MeshResult", "DEFAULT_MODEL"]
+__all__ = ["Mesher", "MeshResult", "DEFAULT_MODEL", "DEFAULT_FAST_MODEL"]
 
 _ROOT = Path(__file__).parent
 DEFAULT_MODEL = _ROOT / "sac" / "output" / "logs" / "sac" / "77" / "0" / "best_model.zip"
+DEFAULT_FAST_MODEL = _ROOT / "sac_fast" / "output" / "model.zip"
 
 
 class MeshResult:
@@ -63,13 +70,18 @@ class MeshResult:
 class Mesher:
     """Loads a trained meshing policy once, then meshes any number of domains."""
 
-    def __init__(self, model_path=DEFAULT_MODEL, device="cpu"):
+    def __init__(self, model_path=None, device="cpu", engine="sac"):
         from stable_baselines3 import SAC  # heavy import, kept lazy
 
+        if engine not in ("sac", "sac_fast"):
+            raise ValueError(f"Unknown engine {engine!r}; use 'sac' or 'sac_fast'.")
+        self.engine = engine
+        if model_path is None:
+            model_path = DEFAULT_MODEL if engine == "sac" else DEFAULT_FAST_MODEL
         if not Path(model_path).exists():
             raise FileNotFoundError(
                 f"No trained model at {model_path}. Place one there, or train with "
-                f"`python -m sac.train`."
+                f"`python -m {engine}.train`."
             )
         self.model = SAC.load(str(model_path), device=device)
 
@@ -82,6 +94,16 @@ class Mesher:
         ``boundary`` is not modified, and its winding (clockwise or
         counter-clockwise) doesn't matter.
         """
+        if len(boundary.vertices) <= 5:
+            raise ValueError(
+                "Could not start meshing this boundary. Supply a simple "
+                "(non-self-intersecting) polygon with more than five vertices."
+            )
+        if self.engine == "sac_fast":
+            return self._mesh_fast(boundary, attempts, smooth, deterministic)
+
+        from sac.sac_env import Sac_Env  # heavy import, kept lazy
+
         env = Sac_Env(_as_clockwise(boundary))
         if env.reset() is None:
             raise ValueError(
@@ -96,6 +118,29 @@ class Mesher:
                 return MeshResult(env.mesh, complete=True)
         return MeshResult(env.mesh, complete=False)
 
+    def _mesh_fast(self, boundary, attempts, smooth, deterministic):
+        import numpy as np
+        from sac_fast.gym_env import Gym_Env  # heavy import, kept lazy
+
+        points = np.array([[v.x, v.y] for v in boundary.vertices])
+        try:
+            env = Gym_Env(points)
+        except Exception as e:
+            raise ValueError(
+                f"Could not start meshing this boundary ({e}). Supply a simple "
+                f"(non-self-intersecting) polygon with more than five vertices."
+            ) from e
+        for _ in range(attempts):
+            obs, _ = env.reset()
+            while True:
+                action, _ = self.model.predict(obs, deterministic=deterministic)
+                obs, _, terminated, truncated, _ = env.step(action)
+                if terminated or truncated:
+                    break
+            if env.boundary_env.is_quad_left():
+                return MeshResult(_fast_to_mesh(env, smooth=smooth), complete=True)
+        return MeshResult(_fast_to_mesh(env, smooth=False), complete=False)
+
 
 def _as_clockwise(boundary):
     """The mesher expects clockwise boundaries; reverse counter-clockwise input
@@ -108,6 +153,34 @@ def _as_clockwise(boundary):
     flipped = Boundary([Vertex(p.x, p.y) for p in reversed(v)])
     flipped.connect_vertices()
     return flipped
+
+
+def _fast_to_mesh(env, smooth):
+    """Rebuild a ``general.mesh.Mesh`` from a sac_fast rollout so the result
+    surface (quads, coverage, save, smoothing) matches the sac engine. Like
+    Sac_Env, a remaining four-vertex front becomes the closing quad.
+
+    sac_fast winds its polygons counter-clockwise, but general/ reads corner
+    angles clockwise, so every ring is reversed on the way across."""
+    verts = [Vertex(float(x), float(y)) for x, y in env.mesh.vertices]
+    original = Boundary(verts[:len(env.initial_boundary)][::-1])
+    original.connect_vertices()
+    mesh = Mesh(original)
+
+    quad_indices = list(env.mesh.quads)
+    front_indices = [int(i) for i in env.mesh.boundary_indices_mapping]
+    if env.boundary_env.is_quad_left() and len(front_indices) == 4:
+        quad_indices.append(tuple(front_indices))
+    for indices in quad_indices:
+        cell = Quad([verts[i] for i in reversed(indices)])
+        cell.connect_vertices()
+        mesh.generated_quads.append(cell)
+
+    if smooth:
+        front = Boundary([verts[i] for i in reversed(front_indices)])
+        front.connect_vertices()
+        smooth_mesh(mesh, front)
+    return mesh
 
 
 def _rollout(model, env, deterministic):

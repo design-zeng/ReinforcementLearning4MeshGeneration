@@ -21,6 +21,10 @@ sac/output/logs/sac/77/*
 sac/output/logs/sac/77/0/*
 !sac/output/logs/sac/77/0/best_model.zip
 
+!sac_fast/output/
+sac_fast/output/*
+!sac_fast/output/model.zip
+
 !ebrd/output/
 ebrd/output/*
 !ebrd/output/data_augmentation/

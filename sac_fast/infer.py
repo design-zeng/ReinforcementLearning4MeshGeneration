@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import SAC
 
-from gym_env import Gym_Env
+from sac_fast.gym_env import Gym_Env
 
 
 base_path = Path(__file__).parent.parent
@@ -15,7 +15,7 @@ boundary = np.array(json.load(open(base_path / "samples" / "domains" / f"{DOMAIN
 environment = Gym_Env(boundary)
 obs, info = environment.reset()
 
-model = SAC.load(base_path / "sac_ebd" / "output" / "model.zip")
+model = SAC.load(base_path / "sac_fast" / "output" / "model.zip")
 
 done = False
 while not done:

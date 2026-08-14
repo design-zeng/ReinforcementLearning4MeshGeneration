@@ -5,8 +5,8 @@ import math
 import numpy as np
 import numpy.typing as npt
 
-from polygon import Polygon
-from geometry_lib import segment_intersect, rotation_matrix, vector_angle, polar_to_Cartesian
+from sac_fast.polygon import Polygon
+from sac_fast.geometry_lib import segment_intersect, rotation_matrix, vector_angle, polar_to_Cartesian
 
 
 class Boundary(Polygon):

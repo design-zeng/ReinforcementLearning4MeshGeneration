@@ -13,12 +13,26 @@ def segment_intersect(a1: npt.NDArray[np.floating], a2: npt.NDArray[np.floating]
     c3 = u2x * (b1[1] - a2[1]) - u2y * (b1[0] - a2[0])
     c4 = u2x * (b2[1] - a2[1]) - u2y * (b2[0] - a2[0])
 
-    s1 = 1.0 if c1 > 0 else (-1.0 if c1 < 0 else 0.0)
-    s2 = 1.0 if c2 > 0 else (-1.0 if c2 < 0 else 0.0)
-    s3 = 1.0 if c3 > 0 else (-1.0 if c3 < 0 else 0.0)
-    s4 = 1.0 if c4 > 0 else (-1.0 if c4 < 0 else 0.0)
+    # collinear cross products land on rounding noise rather than exact 0,
+    # so compare against a tolerance scaled to each pair's own magnitudes
+    tol_a = 1e-9 * math.hypot(ux, uy) * _reach(a1, a2, b2)
+    tol_b = 1e-9 * math.hypot(u2x, u2y) * _reach(b1, b2, a2)
+
+    s1 = _sign(c1, tol_a)
+    s2 = _sign(c2, tol_a)
+    s3 = _sign(c3, tol_b)
+    s4 = _sign(c4, tol_b)
 
     return s1 != s2 and s3 != s4
+
+
+def _sign(value: float, tolerance: float) -> float:
+    return 1.0 if value > tolerance else (-1.0 if value < -tolerance else 0.0)
+
+
+def _reach(p1: npt.NDArray[np.floating], p2: npt.NDArray[np.floating], origin: npt.NDArray[np.floating]) -> float:
+    return max(math.hypot(p1[0] - origin[0], p1[1] - origin[1]),
+               math.hypot(p2[0] - origin[0], p2[1] - origin[1]))
 
 
 def rotation_matrix(angle: float) -> npt.NDArray[np.floating]:
