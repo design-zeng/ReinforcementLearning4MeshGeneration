@@ -10,10 +10,11 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from general.utils import read_polygon
+from general.geometry import Polygon
+from general.mesh_io import read_polygon
 from ebrd.ebrd_env import Ebrd_Env
 from general.smoothing import smooth_mesh, smooth_pave
-from general.sample_extraction import extract_samples, write_samples
+from ebrd.sample_extraction import extract_samples, write_samples
 from general.plotting import savefig_boundary
 from ebrd.data_augmentation import sampling_main
 from ebrd.model import FNNPolicy, get_action, device, SEED, domains_path, output_path, augmentation_path
@@ -131,7 +132,7 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
         for _ in range(max_steps):
             step += 1
             action, type_value = get_action(state, model)
-            state, reward, done, _ = env.move(action, round(type_value, 2), 0.9, 0.5)
+            state, reward, done, _ = env.move(action, round(type_value, 2))
             print(_, reward, len(env.boundary.vertices))
             ep_reward += reward
             if done:
@@ -140,11 +141,11 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
         print(f"Execution time: {time.time() - start}s.")
 
         if len(env.boundary.vertices) <= 5:
-            smooth_mesh(env.mesh, env.boundary, env.mesh.boundary.vertices)
+            smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
         else:
-            smooth_pave(env.mesh, env.boundary, env.mesh.boundary.vertices, env.boundary.vertices, iteration=400, interior=True)
+            smooth_pave(env.mesh, env.boundary, env.mesh.vertices(), env.boundary.vertices, iteration=400, interior=True)
 
-        savefig_boundary(env.mesh.boundary, plots_dir / f"{i_episode}.png", style='k-', dpi=300)
+        savefig_boundary(Polygon(env.mesh.vertices()), plots_dir / f"{i_episode}.png", style='k-', dpi=300)
         print("Figure saved!")
 
         running_reward = 0.05 * ep_reward + 0.95 * running_reward
@@ -152,8 +153,7 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
         samples, output_types, outputs = extract_samples(
             env.mesh, env.mesh.generated_quads, 2, 3, radius=4, quality_threshold=0.7)
         write_samples(samples_dir / f"ebrd_{i_episode}.json",
-                         {'samples': samples, 'output_types': output_types, 'outputs': outputs},
-                         _type=2)
+                         {'samples': samples, 'output_types': output_types, 'outputs': outputs})
 
         if not samples:
             print("No good-quality elements extracted this round; skipping retrain.")

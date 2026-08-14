@@ -11,9 +11,9 @@ from general.geometry import Quad, Vertex
 from general.boundary import Boundary
 from general.plotting import show_quad
 from general.mesh import Mesh
-from general.utils import read_polygon
-from general.quad_quality import quad_quality
-from general.sample_extraction import extract_samples, write_samples
+from general.mesh_io import read_polygon
+from general.quality import robust_quality, stretch_quality, taper_quality, scaled_jacobian_quality, strong_quality
+from ebrd.sample_extraction import extract_samples, write_samples
 
 
 base_path = Path(__file__).parent.parent.parent
@@ -67,13 +67,13 @@ def calculate_metrics(vertices, elements, metrics, metrics_ind):
 
         for ele in elements:
             # q1, q2 = ele.edge_angle_quality()
-            element_qualities.append(quad_quality(ele, 'robust')) #ele.get_quality()
+            element_qualities.append(robust_quality(ele))
             if 'Stretch' in metrics_ind:
-                stretch.append(quad_quality(ele, 'stretch'))
+                stretch.append(stretch_quality(ele))
             if 'Taper' in metrics_ind:
-                taper.append(quad_quality(ele, 'taper'))
+                taper.append(taper_quality(ele))
             if 'Scaled Jacobian' in metrics_ind:
-                s_jacobian.append(quad_quality(ele, 's_jacobian'))
+                s_jacobian.append(scaled_jacobian_quality(ele))
             angles = ele.inner_angles()
             if 'MinAngle' in metrics_ind:
                 min_angles.append(min(angles))
@@ -246,10 +246,10 @@ def computational_cost_a2c():
 def calculate_initial_boundaries_features():
     domains = sorted(domains_path.glob("*.json"))
 
-    envs = [Mesh(read_polygon(name)) for name in domains]
-    for e in envs:
-        print(len(e.all_vertices), e.mesh.boundary.get_perimeter())
-        print(len(e.all_vertices) / e.mesh.boundary.get_perimeter())
+    for name in domains:
+        boundary = read_polygon(name)
+        print(len(boundary.vertices), boundary.get_perimeter())
+        print(len(boundary.vertices) / boundary.get_perimeter())
 
 
 # calculate_initial_boundaries_features()
@@ -285,9 +285,9 @@ def read_inp_file(filename):
 def extract_samples_from_file():
     for m in discover_meshes():
         env = read_inp_file(str(m))
-        samples, output_types, outputs = extract_samples(env.mesh, env.generated_quads, 3, 3, index=5, radius=6, quality_threshold=0.7)
+        samples, output_types, outputs = extract_samples(env.mesh, env.generated_quads, 3, 3, metric=strong_quality, radius=6, quality_threshold=0.7)
         write_samples(f"{output_path}/data_augmentation/{m.stem}.json",
-                         {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
+                         {'samples': samples, 'output_types': output_types, 'outputs': outputs})
     print("Saved!")
 
 if __name__ == '__main__':

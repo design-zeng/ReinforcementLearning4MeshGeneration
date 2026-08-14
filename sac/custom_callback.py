@@ -44,7 +44,7 @@ class CustomCallback(BaseCallback):
                 self.eval_env.render()
 
         save_meshes(self.eval_env, f"{self.log_path}/{num_freq}_{episode_idx}.png",
-                    quads=self.eval_env.generated_quads,
+                    quads=self.eval_env.mesh.generated_quads,
                     indexing=True, style='k-', dpi=30)
         return episode_reward
 

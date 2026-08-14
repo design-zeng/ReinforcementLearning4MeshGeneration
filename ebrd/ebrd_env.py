@@ -3,8 +3,9 @@ import math
 import numpy as np
 
 from general.mesh import Mesh
-from general.geometry import Quad, Vertex, Lin_Alg
-from general.state_encoding import reference_state
+from general.geometry import Quad, Vertex, Polygon
+from general.recognition import reference_state, reference_candidates, next_reference_point, updated_candidates
+from general.action import from_local_frame
 from general.smoothing import smooth_pave
 from general.plotting import render_boundary, close_render
 
@@ -13,6 +14,7 @@ class Ebrd_Env:
     TYPE_THRESHOLD = 0.3
 
     def __init__(self, boundary):
+        self.problem = boundary.deep_copy()
         self.mesh = Mesh(boundary)
         self.boundary = boundary.copy()
         self.current_area = self.mesh.original_area
@@ -22,20 +24,23 @@ class Ebrd_Env:
         self.radius = 4
 
         self.current_ref_state: dict = None
+        self.reference_candidates = None
         self.not_valid_points = []
         self.last_not_valid_points = []
         self.target_angle = 0
 
     def reset(self, static=False):
-        self.mesh.reset()
-        self.boundary = self.mesh.boundary.copy()
+        fresh = self.problem.deep_copy()
+        self.mesh = Mesh(fresh)
+        self.boundary = fresh.copy()
+        self.reference_candidates = reference_candidates(self.boundary, self.target_angle)
         self.not_valid_points = []
         self.current_area = self.mesh.original_area
         self.current_ref_state = None
         return self.find_next_state(static=static)
 
     def find_next_state(self, not_valid_points=None, static=False):
-        r_p = self.boundary.find_reference_point(not_valid_points, target_angle=self.target_angle)
+        r_p = next_reference_point(self.reference_candidates, not_valid_points)
 
         if r_p:
             self.current_ref_state = reference_state(
@@ -53,16 +58,16 @@ class Ebrd_Env:
     def detransformation(self, point, is_move=False):
         v1, v2 = self.get_middle_points(Vertex.flatten(self.current_ref_state['neighbors']))
 
-        de_point = Lin_Alg.detransformation(point, self.current_ref_state['base_length'] if not is_move else 1, v1, v2)
+        de_point = from_local_frame(point, self.current_ref_state['base_length'] if not is_move else 1, v1, v2)
         return Vertex(round(de_point[0], 4), round(de_point[1], 4))
 
     def close(self):
         close_render()
 
-    def render(self, mode='human'):
-        render_boundary(self.mesh.boundary)
+    def render(self):
+        render_boundary(Polygon(self.mesh.vertices()))
 
-    def move(self, new_point, rule_type, lr_1=None, lr_2=None):
+    def move(self, new_point, rule_type):
         x = self.current_ref_state['base_length'] * self.radius * new_point[0] * math.cos(new_point[1])
         y = self.current_ref_state['base_length'] * self.radius * new_point[0] * math.sin(new_point[1])
 
@@ -76,7 +81,6 @@ class Ebrd_Env:
         reference_point = self.current_ref_state['reference_point']
 
         if len(self.boundary.vertices) <= 5:
-            reward = 10
             done = True
 
         else:
@@ -84,19 +88,20 @@ class Ebrd_Env:
             quad = None
 
             if rule_type <= self.TYPE_THRESHOLD:
-                quad = self.boundary.rule_element(-1, index)
+                quad = self.boundary.rule_quad(-1, index)
             elif rule_type >= 1 - self.TYPE_THRESHOLD:
-                quad = self.boundary.rule_element(1, index)
+                quad = self.boundary.rule_quad(1, index)
             else:
                 if self.boundary.contains_point(new_point):
-                    quad = self.boundary.rule_element(0, index, new_point)
+                    quad = self.boundary.rule_quad(0, index, new_point)
 
             if quad is None:
                 pass
             elif self.mesh.can_commit_quad(self.boundary, quad, reference_point):
 
                 not_valid_element = False
-                self.mesh.commit_quad(self.boundary, quad, reference_point)
+                retired, rescored = self.mesh.commit_quad(self.boundary, quad)
+                self.reference_candidates = updated_candidates(self.reference_candidates, self.boundary, retired, rescored)
 
                 next_state = self.find_next_state(self.not_valid_points, static=True)
 
@@ -116,10 +121,8 @@ class Ebrd_Env:
             if len(self.boundary.vertices) > 4:
                 is_complete = False
                 if next_state is None:
-                    if lr_1 and lr_2:
-                        smooth_pave(self.mesh, self.boundary, self.mesh.boundary.vertices, self.boundary.vertices, lr_1, lr_2, iteration=400)
-                    else:
-                        smooth_pave(self.mesh, self.boundary, self.mesh.boundary.vertices, self.boundary.vertices, iteration=400)
+                    smooth_pave(self.mesh, self.boundary, self.mesh.vertices(), self.boundary.vertices, iteration=400)
+                    self.reference_candidates = reference_candidates(self.boundary, self.target_angle)
 
                     if len(self.last_not_valid_points) > 0 and len(self.not_valid_points) > 0:
                         if self.last_not_valid_points[0] == self.not_valid_points[0] and \

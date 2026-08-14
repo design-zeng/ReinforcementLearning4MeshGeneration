@@ -4,7 +4,7 @@ For people who just want to mesh a 2D domain, without touching the RL/training
 code. You supply the domain boundary; rlmesh meshes it with the trained soft
 actor-critic policy (Pan et al., 2023).
 
-    from general.utils import read_polygon
+    from general.mesh_io import read_polygon
     from rlmesh import Mesher
 
     boundary = read_polygon("samples/domains/random1_1.json")   # -> a Boundary
@@ -26,7 +26,7 @@ from pathlib import Path
 from general.geometry import Vertex
 from general.boundary import Boundary
 from general.smoothing import smooth_mesh
-from general.sample_extraction import write_inp
+from general.mesh_io import write_inp
 from sac.sac_env import Sac_Env
 
 __all__ = ["Mesher", "MeshResult", "DEFAULT_MODEL"]
@@ -55,9 +55,7 @@ class MeshResult:
     def to_arrays(self):
         """Return ``(nodes, faces)``: node coordinates as ``(x, y)`` tuples and
         each quad as a 4-tuple of node indices into ``nodes``."""
-        nodes = list(self._mesh.original_vertices)
-        for quad in self.quads:
-            nodes.extend(v for v in quad.vertices if v not in nodes)
+        nodes = self._mesh.vertices()
         faces = [tuple(nodes.index(v) for v in q.vertices) for q in self.quads]
         return [(n.x, n.y) for n in nodes], faces
 
@@ -76,7 +74,7 @@ class Mesher:
         self.model = SAC.load(str(model_path), device=device)
 
     def mesh(self, boundary, attempts=60, smooth=True, deterministic=False):
-        """Mesh the domain given by ``boundary`` (a ``general.mesh.Boundary``).
+        """Mesh the domain given by ``boundary`` (a ``general.boundary.Boundary``).
 
         The policy is stochastic, so the domain is retried up to ``attempts``
         times until it is fully meshed. Returns a :class:`MeshResult`; check
@@ -94,7 +92,7 @@ class Mesher:
             info = _rollout(self.model, env, deterministic)
             if info["is_complete"]:
                 if smooth:
-                    smooth_mesh(env.mesh, env.boundary, env.mesh.boundary.vertices)
+                    smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
                 return MeshResult(env.mesh, complete=True)
         return MeshResult(env.mesh, complete=False)
 

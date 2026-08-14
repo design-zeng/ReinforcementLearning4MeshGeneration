@@ -10,10 +10,11 @@ from matplotlib import pyplot as plt
 from matplotlib.gridspec import GridSpec
 from stable_baselines3 import A2C, DDPG, SAC, PPO, TD3
 
-from general.utils import read_polygon
+from general.mesh_io import read_polygon, write_inp
 from sac.sac_env import Sac_Env
 from general.smoothing import smooth_mesh
-from general.sample_extraction import extract_samples, write_samples, write_inp
+from ebrd.sample_extraction import extract_samples, write_samples
+from general.quality import robust_quality
 from general.plotting import save_meshes
 
 
@@ -77,31 +78,31 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
         tag = f"{method}_env_{i}_{'T' if deterministic else 'F'}"
 
         if info['is_complete']:
-            smooth_mesh(env.mesh, env.boundary, env.mesh.boundary.vertices)
+            smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
 
         if save_fig and env.mesh.generated_quads:
             save_meshes(env, eval_path / version / f"{tag}.png", quads=env.mesh.generated_quads,
-                            quality=False, quality_index=4, indexing=indexing, style='k-')
+                            quality=False, indexing=indexing, style='k-')
 
             write_inp(env.mesh, eval_path / version / f"{tag}.inp")
 
             with open(experiments_path / version / f"{tag}_history_info", 'w') as fw:
                 json.dump(env.history_info, fw)
 
-            q = [env.mesh.get_quality(env.boundary, env.mesh.generated_quads[j], 4) for j in range(len(env.mesh.generated_quads))]
+            q = [robust_quality(quad) for quad in env.mesh.generated_quads]
             print(f"element quality mean/std: {np.mean(q):.3f} / {np.std(q):.3f}")
 
         if save_samples and env.mesh.generated_quads:
             samples, output_types, outputs = extract_samples(env.mesh, env.mesh.generated_quads, 2, 3, radius=4)
             write_samples(eval_path / version / f"{tag}.json",
-                             {'samples': samples, 'output_types': output_types, 'outputs': outputs}, _type=2)
+                             {'samples': samples, 'output_types': output_types, 'outputs': outputs})
 
     with open(eval_path / version / 'evaluation.txt', 'w') as outfile:
         json.dump(results, outfile)
     print(f"Wrote results + meshes + history to {eval_path / version} and {experiments_path / version}")
 
 
-def replication_evaluation(is_render=False, deterministic=False, indexing=False, save_fig=False, save_samples=False):
+def replication_evaluation(is_render=False, deterministic=False, save_fig=False):
     os.makedirs(eval_path / version, exist_ok=True)
 
     ckpt = logs_path / method / version / stage / "best_model.zip"
@@ -121,7 +122,7 @@ def replication_evaluation(is_render=False, deterministic=False, indexing=False,
         results['sac']['n_complete'] += 1 if info['is_complete'] else 0
 
         if save_fig and info['is_complete']:
-            smooth_mesh(env.mesh, env.boundary, env.mesh.boundary.vertices)
+            smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
 
     with open(eval_path / version / "evaluation_repli.txt", 'w') as outfile:
         json.dump(results, outfile)
@@ -170,14 +171,14 @@ def full_mesh(domain="boundary6",
         coverage = sum(m.area() for m in env.mesh.generated_quads) / env.mesh.original_area
 
         if info['is_complete']:
-            smooth_mesh(env.mesh, env.boundary, env.mesh.boundary.vertices)
+            smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
 
-            save_meshes(env, out, quads=env.mesh.generated_quads, quality=False, quality_index=4, style='k-')
+            save_meshes(env, out, quads=env.mesh.generated_quads, style='k-')
             print(f"Completed {domain} on attempt {k + 1} "
                   f"({len(env.mesh.generated_quads)} elements, {coverage * 100:.0f}% area). Saved {out}")
             return
 
-    save_meshes(env, out, quads=env.mesh.generated_quads, quality=False, quality_index=4, style='k-')
+    save_meshes(env, out, quads=env.mesh.generated_quads, style='k-')
     print(f"No full completion in {attempts} attempts; saved best-effort partial to {out}")
 
 

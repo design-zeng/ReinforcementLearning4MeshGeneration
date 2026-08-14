@@ -9,7 +9,7 @@ from numpy.random import uniform
 from multiprocessing import Process, Manager
 
 from general.geometry import Segment, Vertex, Quad
-from general.quad_quality import quad_quality, is_valid_quad
+from general.quality import strong_quality
 
 
 base_path = Path(__file__).parent.parent
@@ -264,10 +264,10 @@ def compute_quality(obs, action):
                      neighbor_points[index - 1]
                      ])
 
-    if is_valid_quad(quad, 0) and \
+    if quad.is_valid() and \
             not quad_crosses_boundary(quad, neighbor_points, radius_points) and \
             not quad_encloses_point(quad, radius_points + [neighbor_points[0], neighbor_points[-1]]):
-        element_quality = quad_quality(quad, 'strong')
+        element_quality = strong_quality(quad)
         boundary_quality = compute_boundary_quality(quad, neighbor_points, radius_points)
         return element_quality, boundary_quality
     else:

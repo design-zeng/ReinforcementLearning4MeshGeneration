@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from original_ann.pattern_loader import get_patterns, data_transformation
-from original_ann.model import new_model, load_model, model_path, pattern_path
+from original_ann.model import new_model, model_path, pattern_path
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

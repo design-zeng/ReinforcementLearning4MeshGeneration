@@ -44,7 +44,7 @@ use `rlmesh.py`. It wraps the trained soft actor–critic policy behind a small 
 You supply the domain boundary; rlmesh meshes it.
 
 ```python
-from general.utils import read_polygon
+from general.mesh_io import read_polygon
 from rlmesh import Mesher
 
 boundary = read_polygon("samples/domains/random1_1.json")   # -> a Boundary
@@ -97,17 +97,19 @@ On Intel (x86_64) macOS, install PyTorch with conda instead
 ## Repository Layout
 
 - `rlmesh.py` — library entry point (`Mesher`) for meshing a domain, see above
-- `general/` shared geometry + meshing library
-  - `geometry.py` — Vertex, Segment, Polygon, Quad, coordinate transforms, geometric constructions
-  - `boundary.py` — `Boundary`, the advancing front: reference-point selection, element rules, front updates
-  - `mesh.py` — `Mesh`, the committed elements: quad commit/validation and reward-quality dispatch
-  - `quad_quality.py` — element quality metrics (stretch, robust, edge–angle, taper, scaled Jacobian)
-  - `boundary_quality.py` — front-side quality and target element sizing
-  - `state_encoding.py` — encode the local front around a reference point into the RL observation vector
-  - `smoothing.py` — mesh and front smoothing (Laplacian / rule-based relaxation)
-  - `sample_extraction.py` — turn finished meshes into training samples; Abaqus `.inp` export
+- `general/` shared geometry + meshing library, organized after Environment-Based Design
+  (Zeng & Yao 2009): vertices are the primitive objects, quads the primitive products,
+  the front the product–environment interface, and meshing the recursive resolution of
+  conflicts on it
+  - `geometry.py` — Vertex (primitive object), Segment (vertex–vertex interaction), Polygon, Quad, geometric constructions
+  - `boundary.py` — `Boundary`, the advancing front where product meets environment: reference-point selection, rule quads, front updates
+  - `mesh.py` — `Mesh`, the product: absorbs one quad at a time
+  - `quality.py` — quad and front quality metrics
+  - `recognition.py` — the agent's bounded view of the front around a reference point
+  - `action.py` — carry a policy action back into the domain (local frame decode)
+  - `smoothing.py` — resolve integration conflicts among placed vertices (relax until none remain)
+  - `mesh_io.py` — read a JSON polygon into a `Boundary`; write Abaqus `.inp`
   - `plotting.py` — rendering / figure helpers
-  - `utils.py` — read a JSON polygon into a `Boundary`
   - `tools/`
     - `json_gmsh_abaqus_unv_conversion.py`
     - `mesh_quality_comparison.py`
@@ -115,7 +117,8 @@ On Intel (x86_64) macOS, install PyTorch with conda instead
     - `polygon_editor_ui_v2.py`
     - `vtk_quality_verdict.py`
 - `ebrd/` Paper 1: FreeMesh-S
-  - `data_augmentation.py` training sample generator
+  - `data_augmentation.py` synthetic training samples, invented in observation space
+  - `sample_extraction.py` training samples harvested from finished meshes
   - `model.py` model architecture, loading, saving
   - `train.py`
   - `infer.py`

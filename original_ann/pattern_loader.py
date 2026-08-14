@@ -1,6 +1,22 @@
+import math
 import numpy as np
 
-from general.geometry import Lin_Alg
+
+
+def to_local_frame(points, dist, p0, p1):
+    matrix = np.asarray(points, dtype=float).reshape(-1, 2) - p0
+    matrix = np.divide(matrix, dist)
+
+    d = p1 - p0
+    theta = math.atan2(d[1], d[0])
+
+    rotation_matrix = np.array([
+        [np.cos(theta), np.sin(theta)],
+        [- np.sin(theta), np.cos(theta)]
+    ])
+    matrix = np.matmul(rotation_matrix, matrix.T).T
+
+    return np.asarray(matrix).reshape(-1)
 
 
 def get_patterns(filename):
@@ -23,5 +39,5 @@ def data_transformation(data):
     for line in data:
         p0 = np.array([line[4], line[5]])
         p1 = np.array([line[6], line[7]])
-        data_transformed.append(Lin_Alg.transformation(line, np.linalg.norm(p0 - p1), p0, p1))
+        data_transformed.append(to_local_frame(line, np.linalg.norm(p0 - p1), p0, p1))
     return np.array(data_transformed)
