@@ -36,7 +36,7 @@ def evaluation(model_path, version, is_render=False, indexing=False, save_fig=Fa
 
         if save_fig:
             if info['is_complete']:
-                smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
+                smooth_mesh(env.mesh, env.boundary)
                 save_meshes(env, out_dir / f"ebrd_env_{i}__smoothed.png",
                             quads=env.mesh.generated_quads,
                             indexing=indexing, style='k-')

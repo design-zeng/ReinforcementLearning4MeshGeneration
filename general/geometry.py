@@ -197,7 +197,7 @@ class Polygon:
         return sum(1 for seg in vertex.segments
                    if seg.point1 in self.vertices and seg.point2 in self.vertices)
 
-    def get_neighbors(self, vertex, num_points=4):
+    def get_neighbors(self, vertex, num_points):
         if num_points % 2 != 0:
             raise ValueError("The neighbor number is not even!")
         half = num_points // 2
@@ -214,18 +214,18 @@ class Polygon:
         n = len(self.vertices)
         ray_y = ray_segment.point2.y
         for i in range(n):
-            v_i, v_p = self.vertices[i], self.vertices[i - 1]
-            orientation = round(v_i.y - v_p.y, 4)
+            current, previous = self.vertices[i], self.vertices[i - 1]
+            orientation = round(current.y - previous.y, 4)
             if orientation == 0:
                 continue
-            if not Segment(v_i, v_p).is_intersecting(ray_segment):
+            if not Segment(current, previous).is_intersecting(ray_segment):
                 continue
-            if round(v_i.y - ray_y, 4) == 0:
-                no = round(self.vertices[(i + 1) % n].y - v_i.y, 4)
-                count += (no * orientation > 0 and orientation < 0)
-            elif round(v_p.y - ray_y, 4) == 0:
-                po = round(v_p.y - self.vertices[i - 2].y, 4)
-                count += (po * orientation > 0 and orientation > 0)
+            if round(current.y - ray_y, 4) == 0:
+                next_orientation = round(self.vertices[(i + 1) % n].y - current.y, 4)
+                count += (next_orientation * orientation > 0 and orientation < 0)
+            elif round(previous.y - ray_y, 4) == 0:
+                previous_orientation = round(previous.y - self.vertices[i - 2].y, 4)
+                count += (previous_orientation * orientation > 0 and orientation > 0)
             else:
                 count += 1
         return count % 2 != 0

@@ -2,13 +2,14 @@ import math
 
 import numpy as np
 
+from general.config import NEIGHBOR_NUM
 from general.geometry import Vertex
 
 
-def action_point(ref_state, point, neighbor_num):
+def action_point(ref_state, point):
     state = Vertex.flatten(ref_state['neighbors'])
-    v1 = np.asarray([state[neighbor_num], state[neighbor_num + 1]], dtype=float)
-    v2 = np.asarray([state[neighbor_num + 2], state[neighbor_num + 3]], dtype=float)
+    v1 = np.asarray([state[NEIGHBOR_NUM], state[NEIGHBOR_NUM + 1]], dtype=float)
+    v2 = np.asarray([state[NEIGHBOR_NUM + 2], state[NEIGHBOR_NUM + 3]], dtype=float)
     decoded = from_local_frame(point, ref_state['base_length'], v1, v2)
     return Vertex(round(decoded[0], 4), round(decoded[1], 4))
 

@@ -141,9 +141,9 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
         print(f"Execution time: {time.time() - start}s.")
 
         if len(env.boundary.vertices) <= 5:
-            smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
+            smooth_mesh(env.mesh, env.boundary)
         else:
-            smooth_pave(env.mesh, env.boundary, env.mesh.vertices(), env.boundary.vertices, iteration=400, interior=True)
+            smooth_pave(env.mesh, env.boundary, interior=True)
 
         savefig_boundary(Polygon(env.mesh.vertices()), plots_dir / f"{i_episode}.png", style='k-', dpi=300)
         print("Figure saved!")

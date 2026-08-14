@@ -1,29 +1,32 @@
 import math
 
+from general.config import SMOOTH_LR_1, SMOOTH_LR_2, SMOOTH_ITERATIONS, SMOOTH_TOLERANCE
 from general.geometry import Segment, circle_line_intersection, clockwise_vertices
 
 
-def smooth_mesh(mesh, boundary, vertices, lr_1=0.999, lr_2=0.999, iteration=400):
+def smooth_mesh(mesh, boundary):
+    vertices = mesh.vertices()
+
     def reposition_separated_components():
         for vertex in vertices:
             if vertex not in mesh.original_vertices:
-                _smooth_vertex(mesh, boundary, vertex, lr_1, lr_2)
+                _smooth_vertex(mesh, boundary, vertex)
         return sum(v.x + v.y for v in vertices)
 
-    _resolve_until_settled(reposition_separated_components, iteration)
+    _resolve_until_settled(reposition_separated_components)
 
 
-def smooth_pave(mesh, boundary, vertices, current_boundary_vertices, iteration=400, interior=False):
+def smooth_pave(mesh, boundary, interior=False):
     if not interior:
         _smooth_front(boundary, mesh.original_vertices)
-    _smooth_fixed_vertices(mesh, [v for v in vertices if v not in current_boundary_vertices], iteration)
+    _smooth_fixed_vertices(mesh, [v for v in mesh.vertices() if v not in boundary.vertices])
 
 
-def _resolve_until_settled(run_pass, iteration):
+def _resolve_until_settled(run_pass):
     settled_sum = 0
     diffs = 100
     i_iteration = 0
-    while diffs > 0.001 and i_iteration < iteration:
+    while diffs > SMOOTH_TOLERANCE and i_iteration < SMOOTH_ITERATIONS:
         i_iteration += 1
         new_sum = run_pass()
         diffs = math.fabs(new_sum - settled_sum)
@@ -38,7 +41,7 @@ def _first_inside(vertex, guard_a, guard_b, proposals):
     return vertex
 
 
-def _smooth_fixed_vertices(mesh, vertices, iteration):
+def _smooth_fixed_vertices(mesh, vertices):
     def reposition_separated_components():
         checksum = 0
         for vertex in vertices:
@@ -53,10 +56,10 @@ def _smooth_fixed_vertices(mesh, vertices, iteration):
             checksum += vertex.x + vertex.y
         return checksum
 
-    _resolve_until_settled(reposition_separated_components, iteration)
+    _resolve_until_settled(reposition_separated_components)
 
 
-def _smooth_vertex(mesh, boundary, vertex, lr_1, lr_2):
+def _smooth_vertex(mesh, boundary, vertex):
     neighbors = vertex.get_neighbors()
     quad_count = len(mesh.find_related_quads(vertex))
 
@@ -92,7 +95,7 @@ def _smooth_vertex(mesh, boundary, vertex, lr_1, lr_2):
             vertex.y = sum(v.y + vertex.y for v in neighbors) / (2 * count)
         return
 
-    lr = lr_1 if quad_count == 1 else lr_2
+    lr = SMOOTH_LR_1 if quad_count == 1 else SMOOTH_LR_2
     for neighbor in neighbors:
         vertex.x = lr * vertex.x + (1 - lr) * neighbor.x
         vertex.y = lr * vertex.y + (1 - lr) * neighbor.y

@@ -92,7 +92,7 @@ class Mesher:
             info = _rollout(self.model, env, deterministic)
             if info["is_complete"]:
                 if smooth:
-                    smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
+                    smooth_mesh(env.mesh, env.boundary)
                 return MeshResult(env.mesh, complete=True)
         return MeshResult(env.mesh, complete=False)
 

@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 
+from general.config import NEIGHBOR_NUM, RADIUS
 from general.mesh import Mesh
 from general.geometry import Quad, Vertex, Polygon
 from general.recognition import reference_state, reference_candidates, next_reference_point, updated_candidates
@@ -19,40 +20,34 @@ class Ebrd_Env:
         self.boundary = boundary.copy()
         self.current_area = self.mesh.original_area
 
-        self.neighbor_num = 6
-        self.radius_num = 3
-        self.radius = 4
-
-        self.current_ref_state: dict = None
-        self.reference_candidates = None
+        self.current_ref_state = None
+        self.candidates = None
         self.not_valid_points = []
         self.last_not_valid_points = []
-        self.target_angle = 0
 
     def reset(self, static=False):
         fresh = self.problem.deep_copy()
         self.mesh = Mesh(fresh)
         self.boundary = fresh.copy()
-        self.reference_candidates = reference_candidates(self.boundary, self.target_angle)
+        self.candidates = reference_candidates(self.boundary)
         self.not_valid_points = []
         self.current_area = self.mesh.original_area
         self.current_ref_state = None
         return self.find_next_state(static=static)
 
     def find_next_state(self, not_valid_points=None, static=False):
-        r_p = next_reference_point(self.reference_candidates, not_valid_points)
+        r_p = next_reference_point(self.candidates, not_valid_points)
 
         if r_p:
             self.current_ref_state = reference_state(
-                self.boundary, r_p, self.neighbor_num, self.radius_num,
-                self.current_area / self.mesh.original_area, self.radius, static)
+                self.boundary, r_p, self.current_area / self.mesh.original_area, static)
             return np.array(self.current_ref_state['state']).astype(np.float32)
         else:
             return None
 
     def get_middle_points(self, state):
-        v1 = np.asarray([state[self.neighbor_num], state[self.neighbor_num + 1]], dtype=float)
-        v2 = np.asarray([state[self.neighbor_num + 2], state[self.neighbor_num + 3]], dtype=float)
+        v1 = np.asarray([state[NEIGHBOR_NUM], state[NEIGHBOR_NUM + 1]], dtype=float)
+        v2 = np.asarray([state[NEIGHBOR_NUM + 2], state[NEIGHBOR_NUM + 3]], dtype=float)
         return v1, v2
 
     def detransformation(self, point, is_move=False):
@@ -68,8 +63,8 @@ class Ebrd_Env:
         render_boundary(Polygon(self.mesh.vertices()))
 
     def move(self, new_point, rule_type):
-        x = self.current_ref_state['base_length'] * self.radius * new_point[0] * math.cos(new_point[1])
-        y = self.current_ref_state['base_length'] * self.radius * new_point[0] * math.sin(new_point[1])
+        x = self.current_ref_state['base_length'] * RADIUS * new_point[0] * math.cos(new_point[1])
+        y = self.current_ref_state['base_length'] * RADIUS * new_point[0] * math.sin(new_point[1])
 
         new_point = self.detransformation([round(x, 6), round(y, 6)], is_move=True)
 
@@ -101,7 +96,7 @@ class Ebrd_Env:
 
                 not_valid_element = False
                 retired, rescored = self.mesh.commit_quad(self.boundary, quad)
-                self.reference_candidates = updated_candidates(self.reference_candidates, self.boundary, retired, rescored)
+                self.candidates = updated_candidates(self.candidates, self.boundary, retired, rescored)
 
                 next_state = self.find_next_state(self.not_valid_points, static=True)
 
@@ -121,8 +116,8 @@ class Ebrd_Env:
             if len(self.boundary.vertices) > 4:
                 is_complete = False
                 if next_state is None:
-                    smooth_pave(self.mesh, self.boundary, self.mesh.vertices(), self.boundary.vertices, iteration=400)
-                    self.reference_candidates = reference_candidates(self.boundary, self.target_angle)
+                    smooth_pave(self.mesh, self.boundary)
+                    self.candidates = reference_candidates(self.boundary)
 
                     if len(self.last_not_valid_points) > 0 and len(self.not_valid_points) > 0:
                         if self.last_not_valid_points[0] == self.not_valid_points[0] and \

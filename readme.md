@@ -101,6 +101,7 @@ On Intel (x86_64) macOS, install PyTorch with conda instead
   (Zeng & Yao 2009): vertices are the primitive objects, quads the primitive products,
   the front the product–environment interface, and meshing the recursive resolution of
   conflicts on it
+  - `config.py` — all tweakable constants in one place
   - `geometry.py` — Vertex (primitive object), Segment (vertex–vertex interaction), Polygon, Quad, geometric constructions
   - `boundary.py` — `Boundary`, the advancing front where product meets environment: reference-point selection, rule quads, front updates
   - `mesh.py` — `Mesh`, the product: absorbs one quad at a time

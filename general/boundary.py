@@ -1,13 +1,12 @@
 import math
 
+from general.config import NUM_REF_NEIGHBOR
 from general.geometry import Segment, Polygon, Quad
 
 
 class Boundary(Polygon):
-    def __init__(self, vertices, num_ref_neighbor=4, maximum_reference_angle=math.pi * 0.972):
+    def __init__(self, vertices):
         super().__init__(vertices)
-        self.num_ref_neighbor = num_ref_neighbor
-        self.maximum_reference_angle = maximum_reference_angle
 
     def estimate_area_range(self):
         lengths = sorted(seg.length() for seg in self.own_segments())
@@ -44,7 +43,7 @@ class Boundary(Polygon):
 
     def update_boundary(self, quad):
         new_vertices = [v for v in quad.vertices if v not in self.vertices]
-        half = self.num_ref_neighbor // 2
+        half = NUM_REF_NEIGHBOR // 2
 
         if len(new_vertices) == 1:
             new_v = new_vertices[0]

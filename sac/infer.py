@@ -78,7 +78,7 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
         tag = f"{method}_env_{i}_{'T' if deterministic else 'F'}"
 
         if info['is_complete']:
-            smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
+            smooth_mesh(env.mesh, env.boundary)
 
         if save_fig and env.mesh.generated_quads:
             save_meshes(env, eval_path / version / f"{tag}.png", quads=env.mesh.generated_quads,
@@ -122,7 +122,7 @@ def replication_evaluation(is_render=False, deterministic=False, save_fig=False)
         results['sac']['n_complete'] += 1 if info['is_complete'] else 0
 
         if save_fig and info['is_complete']:
-            smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
+            smooth_mesh(env.mesh, env.boundary)
 
     with open(eval_path / version / "evaluation_repli.txt", 'w') as outfile:
         json.dump(results, outfile)
@@ -171,7 +171,7 @@ def full_mesh(domain="boundary6",
         coverage = sum(m.area() for m in env.mesh.generated_quads) / env.mesh.original_area
 
         if info['is_complete']:
-            smooth_mesh(env.mesh, env.boundary, env.mesh.vertices())
+            smooth_mesh(env.mesh, env.boundary)
 
             save_meshes(env, out, quads=env.mesh.generated_quads, style='k-')
             print(f"Completed {domain} on attempt {k + 1} "
