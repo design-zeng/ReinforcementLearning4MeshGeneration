@@ -26,7 +26,7 @@ def evaluation(model_path, version, is_render=False, indexing=False, save_fig=Fa
 
         while True:
             action, type_value = get_action(state, model)
-            state, reward, done, info = env.move(action, round(type_value, 2))
+            state, reward, done, info = env.step(action, round(type_value, 2))
             if is_render:
                 env.render()
             if done:

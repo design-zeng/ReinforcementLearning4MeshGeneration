@@ -132,7 +132,7 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
         for _ in range(max_steps):
             step += 1
             action, type_value = get_action(state, model)
-            state, reward, done, _ = env.move(action, round(type_value, 2))
+            state, reward, done, _ = env.step(action, round(type_value, 2))
             print(_, reward, len(env.boundary.vertices))
             ep_reward += reward
             if done:

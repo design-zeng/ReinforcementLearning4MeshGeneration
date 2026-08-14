@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from general.config import NEIGHBOR_NUM
+from general.config import NEIGHBOR_NUM, RADIUS
 from general.geometry import Vertex
 
 
@@ -11,6 +11,16 @@ def action_point(ref_state, point):
     v1 = np.asarray([state[NEIGHBOR_NUM], state[NEIGHBOR_NUM + 1]], dtype=float)
     v2 = np.asarray([state[NEIGHBOR_NUM + 2], state[NEIGHBOR_NUM + 3]], dtype=float)
     decoded = from_local_frame(point, ref_state['base_length'], v1, v2)
+    return Vertex(round(decoded[0], 4), round(decoded[1], 4))
+
+
+def polar_action_point(ref_state, polar):
+    state = Vertex.flatten(ref_state['neighbors'])
+    v1 = np.asarray([state[NEIGHBOR_NUM], state[NEIGHBOR_NUM + 1]], dtype=float)
+    v2 = np.asarray([state[NEIGHBOR_NUM + 2], state[NEIGHBOR_NUM + 3]], dtype=float)
+    x = ref_state['base_length'] * RADIUS * polar[0] * math.cos(polar[1])
+    y = ref_state['base_length'] * RADIUS * polar[0] * math.sin(polar[1])
+    decoded = from_local_frame([round(x, 6), round(y, 6)], 1, v1, v2)
     return Vertex(round(decoded[0], 4), round(decoded[1], 4))
 
 
