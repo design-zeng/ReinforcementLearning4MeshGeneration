@@ -1,7 +1,7 @@
 import math
 
 from general.config import NUM_REF_NEIGHBOR
-from general.geometry import Segment, Polygon, Quad
+from general.geometry import Polygon
 
 
 class Boundary(Polygon):
@@ -14,36 +14,6 @@ class Boundary(Polygon):
         max_L = min(lengths[-2], 2 * L)
         min_L = min(L / math.sqrt(2), lengths[1])
         return min_L ** 2, ((max_L + 3 * min_L) / 4) ** 2
-
-    def rule_quad(self, rule, index, new_point=None):
-        v = self.vertices
-        n = len(v)
-        if rule == -1:
-            return Quad([v[index - 1], v[index], v[(index + 1) % n], v[(index + 2) % n]])
-        if rule == 1:
-            return Quad([v[index - 2], v[index - 1], v[index], v[(index + 1) % n]])
-        return Quad([new_point, v[index - 1], v[index], v[(index + 1) % n]])
-
-    def can_add_quad(self, quad, reference_point):
-        return quad.is_valid() and \
-            not self.check_intersection_with_boundary(quad, reference_point)
-
-    def check_intersection_with_boundary(self, quad, reference_point):
-        max_dist = max(reference_point.distance_to(v) for v in quad.vertices if v is not reference_point)
-        neighbouring = [v for v in self.vertices
-                        if reference_point.distance_to(v) < max_dist and v not in quad.vertices]
-
-        idx = quad.vertices.index(reference_point)
-        checking_segs = [Segment(quad.vertices[idx - 1], quad.vertices[idx - 2]),
-                         Segment(quad.vertices[idx - 2], quad.vertices[idx - 3])]
-        n = len(self.vertices)
-        for v in neighbouring:
-            index = self.vertices.index(v)
-            for u in (self.vertices[index - 1], self.vertices[(index + 1) % n]):
-                if u not in quad.vertices and \
-                        any(seg.is_intersecting(Segment(v, u)) for seg in checking_segs):
-                    return True
-        return False
 
     def update_boundary(self, quad):
         new_vertices = [v for v in quad.vertices if v not in self.vertices]

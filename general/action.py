@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from general.config import NEIGHBOR_NUM, RADIUS
-from general.geometry import Vertex
+from general.geometry import Vertex, Quad
 
 
 def action_point(ref_state, point):
@@ -22,6 +22,16 @@ def polar_action_point(ref_state, polar):
     y = ref_state['base_length'] * RADIUS * polar[0] * math.sin(polar[1])
     decoded = from_local_frame([round(x, 6), round(y, 6)], 1, v1, v2)
     return Vertex(round(decoded[0], 4), round(decoded[1], 4))
+
+
+def rule_quad(boundary, rule, index, new_point=None):
+    v = boundary.vertices
+    n = len(v)
+    if rule == -1:
+        return Quad([v[index - 1], v[index], v[(index + 1) % n], v[(index + 2) % n]])
+    if rule == 1:
+        return Quad([v[index - 2], v[index - 1], v[index], v[(index + 1) % n]])
+    return Quad([new_point, v[index - 1], v[index], v[(index + 1) % n]])
 
 
 def from_local_frame(point, dist, p0, p1):

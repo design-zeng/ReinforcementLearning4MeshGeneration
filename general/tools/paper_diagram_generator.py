@@ -1,14 +1,18 @@
 import os
 from pathlib import Path
 
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import patches
 
-from general.geometry import Vertex, Segment
+from general.geometry import Vertex, Segment, Quad
+from general.quality import edge_angle_quality
+from general.mesh_io import read_polygon
 from general.plotting import plot_segment
 
 
 output_path = Path(__file__).parent.parent.parent / "general" / "output"
+domains_path = Path(__file__).parent.parent.parent / "samples" / "domains"
 # mesh snapshots are produced by sac/infer.py evaluation() (save_fig=True)
 img_path = Path(__file__).parent.parent.parent / "sac" / "output" / "evaluation"
 
@@ -150,6 +154,67 @@ def output_types():
     plt.show()
 
 
+def element_quality_sweep():
+    v1 = Vertex(0, 0)
+    v2 = Vertex(-1, 0.5)
+    v3 = Vertex(3.4, 0.2)
+    xs = np.arange(-10, 10, 0.1)
+    ys = np.arange(1, 11, 0.1)
+    vs = [Vertex(x, y) for x in xs for y in ys]
+
+    for v in [v1, v2, v3]:
+        plt.plot(v.x, v.y, 'b.')
+
+    angle = []
+    ratio = []
+    quality = []
+    for v in vs:
+        quad = Quad([v1, v2, v, v3])
+        if quad.is_valid():
+            quality.append(edge_angle_quality(quad))
+            angle.append(v.clockwise_angle(v3, v2))
+            ratio.append(v.distance_to(v2) / v.distance_to(v3))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(angle, ratio, quality, marker='.')
+    plt.show()
+
+
+def experiment_boundaries():
+    def boundary_data(boundary):
+        xs = [v.x for v in boundary.vertices]
+        xs.append(xs[0])
+        ys = [v.y for v in boundary.vertices]
+        ys.append(ys[0])
+        return xs, ys
+
+    d1 = read_polygon(domains_path / "boundary16.json")
+    d2 = read_polygon(domains_path / "boundary15.json")
+    d3 = read_polygon(domains_path / "test1.json")
+
+    plt.figure(1)
+    ax1 = plt.subplot(221)
+    d1_xs, d1_ys = boundary_data(d1)
+    ax1.set_title("D1")
+    plt.axis('off')
+    plt.plot(d1_xs, d1_ys, 'k.-')
+
+    ax2 = plt.subplot(223)
+    d2_xs, d2_ys = boundary_data(d2)
+    ax2.set_title("D2")
+    plt.plot(d2_xs, d2_ys, 'k.-')
+    plt.axis('off')
+
+    ax3 = plt.subplot(122)
+    d3_xs, d3_ys = boundary_data(d3)
+    ax3.set_title("D3")
+    plt.plot(d3_xs, d3_ys, 'k.-')
+    plt.axis('off')
+
+    plt.show()
+
+
 def read_img():
     # Assemble a panel from the mesh figures produced by sac.infer.
     imgs = sorted(img_path.rglob("*.png"))[:6]
@@ -175,3 +240,5 @@ if __name__ == "__main__":
     # coordinate_system()
     # output_types()
     # read_img()
+    # element_quality_sweep()
+    # experiment_boundaries()

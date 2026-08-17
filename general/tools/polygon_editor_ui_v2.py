@@ -103,8 +103,8 @@ class MeshFrame(Frame):
         self.last_draw = None
 
     def density(self, event):
-        # d = Tk()
         self.newWindow = Toplevel(self.master)
+        Density(self.newWindow, self.points, self)
 
     def mouse_move(self, event):
         if self.done:  # Nothing more to do

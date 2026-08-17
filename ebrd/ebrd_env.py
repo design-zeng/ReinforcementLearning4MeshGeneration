@@ -2,7 +2,8 @@ import numpy as np
 
 from general.geometry import Quad, Polygon, Mesh
 from general.recognition import reference_state, reference_candidates, next_reference_point, updated_candidates
-from general.action import polar_action_point
+from general.action import polar_action_point, rule_quad
+from general.quality import can_add_quad
 from general.smoothing import smooth_pave
 from general.plotting import render_boundary, close_render
 
@@ -10,14 +11,9 @@ from general.plotting import render_boundary, close_render
 class Ebrd_Env:
     def __init__(self, boundary):
         self.problem = boundary.deep_copy()
-        self.mesh = Mesh(boundary)
-        self.boundary = boundary.copy()
-        self.current_area = self.mesh.original_area
-
-        self.current_ref_state = None
-        self.candidates = None
-        self.failed_points = []
         self.last_failed_points = []
+
+        self.reset()
 
     def reset(self, static=False):
         fresh = self.problem.deep_copy()
@@ -50,15 +46,15 @@ class Ebrd_Env:
             new_point = polar_action_point(self.current_ref_state, action)
 
             if rule_type <= 0.3:
-                quad = self.boundary.rule_quad(-1, index)
+                quad = rule_quad(self.boundary, -1, index)
             elif rule_type >= 0.7:
-                quad = self.boundary.rule_quad(1, index)
+                quad = rule_quad(self.boundary, 1, index)
             elif self.boundary.contains_point(new_point):
-                quad = self.boundary.rule_quad(0, index, new_point)
+                quad = rule_quad(self.boundary, 0, index, new_point)
             else:
                 quad = None
 
-            if quad is not None and self.boundary.can_add_quad(quad, reference_point):
+            if quad is not None and can_add_quad(self.boundary, quad, reference_point):
                 absorbed = True
                 self.mesh.add_quad(quad)
                 retired, rescored = self.boundary.update_boundary(quad)
@@ -67,7 +63,7 @@ class Ebrd_Env:
                 if len(self.boundary.vertices) <= 5:
                     done = True
                     if len(self.boundary.vertices) == 4:
-                        self.mesh.generated_quads.append(Quad(self.boundary.vertices))
+                        self.mesh.add_quad(Quad(self.boundary.vertices))
             elif reference_point not in self.failed_points:
                 self.failed_points.append(reference_point)
 

@@ -5,8 +5,8 @@ from gym import spaces
 from general.config import NEIGHBOR_NUM, RADIUS_NUM, MAX_FAILURES
 from general.geometry import Quad, Polygon, Mesh
 from general.recognition import reference_state, reference_candidates, next_reference_point, updated_candidates
-from general.action import action_point
-from general.quality import combined_quality
+from general.action import action_point, rule_quad
+from general.quality import combined_quality, can_add_quad, speed_penalty
 from general.plotting import render_boundary, close_render
 
 
@@ -61,36 +61,28 @@ class Sac_Env(gym.Env):
             new_vertex = None
             if rule_type <= -0.5:
                 rule = -1
-                quad = self.boundary.rule_quad(-1, index)
+                quad = rule_quad(self.boundary, -1, index)
             elif rule_type >= 0.5:
                 rule = 1
-                quad = self.boundary.rule_quad(1, index)
+                quad = rule_quad(self.boundary, 1, index)
             else:
                 rule = 0
                 if not self.boundary.contains_point(new_point):
                     quad = None
                 elif self.boundary.find_same_point(new_point):
-                    quad = self.boundary.rule_quad(-1, index)
+                    quad = rule_quad(self.boundary, -1, index)
                 else:
-                    quad = self.boundary.rule_quad(0, index, new_point)
+                    quad = rule_quad(self.boundary, 0, index, new_point)
                     new_vertex = new_point
 
-            if quad is not None and self.boundary.can_add_quad(quad, reference_point):
+            if quad is not None and can_add_quad(self.boundary, quad, reference_point):
                 self.mesh.add_quad(quad)
                 retired, rescored = self.boundary.update_boundary(quad)
                 self.candidates = updated_candidates(self.candidates, self.boundary, retired, rescored)
                 self.current_area -= quad.area()
 
                 reward = combined_quality(self.boundary, quad, new_vertex)
-                quad_area = quad.area()
-                min_area, critical_area = self.estimated_area_range
-                if min_area <= quad_area < critical_area:
-                    speed_penalty = (quad_area - critical_area) / (critical_area - min_area)
-                elif quad_area < min_area:
-                    speed_penalty = -1
-                else:
-                    speed_penalty = 0
-                reward += speed_penalty
+                reward += speed_penalty(quad.area(), self.estimated_area_range)
                 self.history_info[rule].append(reward)
                 absorbed = True
 
@@ -98,9 +90,7 @@ class Sac_Env(gym.Env):
                     reward += 10
                     done = True
                     if len(self.boundary.vertices) == 4:
-                        final_cell = Quad(self.boundary.vertices)
-                        final_cell.connect_vertices()
-                        self.mesh.generated_quads.append(final_cell)
+                        self.mesh.add_quad(Quad(self.boundary.vertices))
             else:
                 n = len(self.mesh.generated_quads)
                 reward = -1 / n if n else -1

@@ -1,18 +1,18 @@
 # RL for Mesh Generation
 
-This repository contains a Python implementation of the RL-based mesh generation algorithm presented in:
+A Python implementation of the RL-based quadrilateral mesh generation algorithms from:
 
 1. Pan, J., Huang, J., Wang, Y., Cheng, G., & Zeng, Y. (2021). A self-learning finite element extraction system based on reinforcement learning. *AI EDAM, 35(2)*, 180-208.
 2. Pan, J., Huang, J., Cheng, G., & Zeng, Y. (2023). Reinforcement learning for automatic quadrilateral mesh generation: A soft actor–critic approach. *Neural Networks, 157*, 288-304.
 
-which were evolved from the following:
+which evolved from:
 
-3. Zeng, Y. (2015). Environment-Based Design (EBD): a Methodology for Transdisciplinary Design. *Journal of Integrated Design and Process Science, 19(1)*, 5-20. — the design methodology whose element-extraction rules the FreeMesh work follows.
+3. Zeng, Y. (2015). Environment-Based Design (EBD): a Methodology for Transdisciplinary Design. *Journal of Integrated Design and Process Science, 19(1)*, 5-20.
 4. Zeng, Y., & Yao, S. (2009). Understanding design activities through computer simulation. *Advanced Engineering Informatics, 23(3)*, 294-308.
 5. Yao, S., Yan, B., Chen, B., & Zeng, Y. (2005). An ANN-based element extraction method for automatic mesh generation. *Expert Systems with Applications, 29(1)*, 193-206.
 6. Zeng, Y., & Cheng, G. (1993). Knowledge‐Based Free Mesh Generation of Quadrilateral Elements in Two‐Dimensional Domains. *Computer‐Aided Civil and Infrastructure Engineering, 8(4)*, 259-270.
 
-If you use this implementation in your work, please add a reference/citation to the paper:
+If you use this implementation, please cite:
 
 ```bibtex
 @article{pan2021self,
@@ -39,23 +39,24 @@ If you use this implementation in your work, please add a reference/citation to 
 
 ## Use it as a library
 
-If you just want to mesh a 2D domain and don't need the RL/training internals,
-use `rlmesh.py`. It wraps the trained soft actor–critic policy behind a small API.
-You supply the domain boundary; rlmesh meshes it.
+To just mesh a 2D domain without touching the RL/training internals, use `rlmesh.py`.
+It wraps the trained soft actor–critic policy behind a small API:
 
 ```python
 from general.mesh_io import read_polygon
 from rlmesh import Mesher
 
-boundary = read_polygon("samples/domains/random1_1.json")   # -> a Boundary
+boundary = read_polygon("samples/domains/random1_1.json")
 result = Mesher().mesh(boundary)
 print(len(result.quads), "elements,", f"{result.coverage:.0%} area covered")
 
-result.save("mesh.inp")                          # export an Abaqus .inp file
-nodes, faces = result.to_arrays()                # or plain data for your own tools
+result.save("mesh.inp")
+# export an Abaqus .inp file
+nodes, faces = result.to_arrays()
+# or plain data for your own tools
 ```
 
-Build the boundary from your own points instead of reading a file:
+Or build the boundary from your own points:
 
 ```python
 from general.geometry import Vertex
@@ -65,174 +66,154 @@ boundary = Boundary([Vertex(x, y) for x, y in my_points])
 boundary.connect_vertices()
 result = Mesher().mesh(boundary)
 ```
+There is a convenient boundary drawer inside `general/tools`, which you can run using
+```bash
+python -m general.tools.polygon_editor_ui_v2  
+```
+They are saved inside `samples/domains`, so you must wire up the correct path.
 
 The policy is stochastic, so `mesh()` retries a domain up to `attempts` times
-(default 60) until it is fully meshed — check `result.complete`. By default
-`Mesher()` loads `sac/output/logs/sac/77/0/best_model.zip`; pass
-`Mesher(model_path=...)` to use another, or train one with `python -m sac.train`.
+(default 60) until it is fully meshed. `Mesher()`
+loads the shipped SAC model by default; pass `Mesher(model_path=...)` to use
+another.
 
-To mesh with the vectorized `sac_fast` policy instead, pass `engine="sac_fast"`:
+> Use `Mesher(engine="sac_fast")` for the vectorized policy.
+> The shipped `sac_fast` model is ~16× faster than `sac`.
+> However, retrain with `python -m sac_fast.train` before relying on it, the current supplied model is wrong.
 
-```python
-result = Mesher(engine="sac_fast").mesh(boundary)
-```
-
-This loads `sac_fast/output/model.zip` by default and returns the same
-`MeshResult`.
-
-> **The shipped `sac_fast` model is provisional — prefer the default `sac`
-> engine for real meshes.** It was trained for only 30k steps per domain
-> (`python -m sac_fast.train 30000`) instead of the full 200k, because the full
-> run takes ~10 h on a CPU. It is roughly 16× faster than `sac` (0.5 s vs 8.1 s
-> per domain), but over a 17-domain check it left **26% of elements invalid**
-> (tangled, zero-area, or non-convex) against **0.03%** for `sac`, at mean
-> element quality 0.33 vs 0.62. It also produces far coarser meshes: it picks
-> the two vertex-removing rules ~87% of the time, so it collapses the front in
-> a few large slivers rather than building refined elements. Retrain with
-> `python -m sac_fast.train` (full 200k) before relying on it.
-
-## Setup
+## Local Setup
 
 **Requirements:** Python 3.10+ and the packages pinned in `requirements.txt`.
 
-First, clone the repo and switch to branch `ming-cleanup-v2`
 ```bash
-git clone https://github.com/design-zeng/ReinforcementLearning4MeshGeneration.git
-cd ReinforcementLearning4MeshGeneration
+git clone https://github.com/design-zeng/ReinforcementLearning4MeshGeneration.git rl-mesh
+cd rl-mesh
 git switch ming-cleanup-v2
-```
-Optionally, create a conda environment
-```bash
-conda create --name rlmeshenv python=3.11
-conda activate rlmeshenv
-```
-Install the requirements
-```
 pip install -r requirements.txt
 ```
 
+Optionally use a conda environment (`conda create --name rlmeshenv python=3.11`).
 On Intel (x86_64) macOS, install PyTorch with conda instead
 (`conda install pytorch -c pytorch`); PyPI no longer ships x86_64 macOS wheels.
 
+## Google Cloud Training Setup
+
+The shipped `sac` and `ebrd` models were trained on a Compute Engine
+**g2-standard-8** instance (1× NVIDIA L4 GPU), using a Deep Learning VM image
+that comes with CUDA and PyTorch preinstalled.
+
+1. Create a Google Cloud project.
+2. Set up billing.
+3. Navigate to Compute Engine, then "VM Instances". When I built this project, I used the `g2-standard-4` instance with a single L4 GPU. Use "Capacity Advisor" to check for available GPUs in your region, then select your desired region when creating the VM.
+4. In the "OS and Storage" tab, change your operating system to "Deep Learning on Linux" and allocate at least 100 GB of storage.
+5. The right-side panel might warn you about insufficient quota, in which case you should click on "Request Quota Adjustment". Mine got approved instantly. 
+6. Click Create and SSH into the VM.
+7. Clone the repo.
+```bash
+git clone https://github.com/design-zeng/ReinforcementLearning4MeshGeneration.git rl-mesh
+cd rl-mesh
+git switch ming-cleanup-v2
+```
+8. Install Python, create venv, switch to venv, then install the requirements
+```bash
+pip install -r requirements.txt
+```
+9. Install tmux, create a tmux session.
+10. Go to section "Training and Results" in this README for further instructions.
+
+Note: You can detach from tmux by pressing `Ctrl + B`, release both, then `D`. You can now safely `exit` the VM, and all tasks inside tmux will keep running. You can check back after a few hours, by SSH-ing again, and attaching back to your tmux session with `tmux a`. To view GPU usage, use
+```bash
+watch -n 1 nvidia-smi
+```
+When training is done, download `ebrd/output/data_augmentation/run1.pt` and `sac/output/logs/sac/77/0/best_model.zip` using SCP, and place them in the same folder on your local machine. You can now run them locally.
+
+MAKE SURE TO DELETE YOUR INSTANCE AFTER USAGE. THEY WILL KEEP INCURRING FEES.
+
 ## Repository Layout
 
-- `rlmesh.py` — library entry point (`Mesher`) for meshing a domain, see above
-- `general/` shared geometry + meshing library, organized after Environment-Based Design
-  (Zeng & Yao 2009): vertices are the primitive objects, quads the primitive products,
-  the front the product–environment interface, and meshing the recursive resolution of
-  conflicts on it
-  - `config.py` — all tweakable constants in one place
-  - `geometry.py` — Vertex (primitive object), Segment (vertex–vertex interaction), Polygon, Quad, Mesh (quads accumulated over a polygon), geometric constructions
-  - `boundary.py` — `Boundary`, the advancing front where product meets environment: reference-point selection, rule quads, quad acceptance, front updates
-  - `quality.py` — quad and front quality metrics
-  - `recognition.py` — the agent's bounded view of the front around a reference point
-  - `action.py` — carry a policy action back into the domain (local frame decode)
-  - `smoothing.py` — resolve integration conflicts among placed vertices (relax until none remain)
-  - `mesh_io.py` — read a JSON polygon into a `Boundary`; write Abaqus `.inp`
-  - `plotting.py` — rendering / figure helpers
-  - `tools/`
-    - `json_gmsh_abaqus_unv_conversion.py`
-    - `mesh_quality_comparison.py`
-    - `paper_diagram_generator.py`
-    - `polygon_editor_ui_v2.py`
-    - `vtk_quality_verdict.py`
+- `rlmesh.py` library entry point (`Mesher`)
+- `general/` shared across `ebrd/` and `sac/`
+  - `config.py` constants
+  - `geometry.py` geometry such as vertices, segments, polygons, quads, meshes
+  - `boundary.py` the advancing front: front updates, element size range
+  - `recognition.py` the agent's view of the front; reference-point selection
+  - `action.py` decode a policy action into the domain (local frame); rule quads
+  - `quality.py` quad and front quality metrics; quad acceptance
+  - `smoothing.py` mesh and front smoothing
+  - `mesh_io.py` IO utilities
+  - `plotting.py` rendering / figure helpers
+  - `tools/` format conversion, quality comparison/verdict, paper diagrams, polygon editor
 - `ebrd/` Paper 1: FreeMesh-S
-  - `data_augmentation.py` synthetic training samples, invented in observation space
-  - `sample_extraction.py` training samples harvested from finished meshes
-  - `model.py` model architecture, loading, saving
-  - `train.py`
-  - `infer.py`
+  - `data_augmentation.py` random training samples
+  - `sample_extraction.py` harvested training samples
+  - `tools/` sample distribution figures
+- `sac/` Paper 2: FreeMesh-RL
+- `sac_fast/` vectorized numpy reimplementation for faster inference
 - `original_ann/` Paper 4: ebrd predecessor
-  - `model.py` model architecture, loading, saving
-  - `train.py`
-  - `infer.py` inference and evaluation scripts
-  - `pattern_loader.py` txt reader and transformation
+  - `pattern_loader.py`
   - `patterns/` training samples
     - `pattern.txt`
-- `sac/` Paper 2: FreeMesh-RL
-  - `train.py`
-  - `infer.py`
-  - `custom_callback.py`
-- `sac_fast/` vectorized approach for faster GPU inference
-  - `polygon.py`, `boundary.py`, `mesh.py`, `geometry_lib.py` — numpy reimplementation of the front and mesh
-  - `gym_env.py` — gymnasium environment
-  - `train.py`
-  - `infer.py`
-- `samples/domains/` json boundary samples
-- `*/output/` model zip, logs, figures
+- `samples/domains/` JSON boundary samples
+- `*/output/` model weights, logs, figures
 
-## Usage
+## Training and Results
 
 ### SAC
-1. Train
-   ```bash
-   python -m sac.train
-   ```
-2. Evaluate
-   ```bash
-   python -m sac.infer
-   ```
-3. Plot return vs time
-   ```bash
-   python -m sac.tools.return_vs_time_from_tflogs
-   ```
-4. Plot rule usage frequency
-   ```bash
-   python -m sac.tools.rule_frequency_analysis
-   ```
 
-### SAC (fast)
-1. Train
-   ```bash
-   python -m sac_fast.train
-   ```
-2. Evaluate
-   ```bash
-   python -m sac_fast.infer
-   ```
+```bash
+python -m sac.train
+python -m sac.infer
+python -m sac.tools.return_vs_time_from_tflogs
+# plot return vs time
+python -m sac.tools.rule_frequency_analysis
+# plot rule usage frequency
+```
 
 ### EBRD
 
-- Train
-  ```bash
-  python -m ebrd.train
-  ```
-- Infer
-  ```bash
-  python -m ebrd.infer
-  ```
-- The `train.py` script samples data automatically. If you wish ONLY for the data, run
-  ```bash
-  python -m ebrd.data_augmentation
-  ```
+```bash
+python -m ebrd.train
+python -m ebrd.infer
+python -m ebrd.tools.sample_distribution_plots
+# plot vertex, angle, and quality distributions of the training samples
+```
+
+The plot compares the extracted samples against the generated ones when extracted samples exist under `general/output/data_augmentation`, otherwise it plots the generated ones alone. To harvest extracted samples from meshes, call `extract_samples_from_file()` in `general.tools.mesh_quality_comparison`.
 
 ### Original ANN
 
-- Train
-  ```bash
-  python -m original_ann.train
-  ```
-- Infer
-  ```bash
-  python -m original_ann.infer
-  ```
+```bash
+python -m original_ann.train
+python -m original_ann.infer
+```
+
+### SAC_fast
+
+```bash
+python -m sac_fast.train
+python -m sac_fast.infer
+```
 
 ### Other Tools
 
-- Evaluation using VTK criteria
-  ```bash
-  python -m general.tools.vtk_quality_verdict
-  ```
-- Compare mesh quality to BQ, Pave, and DG methods
-  ```bash
-  python -m general.tools.mesh_quality_comparison
-  ```
-- Some of the diagrams generated for the papers:
-  ```bash
-  python -m general.tools.paper_diagram_generator
-  ```
-  such as problematic geometries, primitive rules, vision space, space normalization, action space, etc
-- Interactive custom boundary creator
-  ```bash
-  python -m general.tools.polygon_editor_ui_v2
-  ```
+These read the meshes that `python -m sac.infer` writes (as `.inp` files under `sac/output/evaluation`), so run that first with `save_fig=True`.
+
+Evaluate every produced mesh with the VTK quality criteria. Prints average and standard deviation for min angle, max angle, scaled Jacobian, stretch, and taper:
+```bash
+python -m general.tools.vtk_quality_verdict
+```
+
+Compare mesh quality across methods. Prints the quality statistics of every produced mesh, grouped by filename prefix: `g_*` is counted as BQ, `pave*` as Pave, everything else as DG (this repo). To compare against BQ or Pave, copy their meshes into `sac/output/evaluation` as `.inp` files with those prefixes:
+```bash
+python -m general.tools.mesh_quality_comparison
+```
+
+Regenerate the diagrams from the papers. Running it as-is shows the problematic-geometries figure (`bad_cases`); the other figures (`primitive_rules`, `generation_partial_boundary`, `coordinate_system`, `output_types`, `read_img`, `element_quality_sweep`, `experiment_boundaries`) are listed in its `__main__`, uncomment the one you want. `read_img` assembles a panel from the sac.infer figures and saves it to `general/output`:
+```bash
+python -m general.tools.paper_diagram_generator
+```
+
+Convert between mesh formats: writes `samples/domains/basic1.json` as a Gmsh geometry script and converts the first produced `.inp` mesh to UNV, both into `general/output`. Edit its `__main__` to convert other files:
+```bash
+python -m general.tools.json_gmsh_abaqus_unv_conversion
+```
