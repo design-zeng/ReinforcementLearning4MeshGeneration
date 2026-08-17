@@ -93,6 +93,23 @@ class Vertex:
         q = o + np.array([[c, -s], [s, c]]) @ (np.array([vertex.x, vertex.y]) - o)
         return Vertex(float(q[0]), float(q[1]))
 
+    @staticmethod
+    def clockwise_vertices(inner_v, vertices):
+        for i in range(1, len(vertices)):
+            flag = max(range(i, len(vertices)),
+                       key=lambda j: inner_v.clockwise_angle(vertices[j], vertices[i - 1]))
+            if flag != i:
+                vertices[i], vertices[flag] = vertices[flag], vertices[i]
+
+        final_vertices = []
+        for i in range(len(vertices)):
+            inter_v = [v for v in vertices[i].get_neighbors()
+                       if v in vertices[i - 1].get_neighbors() and v is not inner_v]
+            final_vertices.append(vertices[i - 1])
+            if inter_v:
+                final_vertices.append(inter_v[0])
+        return final_vertices
+
 
 class Segment:
     def __init__(self, point1, point2):
@@ -293,8 +310,10 @@ class Polygon:
 
 
 class Quad(Polygon):
-    def __init__(self, vertices):
-        if len(vertices) != 4:
+    def __init__(self, vertices=None):
+        if vertices is None:
+            vertices = []
+        elif len(vertices) != 4:
             raise ValueError(f"A Quad requires exactly 4 vertices, got {len(vertices)}.")
         super().__init__(vertices)
 
@@ -307,7 +326,16 @@ class Mesh:
     def __init__(self, polygon):
         self.original_vertices = list(polygon.vertices)
         self.original_area = polygon.area()
+        self.current_area = self.original_area
         self.generated_quads = []
+
+    def area_ratio(self):
+        return self.current_area / self.original_area
+
+    @staticmethod
+    def add_quad(quad, mesh):
+        quad.connect_vertices()
+        mesh.generated_quads.append(quad)
 
     def vertices(self):
         vertices = list(self.original_vertices)
@@ -315,46 +343,5 @@ class Mesh:
             vertices.extend(v for v in quad.vertices if v not in vertices)
         return vertices
 
-    def add_quad(self, quad):
-        quad.connect_vertices()
-        self.generated_quads.append(quad)
-
     def find_related_quads(self, vertex):
         return list({m for m in self.generated_quads if vertex in m.vertices})
-
-
-def circle_line_intersection(a, b, A, B, W, dist):
-    if B == 0:
-        h = math.sqrt(dist ** 2 - (W / A) ** 2)
-        x1 = x2 = W / A + a
-        y1, y2 = b + h, b - h
-    elif A == 0:
-        h = math.sqrt(dist ** 2 - (W / B) ** 2)
-        x1, x2 = a + h, a - h
-        y1 = y2 = W / B + b
-    else:
-        M = -A / B
-        N = (W + A * a + B * b) / B
-        lin = 2 * M * b - 2 * M * N + 2 * a
-        disc = math.sqrt(math.fabs(lin ** 2 - 4 * (M ** 2 + 1) * ((N - b) ** 2 + a ** 2 - dist ** 2)))
-        denom = 2 * (M ** 2 + 1)
-        x1, x2 = (lin + disc) / denom, (lin - disc) / denom
-        y1, y2 = M * x1 + N, M * x2 + N
-    return Vertex(x1, y1), Vertex(x2, y2)
-
-
-def clockwise_vertices(inner_v, vertices):
-    for i in range(1, len(vertices)):
-        flag = max(range(i, len(vertices)),
-                   key=lambda j: inner_v.clockwise_angle(vertices[j], vertices[i - 1]))
-        if flag != i:
-            vertices[i], vertices[flag] = vertices[flag], vertices[i]
-
-    final_vertices = []
-    for i in range(len(vertices)):
-        inter_v = [v for v in vertices[i].get_neighbors()
-                   if v in vertices[i - 1].get_neighbors() and v is not inner_v]
-        final_vertices.append(vertices[i - 1])
-        if inter_v:
-            final_vertices.append(inter_v[0])
-    return final_vertices

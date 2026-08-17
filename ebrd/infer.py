@@ -5,7 +5,7 @@ from ebrd.ebrd_env import Ebrd_Env
 from general.smoothing import smooth_mesh
 from ebrd.sample_extraction import extract_samples, write_samples
 from general.plotting import save_meshes
-from ebrd.model import get_action, load_model, domains_path, augmentation_path
+from ebrd.model import FNNPolicy, domains_path, augmentation_path
 
 
 def prepare_eval_envs():
@@ -18,14 +18,14 @@ def evaluation(model_path, version, is_render=False, indexing=False, save_fig=Fa
     os.makedirs(out_dir, exist_ok=True)
 
     envs = prepare_eval_envs()
-    model = load_model(model_path)
+    model = FNNPolicy.load(model_path)
 
     for i, env in enumerate(envs):
         print(f'Starting for model with env {i}')
         state = env.reset(static=True)
 
         while True:
-            action, type_value = get_action(state, model)
+            action, type_value = FNNPolicy.get_action(state, model)
             state, reward, done, info = env.step(action, round(type_value, 2))
             if is_render:
                 env.render()
@@ -46,9 +46,9 @@ def evaluation(model_path, version, is_render=False, indexing=False, save_fig=Fa
                             indexing=indexing, style='k-')
         if save_samples:
             if len(env.mesh.generated_quads):
-                samples, output_types, outputs = extract_samples(env.mesh, env.mesh.generated_quads, 2, 3, radius=4)
-                write_samples(out_dir / f"ebrd_env_{i}.json",
-                                 {'samples': samples, 'output_types': output_types, 'outputs': outputs})
+                dataset = {'samples': [], 'output_types': [], 'outputs': []}
+                extract_samples(env.mesh, dataset, 2, 3, fan_radius=4)
+                write_samples(out_dir / f"ebrd_env_{i}.json", dataset)
                 print("Saved!")
 
 

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from general.geometry import Segment, Polygon
-from general.quality import edge_angle_quality, robust_quality
+from general.quality import QuadQuality
 
 
 def plot_segment(segment, style='b.-', linewidth=2, markersize=0.1):
@@ -55,7 +55,7 @@ def show_quad(quad, quality=3):
     plt.gca().set_aspect('equal', adjustable='box')
     if quality != 0:
         center = quad.get_centroid()
-        plt.text(center.x * 0.8, center.y * 0.8, str(round(edge_angle_quality(quad), 2)), fontsize=15)
+        plt.text(center.x * 0.8, center.y * 0.8, str(round(QuadQuality.edge_angle(quad), 2)), fontsize=15)
     plt.gca().set_frame_on(False)
     plt.xticks([])
     plt.yticks([])
@@ -150,7 +150,7 @@ def generate_meshes_canvas(mesh_gen, quads, quality, indexing, metric, style):
             plt.text(center.x, center.y, str(idx), fontsize=4)
 
 
-def save_meshes(mesh_gen, name, quads, quality=False, indexing=False, metric=robust_quality, dpi=300, style='k.-'):
+def save_meshes(mesh_gen, name, quads, quality=False, indexing=False, metric=QuadQuality.element, dpi=300, style='k.-'):
     plt.clf()
     generate_meshes_canvas(mesh_gen, quads, quality, indexing, metric, style=style)
     plt.gca().set_aspect('equal', adjustable='box')

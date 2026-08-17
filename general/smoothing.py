@@ -1,7 +1,7 @@
 import math
 
 from general.config import SMOOTH_LR_1, SMOOTH_LR_2, SMOOTH_ITERATIONS, SMOOTH_TOLERANCE
-from general.geometry import Segment, circle_line_intersection, clockwise_vertices
+from general.geometry import Segment, Vertex
 
 
 def smooth_mesh(mesh, boundary):
@@ -35,7 +35,7 @@ def _resolve_until_settled(run_pass):
 
 def _first_inside(vertex, guard_a, guard_b, proposals):
     for candidate in proposals:
-        ring = clockwise_vertices(vertex, vertex.get_neighbors())
+        ring = Vertex.clockwise_vertices(vertex, vertex.get_neighbors())
         if _stays_inside_ring(vertex, candidate, ring, guard_a, guard_b):
             return candidate
     return vertex
@@ -212,19 +212,19 @@ def _middle_vertex(vertex, left_v, right_v, target_angle):
     B = right_v.y - left_v.y
     D = left_v.distance_to(midpoint) / math.tan(math.radians(target_angle / 2))
 
-    V1, V2 = circle_line_intersection(midpoint.x, midpoint.y, A, B, 0, D)
+    V1, V2 = _circle_line_intersection(midpoint.x, midpoint.y, A, B, 0, D)
     return V1 if V1.distance_to(vertex) < V2.distance_to(vertex) else V2
 
 
 def _side_vertex(vertex, near_neighbor, beyond_neighbor, angle, dist):
     W = dist * near_neighbor.distance_to(beyond_neighbor) * math.cos(math.radians(angle))
-    V1, V2 = circle_line_intersection(near_neighbor.x, near_neighbor.y, beyond_neighbor.x - near_neighbor.x, beyond_neighbor.y - near_neighbor.y, W, dist)
+    V1, V2 = _circle_line_intersection(near_neighbor.x, near_neighbor.y, beyond_neighbor.x - near_neighbor.x, beyond_neighbor.y - near_neighbor.y, W, dist)
     return V1 if V1.distance_to(vertex) < V2.distance_to(vertex) else V2
 
 
 def _indention_vertex(vertex, left_v, right_v, angle, dist):
     W = dist * vertex.distance_to(left_v) * math.cos(math.radians(angle))
-    V1, V2 = circle_line_intersection(vertex.x, vertex.y, left_v.x - vertex.x, left_v.y - vertex.y, W, dist)
+    V1, V2 = _circle_line_intersection(vertex.x, vertex.y, left_v.x - vertex.x, left_v.y - vertex.y, W, dist)
     return V1 if V1.clockwise_angle(left_v, right_v) < V2.clockwise_angle(left_v, right_v) else V2
 
 
@@ -234,3 +234,23 @@ def _stays_inside_ring(original, candidate, ring, left_v, right_v):
         (original.clockwise_angle(ring[i], ring[i - 1]) < math.pi)
         for i in range(len(ring))
         if not (left_v in (ring[i], ring[i - 1]) and right_v in (ring[i], ring[i - 1])))
+
+
+def _circle_line_intersection(a, b, A, B, W, dist):
+    if B == 0:
+        h = math.sqrt(dist ** 2 - (W / A) ** 2)
+        x1 = x2 = W / A + a
+        y1, y2 = b + h, b - h
+    elif A == 0:
+        h = math.sqrt(dist ** 2 - (W / B) ** 2)
+        x1, x2 = a + h, a - h
+        y1 = y2 = W / B + b
+    else:
+        M = -A / B
+        N = (W + A * a + B * b) / B
+        lin = 2 * M * b - 2 * M * N + 2 * a
+        disc = math.sqrt(math.fabs(lin ** 2 - 4 * (M ** 2 + 1) * ((N - b) ** 2 + a ** 2 - dist ** 2)))
+        denom = 2 * (M ** 2 + 1)
+        x1, x2 = (lin + disc) / denom, (lin - disc) / denom
+        y1, y2 = M * x1 + N, M * x2 + N
+    return Vertex(x1, y1), Vertex(x2, y2)

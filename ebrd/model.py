@@ -41,15 +41,15 @@ class FNNPolicy(nn.Module):
         x = F.relu(self.fc5(x))
         return self.action_head(x), self.type_head(x)
 
+    @staticmethod
+    def get_action(state, model):
+        state = torch.FloatTensor(state).to(device)
+        action, type_values = model(state)
+        return action.tolist(), float(torch.argmax(type_values) / 2)
 
-def get_action(state, model):
-    state = torch.FloatTensor(state).to(device)
-    action, type_values = model(state)
-    return action.tolist(), float(torch.argmax(type_values) / 2)
-
-
-def load_model(model_path):
-    model = FNNPolicy().to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.eval()
-    return model
+    @staticmethod
+    def load(model_path):
+        model = FNNPolicy().to(device)
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        model.eval()
+        return model

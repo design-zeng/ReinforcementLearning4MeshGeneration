@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 
 from general.geometry import Vertex, Segment, Quad
-from general.quality import edge_angle_quality
+from general.quality import QuadQuality
 from general.mesh_io import read_polygon
 from general.plotting import plot_segment
 
@@ -171,7 +171,7 @@ def element_quality_sweep():
     for v in vs:
         quad = Quad([v1, v2, v, v3])
         if quad.is_valid():
-            quality.append(edge_angle_quality(quad))
+            quality.append(QuadQuality.edge_angle(quad))
             angle.append(v.clockwise_angle(v3, v2))
             ratio.append(v.distance_to(v2) / v.distance_to(v3))
 

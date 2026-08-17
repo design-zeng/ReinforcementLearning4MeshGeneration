@@ -10,7 +10,7 @@ from scipy.spatial import ConvexHull
 from general.geometry import Quad, Vertex, Mesh, Polygon
 from general.plotting import show_quad
 from general.mesh_io import read_polygon
-from general.quality import robust_quality, stretch_quality, taper_quality, scaled_jacobian_quality, strong_quality
+from general.quality import QuadQuality
 from ebrd.sample_extraction import extract_samples, write_samples
 
 
@@ -65,13 +65,13 @@ def calculate_metrics(vertices, elements, metrics, metrics_ind):
 
         for ele in elements:
             # q1, q2 = ele.edge_angle_quality()
-            element_qualities.append(robust_quality(ele))
+            element_qualities.append(QuadQuality.element(ele))
             if 'Stretch' in metrics_ind:
-                stretch.append(stretch_quality(ele))
+                stretch.append(QuadQuality.stretch(ele))
             if 'Taper' in metrics_ind:
-                taper.append(taper_quality(ele))
+                taper.append(QuadQuality.taper(ele))
             if 'Scaled Jacobian' in metrics_ind:
-                s_jacobian.append(scaled_jacobian_quality(ele))
+                s_jacobian.append(QuadQuality.scaled_jacobian(ele))
             angles = ele.inner_angles()
             if 'MinAngle' in metrics_ind:
                 min_angles.append(min(angles))
@@ -289,9 +289,9 @@ def extract_samples_from_file():
     out_dir.mkdir(parents=True, exist_ok=True)
     for m in discover_meshes():
         mesh = read_inp_file(str(m))
-        samples, output_types, outputs = extract_samples(mesh, mesh.generated_quads, 3, 3, metric=strong_quality, radius=6, quality_threshold=0.7)
-        write_samples(out_dir / f"{m.stem}.json",
-                         {'samples': samples, 'output_types': output_types, 'outputs': outputs})
+        dataset = {'samples': [], 'output_types': [], 'outputs': []}
+        extract_samples(mesh, dataset, 3, 3, metric=QuadQuality.edge_angle_ratio, fan_radius=6, quality_threshold=0.7)
+        write_samples(out_dir / f"{m.stem}.json", dataset)
     print("Saved!")
 
 if __name__ == '__main__':

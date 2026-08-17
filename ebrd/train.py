@@ -17,26 +17,13 @@ from general.smoothing import smooth_mesh, smooth_pave
 from ebrd.sample_extraction import extract_samples, write_samples
 from general.plotting import savefig_boundary
 from ebrd.data_augmentation import sampling_main
-from ebrd.model import FNNPolicy, get_action, device, SEED, domains_path, output_path, augmentation_path
+from ebrd.model import FNNPolicy, device, SEED, domains_path, output_path, augmentation_path
 
 
 def load_training_data(file_name):
     with open(file_name, 'r') as fr:
         return json.loads(fr.read())
 
-
-def build_training_data(data):
-    if len(data['samples']) == 0:
-        raise ValueError(
-            "No training samples to build from — mesh extraction produced none. "
-            "Try a lower quality_threshold or a better-trained model.")
-    inputs = np.array(data['samples'])
-    outputs = np.array(data['outputs'])
-    output_types = np.array(data['output_types'])
-
-    x = torch.from_numpy(inputs).float().to(device)
-    y = torch.from_numpy(np.concatenate((output_types, outputs), axis=1)).float().to(device)
-    return x, y
 
 # def train_fnn_mse(model, x, y, model_path, tensorboard_log, epoches=500000):
 #     loss_fn = torch.nn.MSELoss(reduction='sum')
@@ -73,14 +60,22 @@ def types_to_class_indices(types):
     return torch.tensor(result)
 
 
-def train_fnn(train_data, model, num_epoches, batch_size, tensorboard_log, model_path, lr=None):
+def train_fnn(data, model, num_epoches, batch_size, tensorboard_log, model_path, lr=None):
+    if len(data['samples']) == 0:
+        raise ValueError(
+            "No training samples to build from — mesh extraction produced none. "
+            "Try a lower quality_threshold or a better-trained model.")
+    x = torch.from_numpy(np.array(data['samples'])).float().to(device)
+    y = torch.from_numpy(np.concatenate((np.array(data['output_types']),
+                                         np.array(data['outputs'])), axis=1)).float().to(device)
+
     torch.manual_seed(SEED)  # reproducible weight init order / DataLoader shuffling
     optimizer = optim.Adam(model.parameters(), lr=lr or 1e-3)
 
     classification_loss_fn = nn.CrossEntropyLoss(reduction='sum')  # element type
     regression_loss_fn = nn.MSELoss(reduction='sum')  # vertex coordinates
 
-    train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    train_dataloader = DataLoader(list(zip(x, y)), batch_size=batch_size, shuffle=True)
     writer = SummaryWriter(tensorboard_log)
 
     for t in range(num_epoches):
@@ -108,9 +103,8 @@ def train_fnn(train_data, model, num_epoches, batch_size, tensorboard_log, model
 
 
 def start_training(model_path, data_path, tensorboard_log):
-    x, y = build_training_data(load_training_data(data_path))
     model = FNNPolicy().to(device)
-    train_fnn(list(zip(x, y)), model, 2000, 128, tensorboard_log, model_path)
+    train_fnn(load_training_data(data_path), model, 2000, 128, tensorboard_log, model_path)
 
 
 def self_evolving_training(env, version, model=None, episodes=100, max_steps=8000):
@@ -131,7 +125,7 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
 
         for _ in range(max_steps):
             step += 1
-            action, type_value = get_action(state, model)
+            action, type_value = FNNPolicy.get_action(state, model)
             state, reward, done, _ = env.step(action, round(type_value, 2))
             print(_, reward, len(env.boundary.vertices))
             ep_reward += reward
@@ -150,19 +144,15 @@ def self_evolving_training(env, version, model=None, episodes=100, max_steps=800
 
         running_reward = 0.05 * ep_reward + 0.95 * running_reward
 
-        samples, output_types, outputs = extract_samples(
-            env.mesh, env.mesh.generated_quads, 2, 3, radius=4, quality_threshold=0.7)
-        write_samples(samples_dir / f"ebrd_{i_episode}.json",
-                         {'samples': samples, 'output_types': output_types, 'outputs': outputs})
+        dataset = {'samples': [], 'output_types': [], 'outputs': []}
+        extract_samples(env.mesh, dataset, 2, 3, fan_radius=4, quality_threshold=0.7)
+        write_samples(samples_dir / f"ebrd_{i_episode}.json", dataset)
 
-        if not samples:
+        if not dataset['samples']:
             print("No good-quality elements extracted this round; skipping retrain.")
             continue
 
-        x, y = build_training_data({'samples': samples,
-                                    'output_types': output_types,
-                                    'outputs': outputs})
-        train_fnn(list(zip(x, y)), model, 10000, 1024,
+        train_fnn(dataset, model, 10000, 1024,
                   tensorboard_log=logs_dir, model_path=models_dir / f"ebrd_model_{i_episode}.pt")
 
         print("%d: done %d games, running reward %.3f" % (step, i_episode, running_reward))

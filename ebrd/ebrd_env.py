@@ -1,9 +1,9 @@
 import numpy as np
 
-from general.geometry import Quad, Polygon, Mesh
-from general.recognition import reference_state, reference_candidates, next_reference_point, updated_candidates
-from general.action import polar_action_point, rule_quad
-from general.quality import can_add_quad
+from general.geometry import Polygon, Mesh
+from general.boundary import Boundary
+from general.recognition import recognize
+from general.action import polar_act, act_last
 from general.smoothing import smooth_pave
 from general.plotting import render_boundary, close_render
 
@@ -19,17 +19,16 @@ class Ebrd_Env:
         fresh = self.problem.deep_copy()
         self.mesh = Mesh(fresh)
         self.boundary = fresh.copy()
-        self.candidates = reference_candidates(self.boundary)
-        self.current_area = self.mesh.original_area
+        self.candidates = []
+        Boundary.score_candidates(self.boundary, self.candidates)
         self.failed_points = []
-        self.current_ref_state = None
+        self.view = {}
 
-        reference_point = next_reference_point(self.candidates)
-        if not reference_point:
+        recognize(self.boundary, self.candidates, self.view,
+                  self.mesh.area_ratio(), static)
+        if not self.view['reference_point']:
             return None
-        self.current_ref_state = reference_state(
-            self.boundary, reference_point, self.current_area / self.mesh.original_area, static)
-        return np.array(self.current_ref_state['state']).astype(np.float32)
+        return np.array(self.view['state']).astype(np.float32)
 
     def step(self, action, rule_type):
         done = False
@@ -37,41 +36,28 @@ class Ebrd_Env:
         is_complete = True
         observation = None
 
-        reference_point = self.current_ref_state['reference_point']
+        reference_point = self.view['reference_point']
 
         if len(self.boundary.vertices) <= 5:
             done = True
         else:
-            index = self.boundary.vertices.index(reference_point)
-            new_point = polar_action_point(self.current_ref_state, action)
+            outcome = {}
+            polar_act(self.view, action, rule_type, self.boundary, self.mesh, outcome)
 
-            if rule_type <= 0.3:
-                quad = rule_quad(self.boundary, -1, index)
-            elif rule_type >= 0.7:
-                quad = rule_quad(self.boundary, 1, index)
-            elif self.boundary.contains_point(new_point):
-                quad = rule_quad(self.boundary, 0, index, new_point)
-            else:
-                quad = None
-
-            if quad is not None and can_add_quad(self.boundary, quad, reference_point):
+            if outcome['absorbed']:
                 absorbed = True
-                self.mesh.add_quad(quad)
-                retired, rescored = self.boundary.update_boundary(quad)
-                self.candidates = updated_candidates(self.candidates, self.boundary, retired, rescored)
 
                 if len(self.boundary.vertices) <= 5:
                     done = True
                     if len(self.boundary.vertices) == 4:
-                        self.mesh.add_quad(Quad(self.boundary.vertices))
+                        act_last(self.boundary, self.mesh)
             elif reference_point not in self.failed_points:
                 self.failed_points.append(reference_point)
 
-            next_point = next_reference_point(self.candidates, self.failed_points)
-            if next_point:
-                self.current_ref_state = reference_state(
-                    self.boundary, next_point, self.current_area / self.mesh.original_area, True)
-                observation = np.array(self.current_ref_state['state']).astype(np.float32)
+            recognize(self.boundary, self.candidates, self.view,
+                      self.mesh.area_ratio(), True, self.failed_points)
+            if self.view['reference_point']:
+                observation = np.array(self.view['state']).astype(np.float32)
             if absorbed:
                 self.failed_points = []
 
@@ -83,7 +69,7 @@ class Ebrd_Env:
                     # (smooth) and extraction retried, giving up only when the
                     # same failure set recurs
                     smooth_pave(self.mesh, self.boundary)
-                    self.candidates = reference_candidates(self.boundary)
+                    Boundary.score_candidates(self.boundary, self.candidates)
 
                     if len(self.last_failed_points) > 0 and len(self.failed_points) > 0 and \
                             self.last_failed_points[0] == self.failed_points[0] and \
@@ -94,11 +80,10 @@ class Ebrd_Env:
                     self.last_failed_points = self.failed_points
                     self.failed_points = []
 
-                    next_point = next_reference_point(self.candidates, self.failed_points)
-                    if next_point:
-                        self.current_ref_state = reference_state(
-                            self.boundary, next_point, self.current_area / self.mesh.original_area, True)
-                        observation = np.array(self.current_ref_state['state']).astype(np.float32)
+                    recognize(self.boundary, self.candidates, self.view,
+                              self.mesh.area_ratio(), True, self.failed_points)
+                    if self.view['reference_point']:
+                        observation = np.array(self.view['state']).astype(np.float32)
                     else:
                         done = True
 

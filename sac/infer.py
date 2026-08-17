@@ -14,7 +14,7 @@ from general.mesh_io import read_polygon, write_inp
 from sac.sac_env import Sac_Env
 from general.smoothing import smooth_mesh
 from ebrd.sample_extraction import extract_samples, write_samples
-from general.quality import robust_quality
+from general.quality import QuadQuality
 from general.plotting import save_meshes
 
 
@@ -89,13 +89,13 @@ def evaluation(is_render=False, deterministic=False, indexing=False, save_fig=Fa
             with open(experiments_path / version / f"{tag}_history_info", 'w') as fw:
                 json.dump(env.history_info, fw)
 
-            q = [robust_quality(quad) for quad in env.mesh.generated_quads]
+            q = [QuadQuality.element(quad) for quad in env.mesh.generated_quads]
             print(f"element quality mean/std: {np.mean(q):.3f} / {np.std(q):.3f}")
 
         if save_samples and env.mesh.generated_quads:
-            samples, output_types, outputs = extract_samples(env.mesh, env.mesh.generated_quads, 2, 3, radius=4)
-            write_samples(eval_path / version / f"{tag}.json",
-                             {'samples': samples, 'output_types': output_types, 'outputs': outputs})
+            dataset = {'samples': [], 'output_types': [], 'outputs': []}
+            extract_samples(env.mesh, dataset, 2, 3, fan_radius=4)
+            write_samples(eval_path / version / f"{tag}.json", dataset)
 
     with open(eval_path / version / 'evaluation.txt', 'w') as outfile:
         json.dump(results, outfile)
