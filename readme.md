@@ -56,6 +56,8 @@ nodes, faces = result.to_arrays()
 # or plain data for your own tools
 ```
 
+Run it from the repo root, since the domain path is relative and the `general` package must be importable.
+
 Or build the boundary from your own points:
 
 ```python
@@ -70,6 +72,7 @@ There is a convenient boundary drawer inside `general/tools`, which you can run 
 ```bash
 python -m general.tools.polygon_editor_ui_v2  
 ```
+It needs tkinter, which ships with Python on macOS and Windows, but needs `python3-tk` on Linux.
 They are saved inside `samples/domains`, so you must wire up the correct path.
 
 The policy is stochastic, so `mesh()` retries a domain up to `attempts` times
@@ -196,7 +199,7 @@ python -m sac_fast.infer
 
 ### Other Tools
 
-These read the meshes that `python -m sac.infer` writes (as `.inp` files under `sac/output/evaluation`), so run that first with `save_fig=True`.
+These read the meshes that `python -m sac.infer` writes (as `.inp` files under `sac/output/evaluation`), so run that first.
 
 Evaluate every produced mesh with the VTK quality criteria. Prints average and standard deviation for min angle, max angle, scaled Jacobian, stretch, and taper:
 ```bash

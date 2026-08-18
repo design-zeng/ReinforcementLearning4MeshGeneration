@@ -155,7 +155,7 @@ def element_number_box_plot():
 
 
 def full_mesh(domain="boundary6",
-               ckpt=logs_path / method / "78" / "1" / "best_model.zip",
+               ckpt=logs_path / method / version / stage / "best_model.zip",
                attempts=60):
     os.makedirs(eval_path, exist_ok=True)
 
@@ -183,10 +183,10 @@ def full_mesh(domain="boundary6",
 
 
 if __name__ == '__main__':
-    full_mesh()
-    full_mesh(domain="dolphin1")
-    full_mesh(domain="basic")
-    full_mesh(domain="basic1")
-    # evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
+    evaluation(is_render=False, deterministic=False, indexing=False, save_fig=True, save_samples=False)
+    # full_mesh()
+    # full_mesh(domain="dolphin1")
+    # full_mesh(domain="basic")
+    # full_mesh(domain="basic1")
     # replication_evaluation(save_fig=True)
     # element_number_box_plot()
